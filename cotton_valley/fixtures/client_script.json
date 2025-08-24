@@ -1,0 +1,68 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Customer",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.850333",
+  "module": "Cotton Valley",
+  "name": "Customer List",
+  "script": "frappe.listview_settings['Customer'] = {\r\n    onload(listview) {\r\n        // Hide sidebar\r\n        $('.layout-side-section').hide();\r\n        // Add \"Product\" button\r\n        listview.page.add_inner_button('Product', () => {\r\n            frappe.set_route(\"List\", \"Item\");  // Opens Product (Item) list\r\n        });\r\n\r\n        // Add \"Sales Reps\" button\r\n        listview.page.add_inner_button('Sales Reps', () => {\r\n            frappe.set_route(\"List\", \"Sales Person\");  // Opens Sales Reps list\r\n        });\r\n    }\r\n};\r\n",
+  "view": "List"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Item",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.978939",
+  "module": "Cotton Valley",
+  "name": "Item List",
+  "script": "frappe.listview_settings['Item'] = {\r\n    onload(listview) {\r\n        // Hide sidebar\r\n        $('.layout-side-section').hide();\r\n    }\r\n};\r\n",
+  "view": "List"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Customer",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.913062",
+  "module": "Cotton Valley",
+  "name": "Customer",
+  "script": "frappe.ui.form.on('Customer', {\r\n    refresh: function(frm) {\r\n        $(\"[data-label='View']\").hide();\r\n    },\r\n    \r\n    validate: function(frm) {\r\n        if (frm.doc.password !== frm.doc.confirm_password) {\r\n            frappe.throw(__('Password and Confirm Password must be the same'));\r\n        }\r\n    }\r\n});\r\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Address",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.944201",
+  "module": "Cotton Valley",
+  "name": "Address",
+  "script": "frappe.ui.form.on(\"Address\", {\n  pincode: async function(frm) {\n    const zip = frm.doc.pincode;\n\n    if (!zip) return;\n\n    try {\n      // Free API (works for many countries, e.g. US, CA, GB, etc.)\n      const res = await fetch(`https://api.zippopotam.us/us/${zip}`);\n      \n      if (!res.ok) {\n        frappe.msgprint(\"No data found for this postal code.\");\n        return;\n      }\n\n      const data = await res.json();\n    console.log(data)\n      if (data.places && data.places.length > 0) {\n        const place = data.places[0];\n\n        frm.set_value(\"city\", place[\"place name\"]);\n        frm.set_value(\"state\", place[\"state\"]);\n        frm.set_value(\"country\", data[\"country\"]);\n      }\n    } catch (e) {\n      console.error(\"Postal lookup error:\", e);\n      frappe.msgprint(\"Could not fetch location details.\");\n    }\n  }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Item",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.884055",
+  "module": "Cotton Valley",
+  "name": "Product",
+  "script": "frappe.ui.form.on('Item', {\n\trefresh: function(frm) {\n        $(\"[data-label='View']\").hide();\n        $(\"[data-label='Actions']\").hide();\n    },\n})",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Item",
+  "enabled": 1,
+  "modified": "2025-08-24 09:26:47.792729",
+  "module": "Cotton Valley",
+  "name": "Product List",
+  "script": "frappe.listview_settings['Item'] = {\r\n    onload(listview) {\r\n        // Hide sidebar\r\n        $('.layout-side-section').hide();\r\n        // Add \"Product\" button\r\n        listview.page.add_inner_button('Customer', () => {\r\n            frappe.set_route(\"List\", \"Customer\");  // Opens Product (Item) list\r\n        });\r\n\r\n        // Add \"Sales Reps\" button\r\n        listview.page.add_inner_button('Sales Reps', () => {\r\n            frappe.set_route(\"List\", \"Sales Person\");  // Opens Sales Reps list\r\n        });\r\n    }\r\n};\r\n",
+  "view": "List"
+ }
+]
