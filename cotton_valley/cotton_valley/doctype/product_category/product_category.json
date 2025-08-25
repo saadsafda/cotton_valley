@@ -8,6 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "column_break_gumt",
+  "category_image",
   "section_break_fcxy",
   "subcategories"
  ],
@@ -30,12 +32,22 @@
    "fieldtype": "Table",
    "label": "SubCategories",
    "options": "SubCategories"
+  },
+  {
+   "fieldname": "column_break_gumt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "category_image",
+   "fieldtype": "Attach Image",
+   "label": "Category Image"
   }
  ],
  "grid_page_length": 50,
+ "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-24 09:11:53.687431",
+ "modified": "2025-08-25 08:31:07.137095",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",
