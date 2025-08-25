@@ -16,6 +16,11 @@ def get_home_banners():
 def get_country_list():
     return frappe.get_all("Country", fields=["name", "country_name"])
 
+
+@frappe.whitelist(allow_guest=True)
+def get_product_categories():
+    return frappe.get_all("Product Category", fields=["name", "title"])
+
 @frappe.whitelist(allow_guest=True)
 def register_customer(data):
     try:
