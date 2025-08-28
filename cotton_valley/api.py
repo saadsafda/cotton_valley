@@ -51,7 +51,7 @@ def get_product_categories_with_count():
 
 @frappe.whitelist(allow_guest=True)
 def register_customer(data=None):
-    import json, base64
+    import json
 
     try:
         # Handle both JSON and FormData
@@ -123,45 +123,11 @@ def register_customer(data=None):
         elif data.get("billing_address"):
             make_customer_address(customer.name, data.get("billing_address"), address_type="Billing")
 
-        # --- Sales Tax Certificate (File) ---
-        file_url = None
-        if "sales_tax_certificate" in frappe.request.files:
-            # Case: FormData upload
-            upload = frappe.request.files["sales_tax_certificate"]
-            _file = frappe.get_doc({
-                "doctype": "File",
-                "file_name": upload.filename,
-                "attached_to_doctype": "Customer",
-                "attached_to_name": customer.name,
-                "is_private": 1
-            })
-            _file.insert(ignore_permissions=True)
-            _file.write_file(content=upload.stream.read())
-            file_url = _file.file_url
-
-        elif isinstance(data.get("sales_tax_certificate"), dict):
-            # Case: JSON with base64
-            stc = data["sales_tax_certificate"]
-            _file = frappe.get_doc({
-                "doctype": "File",
-                "file_name": stc.get("filename"),
-                "content": base64.b64decode(stc.get("content")),
-                "is_private": 1,
-                "attached_to_doctype": "Customer",
-                "attached_to_name": customer.name
-            })
-            _file.insert(ignore_permissions=True)
-            file_url = _file.file_url
-
-        if file_url:
-            frappe.db.set_value("Customer", customer.name, "sales_tax_certificate", file_url)
-
         frappe.db.commit()
         return {
             "status": "success",
             "message": _("Customer registered successfully"),
-            "customer_id": customer.name,
-            "file_url": file_url
+            "customer_id": customer.name
         }
 
     except Exception as e:
