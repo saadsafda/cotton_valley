@@ -163,3 +163,32 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Customer Address Creation Failed")
         return {"status": "error", "message": str(e)}
+
+
+import frappe
+
+@frappe.whitelist(allow_guest=True)
+def get_hot_products(price_list="Standard Selling"):
+    try:
+        items = frappe.db.sql("""
+            SELECT 
+                i.name AS item_code,
+                i.item_name,
+                i.image,
+                ip.price_list_rate AS price
+            FROM 
+                `tabItem` i
+            LEFT JOIN 
+                `tabItem Price` ip 
+                ON ip.item_code = i.name 
+                AND ip.price_list = %s
+            WHERE i.disabled = 0 
+              AND i.custom_is_hot_item = 1
+        """, (price_list,), as_dict=True)
+
+        return items
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
