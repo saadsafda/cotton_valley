@@ -53,8 +53,8 @@ def get_product_categories_with_count():
 def register_customer(data):
     try:
         # Ensure incoming data is a dict (from JSON string)
+        import json, base64
         if isinstance(data, str):
-            import json
             data = json.loads(data)
 
         # Check if email already exists in Customer
@@ -118,6 +118,20 @@ def register_customer(data):
 
         if not data.get("shipping_billing_same") and data.get("billing_address"):
             make_customer_address(customer.name, data.get("billing_address"), address_type="Billing")
+
+        sales_tax_file = data.get("sales_tax_certificate")
+        if sales_tax_file:
+            # Expecting: { "filename": "doc.pdf", "content": "<base64_string>" }
+            file_doc = frappe.get_doc({
+                "doctype": "File",
+                "file_name": sales_tax_file.get("filename"),
+                "content": base64.b64decode(sales_tax_file.get("content")),
+                "is_private": 1,
+                "attached_to_doctype": "Customer",
+                "attached_to_name": customer.name
+            })
+            file_doc.insert(ignore_permissions=True)
+            frappe.db.set_value("Customer", customer.name, "sales_tax_certificate", file_doc.file_url)
 
         frappe.db.commit()
         return {"status": "success", "message": "Customer registered successfully", "customer_id": customer.name}
