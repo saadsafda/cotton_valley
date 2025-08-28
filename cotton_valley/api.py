@@ -164,9 +164,6 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
         frappe.log_error(frappe.get_traceback(), "Customer Address Creation Failed")
         return {"status": "error", "message": str(e)}
 
-
-import frappe
-
 @frappe.whitelist(allow_guest=True)
 def get_hot_products(price_list="Standard Selling"):
     try:
