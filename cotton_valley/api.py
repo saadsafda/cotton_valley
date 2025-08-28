@@ -50,18 +50,21 @@ def get_product_categories_with_count():
     return categories
 
 @frappe.whitelist(allow_guest=True)
-def register_customer(data):
-    try:
-        # Ensure incoming data is a dict (from JSON string)
-        import json, base64
-        if isinstance(data, str):
-            data = json.loads(data)
+def register_customer(data=None):
+    import json, base64
 
-        # Check if email already exists in Customer
+    try:
+        # Handle both JSON and FormData
+        if data and isinstance(data, str):
+            data = json.loads(data)
+        elif not data:
+            data = frappe.form_dict
+
+        # --- Duplicate check ---
         if frappe.db.exists("Customer", {"custom_email_address": data.get("email")}):
             return {"status": "error", "message": _("Email already registered")}
 
-        # Create Customer
+        # --- Create Customer ---
         customer = frappe.get_doc({
             "doctype": "Customer",
             "customer_name": data.get("first_name"),
@@ -94,9 +97,8 @@ def register_customer(data):
             "custom_bank_email": data.get("bank_email"),
         })
 
-        # References
+        # --- References ---
         if isinstance(data.get("references"), list):
-            customer.custom_business_refereances = []
             for ref in data.get("references"):
                 customer.append("custom_business_refereances", {
                     "company_name": ref.get("company_name"),
@@ -111,35 +113,59 @@ def register_customer(data):
 
         customer.insert(ignore_permissions=True)
 
-        # Addresses
+        # --- Addresses ---
         if data.get("shipping_billing_same"):
             make_customer_address(customer.name, data.get("shipping_address"), address_type="Shipping")
             make_customer_address(customer.name, data.get("shipping_address"), address_type="Billing")
-
-        if not data.get("shipping_billing_same") and data.get("billing_address"):
+        elif data.get("billing_address"):
             make_customer_address(customer.name, data.get("billing_address"), address_type="Billing")
 
-        sales_tax_file = data.get("sales_tax_certificate")
-        if sales_tax_file:
-            # Expecting: { "filename": "doc.pdf", "content": "<base64_string>" }
-            file_doc = frappe.get_doc({
+        # --- Sales Tax Certificate (File) ---
+        file_url = None
+        if "sales_tax_certificate" in frappe.request.files:
+            # Case: FormData upload
+            upload = frappe.request.files["sales_tax_certificate"]
+            _file = frappe.get_doc({
                 "doctype": "File",
-                "file_name": sales_tax_file.get("filename"),
-                "content": base64.b64decode(sales_tax_file.get("content")),
+                "file_name": upload.filename,
+                "attached_to_doctype": "Customer",
+                "attached_to_name": customer.name,
+                "is_private": 1
+            })
+            _file.insert(ignore_permissions=True)
+            _file.write_file(content=upload.stream.read())
+            file_url = _file.file_url
+
+        elif isinstance(data.get("sales_tax_certificate"), dict):
+            # Case: JSON with base64
+            stc = data["sales_tax_certificate"]
+            _file = frappe.get_doc({
+                "doctype": "File",
+                "file_name": stc.get("filename"),
+                "content": base64.b64decode(stc.get("content")),
                 "is_private": 1,
                 "attached_to_doctype": "Customer",
                 "attached_to_name": customer.name
             })
-            file_doc.insert(ignore_permissions=True)
-            frappe.db.set_value("Customer", customer.name, "sales_tax_certificate", file_doc.file_url)
+            _file.insert(ignore_permissions=True)
+            file_url = _file.file_url
+
+        if file_url:
+            frappe.db.set_value("Customer", customer.name, "sales_tax_certificate", file_url)
 
         frappe.db.commit()
-        return {"status": "success", "message": "Customer registered successfully", "customer_id": customer.name}
+        return {
+            "status": "success",
+            "message": _("Customer registered successfully"),
+            "customer_id": customer.name,
+            "file_url": file_url
+        }
 
     except Exception as e:
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Customer Registration Failed")
         return {"status": "error", "message": str(e)}
+
 
 
 @frappe.whitelist(allow_guest=True)
