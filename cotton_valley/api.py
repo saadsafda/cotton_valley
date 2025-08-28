@@ -133,7 +133,7 @@ def register_customer(data=None):
     except Exception as e:
         frappe.db.rollback()
         frappe.log_error(frappe.get_traceback(), "Customer Registration Failed")
-        return {"status": "error", "message": str(e)}
+        return {"status": "Error Exception", "message": str(e)}
 
 
 
