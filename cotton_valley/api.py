@@ -63,7 +63,7 @@ def register_customer(data=None):
         # --- Duplicate check ---
         if frappe.db.exists("Customer", {"custom_email_address": data.get("email")}):
             frappe.local.response["http_status_code"] = 409
-            frappe.local.response["message"] = f"{data.get("email")} email is already exist"
+            frappe.local.response["message"] = f"{data.get('email')} email is already exist"
             frappe.local.response["status"] = "error"
             return
 
