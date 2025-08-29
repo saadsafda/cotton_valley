@@ -18,7 +18,15 @@
   "section_break_vbmh",
   "promotion_banner",
   "column_break_yczr",
-  "promotion_subbanner"
+  "promotion_subbanner",
+  "section_break_onbf",
+  "first_title",
+  "column_break_rfdd",
+  "sec_title",
+  "column_break_ybtv",
+  "third_title",
+  "column_break_qwsw",
+  "forth_title"
  ],
  "fields": [
   {
@@ -89,13 +97,49 @@
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Description"
+  },
+  {
+   "fieldname": "section_break_onbf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "first_title",
+   "fieldtype": "Data",
+   "label": "First Title"
+  },
+  {
+   "fieldname": "column_break_rfdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sec_title",
+   "fieldtype": "Data",
+   "label": "Sec Title"
+  },
+  {
+   "fieldname": "column_break_ybtv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "third_title",
+   "fieldtype": "Data",
+   "label": "Third Title"
+  },
+  {
+   "fieldname": "column_break_qwsw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "forth_title",
+   "fieldtype": "Data",
+   "label": "Forth Title"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-29 02:55:59.317790",
+ "modified": "2025-08-29 04:43:14.608545",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",
