@@ -173,6 +173,7 @@ def get_hot_products():
             i.item_name,
             i.image,
             ip.price_list_rate AS price,
+            ip.currency AS currency,
             COALESCE(SUM(b.actual_qty), 0) AS stock_qty
         FROM 
             `tabItem` i
@@ -187,7 +188,7 @@ def get_hot_products():
             i.disabled = 0 
             AND i.custom_is_hot_item = 1
         GROUP BY 
-            i.name, i.item_name, i.image, ip.price_list_rate
+            i.name, i.item_name, i.image, ip.price_list_rate, ip.currency
     """, ("Standard Selling",), as_dict=True)
 
     return items

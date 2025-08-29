@@ -5,15 +5,22 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "header_topbar_text",
+  "section_break_uoqb",
+  "large_image_view",
   "large_image",
   "column_break_oaoq",
   "right_top",
-  "right_bottom"
+  "right_bottom",
+  "section_break_vbmh",
+  "promotion_banner",
+  "column_break_yczr",
+  "promotion_subbanner"
  ],
  "fields": [
   {
    "fieldname": "large_image",
-   "fieldtype": "Attach",
+   "fieldtype": "Attach Image",
    "label": "Large Image"
   },
   {
@@ -22,20 +29,53 @@
   },
   {
    "fieldname": "right_top",
-   "fieldtype": "Attach",
+   "fieldtype": "Attach Image",
    "label": "Right Top"
   },
   {
    "fieldname": "right_bottom",
-   "fieldtype": "Attach",
+   "fieldtype": "Attach Image",
    "label": "Right Bottom"
+  },
+  {
+   "fieldname": "header_topbar_text",
+   "fieldtype": "Data",
+   "label": "Header Topbar Text"
+  },
+  {
+   "fieldname": "section_break_uoqb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "large_image_view",
+   "fieldtype": "Image",
+   "label": "Large Image View",
+   "options": "large_image"
+  },
+  {
+   "fieldname": "section_break_vbmh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "promotion_banner",
+   "fieldtype": "Attach Image",
+   "label": "Promotion Banner"
+  },
+  {
+   "fieldname": "column_break_yczr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "promotion_subbanner",
+   "fieldtype": "Attach Image",
+   "label": "Promotion SubBanner"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-23 04:22:45.140686",
+ "modified": "2025-08-29 02:06:16.705753",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",
