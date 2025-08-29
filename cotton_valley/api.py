@@ -171,7 +171,7 @@ def get_hot_products():
         SELECT 
             i.name AS item_code,
             i.item_name,
-            i.image AS main_image,
+            i.image,
             i.is_hot_item,
             i.is_sale_enable,
             i.is_featured,
