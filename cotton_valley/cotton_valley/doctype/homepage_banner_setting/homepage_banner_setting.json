@@ -21,12 +21,17 @@
   "promotion_subbanner",
   "section_break_onbf",
   "first_title",
+  "slide_1_ids",
   "column_break_rfdd",
   "sec_title",
+  "slide_2_ids",
+  "section_break_knfe",
   "column_break_ybtv",
   "third_title",
+  "slide_3_ids",
   "column_break_qwsw",
-  "forth_title"
+  "forth_title",
+  "slide_4_ids"
  ],
  "fields": [
   {
@@ -133,13 +138,41 @@
    "fieldname": "forth_title",
    "fieldtype": "Data",
    "label": "Forth Title"
+  },
+  {
+   "fieldname": "slide_1_ids",
+   "fieldtype": "Table",
+   "label": "Slide 1 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "slide_2_ids",
+   "fieldtype": "Table",
+   "label": "Slide 2 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "slide_3_ids",
+   "fieldtype": "Table",
+   "label": "Slide 3 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "slide_4_ids",
+   "fieldtype": "Table",
+   "label": "Slide 4 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "section_break_knfe",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-29 04:43:14.608545",
+ "modified": "2025-08-29 07:13:21.387021",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",

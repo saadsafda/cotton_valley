@@ -1,4 +1,39 @@
+# api/products.py
 import frappe
+from frappe import _
+
+@frappe.whitelist(allow_guest=True)
+def get_products(category=None, sortBy=None, search=None):
+    query = """
+        SELECT
+            i.name as id,
+            i.item_name as name,
+            i.description,
+            i.image,
+            ip.price_list_rate as price,
+            ip.currency,
+            COALESCE(SUM(bin.actual_qty), 0) as quantity,
+            i.stock_uom as unit,
+            i.item_group as category
+        FROM `tabItem` i
+        LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name
+        LEFT JOIN `tabBin` bin ON bin.item_code = i.name
+        WHERE i.disabled = 0
+        GROUP BY i.name
+    """
+    products = frappe.db.sql(query, as_dict=True)
+
+    # Apply filters
+    if category:
+        products = [p for p in products if p["category"] == category]
+    if search:
+        products = [p for p in products if search.lower() in p["name"].lower()]
+    if sortBy == "low-high":
+        products = sorted(products, key=lambda x: x["price"] or 0)
+    elif sortBy == "high-low":
+        products = sorted(products, key=lambda x: -(x["price"] or 0))
+
+    return products
 
 
 @frappe.whitelist(allow_guest=True)
