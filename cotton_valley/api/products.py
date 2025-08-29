@@ -4,6 +4,10 @@ from frappe import _
 
 @frappe.whitelist(allow_guest=True)
 def get_products(category=None, sortBy=None, search=None):
+    category = None if not category or category == "null" else category
+    sortBy = None if not sortBy or sortBy == "null" else sortBy
+    search = None if not search or search == "null" else search
+    
     query = """
         SELECT
             i.name as id,
@@ -22,9 +26,10 @@ def get_products(category=None, sortBy=None, search=None):
         GROUP BY i.name
     """
     products = frappe.db.sql(query, as_dict=True)
+    print(category, "Print checking")  
 
     # Apply filters
-    if category:
+    if category :
         products = [p for p in products if p["category"] == category]
     if search:
         products = [p for p in products if search.lower() in p["name"].lower()]
@@ -32,7 +37,6 @@ def get_products(category=None, sortBy=None, search=None):
         products = sorted(products, key=lambda x: x["price"] or 0)
     elif sortBy == "high-low":
         products = sorted(products, key=lambda x: -(x["price"] or 0))
-
     return products
 
 
