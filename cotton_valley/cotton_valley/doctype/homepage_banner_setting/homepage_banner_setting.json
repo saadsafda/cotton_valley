@@ -12,6 +12,9 @@
   "column_break_oaoq",
   "right_top",
   "right_bottom",
+  "section_break_tjbc",
+  "title",
+  "description",
   "section_break_vbmh",
   "promotion_banner",
   "column_break_yczr",
@@ -69,13 +72,30 @@
    "fieldname": "promotion_subbanner",
    "fieldtype": "Attach Image",
    "label": "Promotion SubBanner"
+  },
+  {
+   "fieldname": "section_break_tjbc",
+   "fieldtype": "Section Break",
+   "label": "Product Heading"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-29 02:06:16.705753",
+ "modified": "2025-08-29 02:55:59.317790",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",
