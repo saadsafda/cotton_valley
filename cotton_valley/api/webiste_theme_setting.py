@@ -1,0 +1,270 @@
+import frappe
+
+
+@frappe.whitelist(allow_guest=True)
+def get_website_theme_settings():
+    settings = frappe.get_single("Website Theme Settings")
+    result = {
+        "id": 1,
+        "options": {
+            "general": {
+                "site_title": settings.site_title,
+                "site_tagline": settings.site_tagline,
+                "cart_style": "cart_sidebar",
+                "back_to_top_enable": True,
+                "language_direction": "ltr",
+                "primary_color": settings.primary_color,
+                "mode": "light"
+            },
+            "logo": {
+                "favicon_icon": get_file(settings.faveicon),
+                "header_logo": get_file(settings.header_logo),
+                "footer_logo": get_file(settings.footer_logo),
+            },
+            "header": {
+                "sticky_header_enable": True,
+                "header_options": "basic_header",
+                "page_top_bar_enable": True,
+                "top_bar_content": [
+                    {
+                        "content": settings.top_bar_content
+                    },
+                    {
+                        "content": "Something you love is now on sale <strong>Buy Now!</strong>"
+                    },
+                    {
+                        "content": "Your must-have item is calling – <strong>Buy Now!</strong>"
+                    }
+            ],
+            "page_top_bar_dark": False,
+            "support_number": settings.support_number,
+            "today_deals": [
+                1,
+                12,
+                8
+            ],
+            "category_ids": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8
+            ]
+            },
+            "footer": {
+                "footer_style": "light_mode",
+                "footer_copyright": True,
+                "copyright_content": "©2023 Fastkart All rights reserved",
+                "footer_about": "Discover convenience redefined at our multipurpose store. From fresh groceries to the latest fashion trends, find everything you need under one roof. Your one-stop shopping destination for a diverse range of products.",
+                "about_address": "1418 Riverwood Drive, CA 96052, US",
+                "about_email": "support@fastkart.com",
+                "footer_categories": [
+                    6,
+                    5,
+                    4,
+                    3,
+                    2,
+                    1
+                ],
+                "help_center": [
+                    {
+                    "label": "My Account",
+                    "link": "account/dashboard"
+                    },
+                    {
+                    "label": "My Orders",
+                    "link": "account/order"
+                    },
+                    {
+                    "label": "Wishlist",
+                    "link": "wishlist"
+                    },
+                    {
+                    "label": "Compare",
+                    "link": "compare"
+                    },
+                    {
+                    "label": "FAQ's",
+                    "link": "faq"
+                    },
+                    {
+                    "label": "Contact Us",
+                    "link": "contact-us"
+                    }
+                ],
+                "useful_link": [
+                    {
+                    "label": "Home",
+                    "link": "home"
+                    },
+                    {
+                    "label": "Collections",
+                    "link": "collections"
+                    },
+                    {
+                    "label": "About",
+                    "link": "about-us"
+                    },
+                    {
+                    "label": "Blogs",
+                    "link": "blogs"
+                    },
+                    {
+                    "label": "Offers",
+                    "link": "offer"
+                    },
+                    {
+                    "label": "Search",
+                    "link": "search"
+                    }
+                ],
+                "support_number": settings.support_number,
+                "support_email": settings.support_email,
+                "play_store_url": settings.play_store_url,
+                "app_store_url": settings.app_store_url,
+                "social_media_enable": settings.social_media_enable,
+                "facebook": settings.facebook_url,
+                "instagram": settings.instagram_url,
+                "twitter": settings.twitter_url,
+                "pinterest": settings.pinterest_url
+            },
+            "collection": {
+            "collection_layout": "collection_category_slider",
+            "collection_banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner.png"
+            },
+            "product": {
+            "product_layout": "product_thumbnail",
+            "is_trending_product": True,
+            "banner_enable": True,
+            "banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner-1.png",
+            "safe_checkout": True,
+            "safe_checkout_image": "https://react.pixelstrap.net/fastkart/assets/payments.png",
+            "secure_checkout": True,
+            "secure_checkout_image": "https://react.pixelstrap.net/fastkart/assets/secure_payments.png",
+            "encourage_order": True,
+            "encourage_max_order_count": 50,
+            "encourage_view": True,
+            "encourage_max_view_count": 50,
+            "sticky_checkout": True,
+            "sticky_product": True,
+            "social_share": True,
+            "shipping_and_return": "<p>Shipping and Returns are integral parts of your shopping experience, and we aim to make them as smooth as possible. We prioritize efficient shipping, striving to deliver your orders promptly within the estimated delivery window, typically ranging from 5 to 7 days. We understand that sometimes your purchase may not meet your expectations, so we offer a straightforward return policy. If you find yourself unsatisfied with your order, eligible items can be returned within 30 days of purchase, ensuring you have ample time to make a decision. Our commitment is to ensure your satisfaction and convenience throughout your shopping journey with us, and we're here to assist you every step of the way.</p><p><strong>Our Shipping Commitment:</strong></p><ul><li>Timely and reliable delivery within 5-7 days.</li><li>Real-time tracking for your orders.</li><li>Exceptional packaging to ensure your items arrive in perfect condition.</li></ul><p>&nbsp;</p><p><strong>Our Hassle-Free Returns:</strong></p><ul><li>Eligible items can be returned within 30 days.</li><li>Easy return initiation through our website.</li><li>Prompt processing of returns for a hassle-free experience.</li></ul><p>&nbsp;</p><p>We understand that your shopping needs may vary, and we are here to accommodate them while providing exceptional service.</p>"
+            },
+            "blog": {
+            "blog_style": "grid_view",
+            "blog_sidebar_type": "left_sidebar",
+            "blog_author_enable": True,
+            "read_more_enable": True
+            },
+            "seller": {
+            "about": {
+                "status": True,
+                "title": "Become a seller on Fastkart...",
+                "description": "Ready to showcase your products to the world? Join our dynamic marketplace and become a seller at our thriving multipurpose store. With a diverse customer base and a wide range of categories including groceries, fashion, electronics, and more, you'll have the perfect platform to reach a vast audience.\n\nAs a seller, you'll benefit from our user-friendly interface, seamless payment processing, and dedicated support to ensure your products shine. Whether you're a local artisan or a growing brand, our store provides the visibility and tools you need to succeed.\n\nTap into our established customer traffic, set up your shop with ease, and let your products take center stage. Join us in creating a shopping experience that caters to every need and taste. Your journey to success starts here – become a seller at our multipurpose store today!",
+                "image_url": "https://react.pixelstrap.net/fastkart/assets/banner-2.jpg"
+            },
+            "services": { 
+                "status": True,
+                "service_1": {
+                "title": "Lowest Cost",
+                "description": "Unlock quality at the lowest cost, exceeding expectations.",
+                "image_url": "https://react.pixelstrap.net/fastkart/assets/service.png"
+                },
+                "service_2": {
+                "title": "Lowest Cost",
+                "description": "Unlock quality at the lowest cost, exceeding expectations.",
+                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-2.png"
+                },
+                "service_3": {
+                "title": "Dedicated Pickup",
+                "description": "Enjoy the convenience of dedicated pickup services for your orders.",
+                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-3.png"
+                },
+                "service_4": {
+                "title": "Most Approachable",
+                "description": "We take pride in being the most approachable choice for your needs.",
+                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-4.png"
+                }
+            },
+            "steps": {
+                "status": True,
+                "title": "Doing Business on Fastkart is really easy",
+                "step_1": {
+                "title": "List Your Products & Get Support Provider",
+                "description": "Elevate your business by listing your products with us. Experience dedicated support services for your growth."
+                },
+                "step_2": {
+                "title": "Receive orders & Schedule a pickup",
+                "description": "Effortlessly receive orders and schedule pickups for ultimate convenience. Your business is simplified."
+                },
+                "step_3": {
+                "title": "Receive quick payment & grow your business",
+                "description": "Receive swift payments, fuel the growth of your business seamlessly, and watch your ventures thrive."
+                }
+            },
+            "start_selling": {
+                "status": True,
+                "title": "Start Selling",
+                "description": "Fastkart marketplace is India's leading platform for selling online. Be it a manufacturer, vendor or supplier, simply sell your products online on Fastkart and become a top ecommerce player with minimum investment. Through a team of experts offering exclusive seller workshops, training, seller support and convenient seller portal, Fastkart focuses on educating and empowering sellers across India. Selling on Fastkart.com is easy and absolutely free. All you need is to register, list your catalogue and start selling your products."
+            },
+            "store_layout": "basic_store",
+            "store_details": "basic_store_details"
+            },
+            "contact_us": {
+            "contact_image_url": "https://react.pixelstrap.net/fastkart/assets/contact-us.png",
+            "detail_1": {
+                "label": "Phone",
+                "icon": "ri-phone-line",
+                "text": "(+1) 618 190 496"
+            },
+            "detail_2": {
+                "label": "Email",
+                "icon": "ri-mail-line",
+                "text": "support@fastkart.com"
+            },
+            "detail_3": {
+                "label": "London Office",
+                "icon": "ri-map-pin-line",
+                "text": "Cruce Casa de Postas 29"
+            },
+            "detail_4": {
+                "label": "Bournemouth Office",
+                "icon": "ri-building-line",
+                "text": "Visitación de la Encina 22"
+            }
+            },
+            "error_page": {
+                "error_page_content": settings.error_page_content,
+                "back_button_enable": settings.back_button_enable,
+                "back_button_text": settings.back_button_text
+            },
+            "seo": {
+                "meta_tags": settings.meta_tags,
+                "meta_title": settings.meta_title,
+                "meta_description": settings.meta_description,
+                "og_title": settings.og_title,
+                "og_description": settings.og_description,
+                "og_image": get_file(settings.og_image),
+            }
+        }
+        }
+    
+    return result
+    
+
+def get_file(file_url):
+    """return file object with meta if available"""
+    if not file_url:
+        return None
+    file_doc = frappe.get_doc("File", {"file_url": file_url})
+    return {
+        "id": file_doc.name,
+        "file_name": file_doc.file_name,
+        "mime_type": file_doc.file_type,
+        "size": file_doc.file_size,
+        "original_url": file_doc.file_url,
+    }
+

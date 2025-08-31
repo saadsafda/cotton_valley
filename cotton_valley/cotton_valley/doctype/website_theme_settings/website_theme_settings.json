@@ -1,0 +1,301 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-31 04:20:10.196058",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "general_settings_section",
+  "site_title",
+  "column_break_ymrq",
+  "site_tagline",
+  "primary_color",
+  "logo_section",
+  "faveicon",
+  "column_break_bozl",
+  "header_logo",
+  "footer_logo",
+  "header_section",
+  "top_bar_content",
+  "footer_section_section",
+  "footer_copyright",
+  "copyright_content",
+  "about_address",
+  "about_email",
+  "support_email",
+  "social_media_enable",
+  "column_break_lspo",
+  "footer_about",
+  "support_number",
+  "play_store_url",
+  "app_store_url",
+  "social_media_section_section",
+  "facebook_url",
+  "instagram_url",
+  "column_break_vsfg",
+  "twitter_url",
+  "pinterest_url",
+  "error_page_tab",
+  "back_button_enable",
+  "column_break_nxii",
+  "back_button_text",
+  "section_break_izei",
+  "error_page_content",
+  "seo_section_tab",
+  "meta_tags",
+  "meta_title",
+  "meta_description",
+  "column_break_trxj",
+  "og_title",
+  "og_image",
+  "og_description"
+ ],
+ "fields": [
+  {
+   "fieldname": "general_settings_section",
+   "fieldtype": "Section Break",
+   "label": "General Settings"
+  },
+  {
+   "fieldname": "site_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Site Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_ymrq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "site_tagline",
+   "fieldtype": "Data",
+   "label": "Site Tagline"
+  },
+  {
+   "default": "#f6564f",
+   "fieldname": "primary_color",
+   "fieldtype": "Color",
+   "label": "Primary Color"
+  },
+  {
+   "fieldname": "logo_section",
+   "fieldtype": "Section Break",
+   "label": "Logo"
+  },
+  {
+   "fieldname": "faveicon",
+   "fieldtype": "Attach Image",
+   "label": "Faveicon"
+  },
+  {
+   "fieldname": "column_break_bozl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "header_logo",
+   "fieldtype": "Attach Image",
+   "label": "Header Logo"
+  },
+  {
+   "fieldname": "footer_logo",
+   "fieldtype": "Attach Image",
+   "label": "Footer Logo"
+  },
+  {
+   "fieldname": "header_section",
+   "fieldtype": "Section Break",
+   "label": "Header"
+  },
+  {
+   "fieldname": "top_bar_content",
+   "fieldtype": "Text Editor",
+   "label": "Top Bar Content",
+   "max_height": "200px"
+  },
+  {
+   "fieldname": "footer_section_section",
+   "fieldtype": "Section Break",
+   "label": "Footer Section"
+  },
+  {
+   "default": "0",
+   "fieldname": "footer_copyright",
+   "fieldtype": "Check",
+   "label": "Footer Copyright"
+  },
+  {
+   "fieldname": "copyright_content",
+   "fieldtype": "Data",
+   "label": "Copyright Content"
+  },
+  {
+   "fieldname": "about_address",
+   "fieldtype": "Data",
+   "label": "About Address"
+  },
+  {
+   "fieldname": "about_email",
+   "fieldtype": "Data",
+   "label": "About Email"
+  },
+  {
+   "fieldname": "support_email",
+   "fieldtype": "Data",
+   "label": "Support Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "social_media_enable",
+   "fieldtype": "Check",
+   "label": "Social Media Enable"
+  },
+  {
+   "fieldname": "column_break_lspo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "footer_about",
+   "fieldtype": "Small Text",
+   "label": "Footer About"
+  },
+  {
+   "fieldname": "support_number",
+   "fieldtype": "Data",
+   "label": "Support Number"
+  },
+  {
+   "fieldname": "play_store_url",
+   "fieldtype": "Data",
+   "label": "Play Store Url"
+  },
+  {
+   "fieldname": "app_store_url",
+   "fieldtype": "Data",
+   "label": "App Store Url"
+  },
+  {
+   "depends_on": "eval:doc.social_media_enable",
+   "fieldname": "social_media_section_section",
+   "fieldtype": "Section Break",
+   "label": "Social Media Section"
+  },
+  {
+   "fieldname": "facebook_url",
+   "fieldtype": "Data",
+   "label": "Facebook Url"
+  },
+  {
+   "fieldname": "instagram_url",
+   "fieldtype": "Data",
+   "label": "Instagram Url"
+  },
+  {
+   "fieldname": "column_break_vsfg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "twitter_url",
+   "fieldtype": "Data",
+   "label": "Twitter Url"
+  },
+  {
+   "fieldname": "pinterest_url",
+   "fieldtype": "Data",
+   "label": "Pinterest Url"
+  },
+  {
+   "fieldname": "error_page_tab",
+   "fieldtype": "Tab Break",
+   "label": "Error Page"
+  },
+  {
+   "default": "0",
+   "fieldname": "back_button_enable",
+   "fieldtype": "Check",
+   "label": "Back Button Enable"
+  },
+  {
+   "fieldname": "column_break_nxii",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "back_button_text",
+   "fieldtype": "Data",
+   "label": "Back Button Text"
+  },
+  {
+   "fieldname": "section_break_izei",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "error_page_content",
+   "fieldtype": "Text",
+   "label": "Error Page Content"
+  },
+  {
+   "fieldname": "seo_section_tab",
+   "fieldtype": "Tab Break",
+   "label": "SEO Section"
+  },
+  {
+   "fieldname": "meta_tags",
+   "fieldtype": "Data",
+   "label": "Meta Tags"
+  },
+  {
+   "fieldname": "meta_title",
+   "fieldtype": "Data",
+   "label": "Meta Title"
+  },
+  {
+   "fieldname": "meta_description",
+   "fieldtype": "Text",
+   "label": "Meta Description"
+  },
+  {
+   "fieldname": "column_break_trxj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "og_title",
+   "fieldtype": "Data",
+   "label": "OG Title"
+  },
+  {
+   "fieldname": "og_image",
+   "fieldtype": "Attach Image",
+   "label": "OG Image"
+  },
+  {
+   "fieldname": "og_description",
+   "fieldtype": "Text",
+   "label": "OG Description"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-08-31 08:08:23.347924",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Website Theme Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
