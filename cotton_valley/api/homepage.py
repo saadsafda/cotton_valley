@@ -44,7 +44,13 @@ def get_homepage_slides():
                     "status": True,
                     "product_ids": [row.product for row in doc.slide_4_ids]
                 },
-            }
+            },
+            "news_letter": {
+                "title": doc.news_title,
+                "sub_title": doc.sub_title,
+                "image_url": doc.newsletter_background,
+                "status": doc.show_newsletter
+            },
         }
     }
 
