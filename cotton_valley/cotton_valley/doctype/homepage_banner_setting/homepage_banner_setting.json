@@ -12,12 +12,15 @@
   "right_top",
   "right_bottom",
   "show_categories",
+  "show_products",
   "categories_section",
   "category_title",
   "homepage_categories",
   "section_break_tjbc",
   "title",
   "description",
+  "product_row_1",
+  "product_row_2",
   "section_break_vbmh",
   "promotion_banner",
   "column_break_yczr",
@@ -85,6 +88,8 @@
    "label": "Promotion SubBanner"
   },
   {
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:doc.show_products",
    "fieldname": "section_break_tjbc",
    "fieldtype": "Section Break",
    "label": "Product Heading"
@@ -94,7 +99,7 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Title",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.show_products"
   },
   {
    "fieldname": "description",
@@ -172,6 +177,7 @@
    "label": "Show Categories"
   },
   {
+   "collapsible": 1,
    "depends_on": "eval:doc.show_categories",
    "fieldname": "categories_section",
    "fieldtype": "Section Break",
@@ -190,13 +196,33 @@
    "label": "HomePage Categories",
    "options": "HomePage Categories",
    "reqd": 1
+  },
+  {
+   "description": "Must be select 6 products",
+   "fieldname": "product_row_1",
+   "fieldtype": "Table",
+   "label": "Product Row 1",
+   "mandatory_depends_on": "eval:doc.show_products",
+   "options": "HomePage Products"
+  },
+  {
+   "fieldname": "product_row_2",
+   "fieldtype": "Table",
+   "label": "Product Row 2",
+   "options": "HomePage Products"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_products",
+   "fieldtype": "Check",
+   "label": "Show Products"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-01 03:16:35.586241",
+ "modified": "2025-09-01 05:30:03.771393",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",

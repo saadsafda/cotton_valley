@@ -12,6 +12,16 @@ def get_homepage_slides():
                 "category_ids": [d.product_category for d in doc.homepage_categories],
                 "status": doc.show_categories
             },
+            "products_list_1": {
+                "title": doc.title,
+                "description": doc.description,
+                "product_ids": [row.product for row in doc.product_row_1],
+                "status": doc.show_products
+            },
+            "products_list_2": {
+                "product_ids": [row.product for row in doc.product_row_2],
+                "status": len(doc.product_row_2) > 0
+            },
             "slider_products": {
                 "status": True,
                 "product_slider_1": {
