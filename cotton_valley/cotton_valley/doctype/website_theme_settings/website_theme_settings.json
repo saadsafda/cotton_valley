@@ -35,6 +35,8 @@
   "column_break_vsfg",
   "twitter_url",
   "pinterest_url",
+  "footer_category_section_section",
+  "footer_categories",
   "error_page_tab",
   "back_button_enable",
   "column_break_nxii",
@@ -271,13 +273,25 @@
    "fieldname": "og_description",
    "fieldtype": "Text",
    "label": "OG Description"
+  },
+  {
+   "fieldname": "footer_category_section_section",
+   "fieldtype": "Section Break",
+   "label": "Footer Category Section"
+  },
+  {
+   "fieldname": "footer_categories",
+   "fieldtype": "Table",
+   "label": "Footer Categories",
+   "options": "HomePage Categories",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-31 08:08:23.347924",
+ "modified": "2025-09-01 08:14:41.046911",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",

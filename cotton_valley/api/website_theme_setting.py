@@ -61,14 +61,7 @@ def get_website_theme_settings():
                 "footer_about": settings.footer_about,
                 "about_address": settings.about_address,
                 "about_email": settings.about_email,
-                "footer_categories": [
-                    6,
-                    5,
-                    4,
-                    3,
-                    2,
-                    1
-                ],
+                "footer_categories": [row.product_category for row in settings.footer_categories],
                 "help_center": [
                     {
                     "label": "My Account",
