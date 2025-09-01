@@ -4,6 +4,22 @@ import frappe
 def get_homepage_slides():
     # Get the first (or active) Homepage Banner Setting doc
     doc = frappe.get_single("Homepage Banner Setting")
+    first_row_product_ids = [row.product for row in doc.product_row_1]
+    sec_row_product_ids = [row.product for row in doc.product_row_2]
+    first_slide_product_ids = [row.product for row in doc.slide_1_ids]
+    sec_slide_product_ids = [row.product for row in doc.slide_2_ids]
+    third_slide_product_ids = [row.product for row in doc.slide_3_ids]
+    fourth_slide_product_ids = [row.product for row in doc.slide_4_ids]
+    all_product_ids = list(set(
+        fourth_slide_product_ids +
+        third_slide_product_ids +
+        sec_slide_product_ids +
+        first_slide_product_ids +
+        sec_row_product_ids +
+        first_row_product_ids
+    ))
+
+
 
     result = {
         "content": {
@@ -15,11 +31,11 @@ def get_homepage_slides():
             "products_list_1": {
                 "title": doc.title,
                 "description": doc.description,
-                "product_ids": [row.product for row in doc.product_row_1],
+                "product_ids": first_row_product_ids,
                 "status": doc.show_products
             },
             "products_list_2": {
-                "product_ids": [row.product for row in doc.product_row_2],
+                "product_ids": sec_row_product_ids,
                 "status": len(doc.product_row_2) > 0
             },
             "slider_products": {
@@ -27,22 +43,22 @@ def get_homepage_slides():
                 "product_slider_1": {
                     "title": doc.first_title,
                     "status": True,
-                    "product_ids": [row.product for row in doc.slide_1_ids]
+                    "product_ids": first_slide_product_ids
                 },
                 "product_slider_2": {
                     "title": doc.sec_title,
                     "status": True,
-                    "product_ids": [row.product for row in doc.slide_2_ids]
+                    "product_ids": sec_slide_product_ids
                 },
                 "product_slider_3": {
                     "title": doc.third_title,
                     "status": True,
-                    "product_ids": [row.product for row in doc.slide_3_ids]
+                    "product_ids": third_slide_product_ids
                 },
                 "product_slider_4": {
                     "title": doc.forth_title,
                     "status": True,
-                    "product_ids": [row.product for row in doc.slide_4_ids]
+                    "product_ids": fourth_slide_product_ids
                 },
             },
             "news_letter": {
@@ -51,6 +67,7 @@ def get_homepage_slides():
                 "image_url": doc.newsletter_background,
                 "status": doc.show_newsletter
             },
+            "products_ids": all_product_ids
         }
     }
 
