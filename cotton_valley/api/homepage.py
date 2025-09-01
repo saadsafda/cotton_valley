@@ -7,6 +7,11 @@ def get_homepage_slides():
 
     result = {
         "content": {
+            "categories_image_list": {
+                "title": doc.category_title,
+                "category_ids": [d["product_category"] for d in doc.homepage_categories],
+                "status": doc.show_categories
+            },
             "slider_products": {
                 "status": True,
                 "product_slider_1": {

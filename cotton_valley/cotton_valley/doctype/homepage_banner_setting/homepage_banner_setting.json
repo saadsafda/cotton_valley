@@ -5,13 +5,16 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "header_topbar_text",
   "section_break_uoqb",
   "large_image_view",
   "large_image",
   "column_break_oaoq",
   "right_top",
   "right_bottom",
+  "show_categories",
+  "categories_section",
+  "category_title",
+  "homepage_categories",
   "section_break_tjbc",
   "title",
   "description",
@@ -52,11 +55,6 @@
    "fieldname": "right_bottom",
    "fieldtype": "Attach Image",
    "label": "Right Bottom"
-  },
-  {
-   "fieldname": "header_topbar_text",
-   "fieldtype": "Data",
-   "label": "Header Topbar Text"
   },
   {
    "fieldname": "section_break_uoqb",
@@ -166,13 +164,39 @@
   {
    "fieldname": "section_break_knfe",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_categories",
+   "fieldtype": "Check",
+   "label": "Show Categories"
+  },
+  {
+   "depends_on": "eval:doc.show_categories",
+   "fieldname": "categories_section",
+   "fieldtype": "Section Break",
+   "label": "Categories"
+  },
+  {
+   "fieldname": "category_title",
+   "fieldtype": "Data",
+   "label": "Category Title",
+   "reqd": 1
+  },
+  {
+   "description": "at least select 6 categories *",
+   "fieldname": "homepage_categories",
+   "fieldtype": "Table",
+   "label": "HomePage Categories",
+   "options": "HomePage Categories",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-08-29 07:13:21.387021",
+ "modified": "2025-09-01 03:16:35.586241",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",

@@ -56,11 +56,11 @@ def get_website_theme_settings():
             },
             "footer": {
                 "footer_style": "light_mode",
-                "footer_copyright": True,
-                "copyright_content": "©2023 Fastkart All rights reserved",
-                "footer_about": "Discover convenience redefined at our multipurpose store. From fresh groceries to the latest fashion trends, find everything you need under one roof. Your one-stop shopping destination for a diverse range of products.",
-                "about_address": "1418 Riverwood Drive, CA 96052, US",
-                "about_email": "support@fastkart.com",
+                "footer_copyright": settings.footer_copyright,
+                "copyright_content": settings.copyright_content,
+                "footer_about": settings.footer_about,
+                "about_address": settings.about_address,
+                "about_email": settings.about_email,
                 "footer_categories": [
                     6,
                     5,
