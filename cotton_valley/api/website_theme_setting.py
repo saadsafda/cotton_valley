@@ -4,6 +4,7 @@ import frappe
 @frappe.whitelist(allow_guest=True)
 def get_website_theme_settings():
     settings = frappe.get_single("Website Theme Settings")
+    all_category_ids = frappe.get_all("Product Category", pluck="name")
     result = {
         "id": 1,
         "options": {
@@ -35,24 +36,15 @@ def get_website_theme_settings():
                     {
                         "content": "Your must-have item is calling – <strong>Buy Now!</strong>"
                     }
-            ],
-            "page_top_bar_dark": False,
-            "support_number": settings.support_number,
-            "today_deals": [
-                1,
-                12,
-                8
-            ],
-            "category_ids": [
-                1,
-                2,
-                3,
-                4,
-                5,
-                6,
-                7,
-                8
-            ]
+                ],
+                "page_top_bar_dark": False,
+                "support_number": settings.support_number,
+                "today_deals": [
+                    1,
+                    12,
+                    8
+                ],
+                "category_ids": all_category_ids
             },
             "footer": {
                 "footer_style": "light_mode",
