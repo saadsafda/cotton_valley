@@ -263,4 +263,18 @@ def get_file(file_url):
         "original_url": file_doc.file_url,
     }
 
+def get_categories_from_string(category_string):
+    """
+    Convert a comma-separated category string into a clean list of categories.
+    
+    Args:
+        category_string (str): e.g. "Shirts, Pants, Shoes"
+    
+    Returns:
+        list: e.g. ["Shirts", "Pants", "Shoes"]
+    """
+    if not category_string:
+        return []
+    
+    return [cat.strip() for cat in category_string.split(",") if cat.strip()]
 

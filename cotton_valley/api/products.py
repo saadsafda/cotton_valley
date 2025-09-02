@@ -2,12 +2,12 @@
 from cotton_valley.api.category import get_category_list
 import frappe
 from frappe import _
-from cotton_valley.api.website_theme_setting import get_file
+from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 
 
 @frappe.whitelist(allow_guest=True)
 def get_all_products(category=None, sortBy=None, search=None):
-    category = None if not category or category == "null" else category
+    category = None if not category or category == "null" else get_categories_from_string(category)
     sortBy = None if not sortBy or sortBy == "null" else sortBy
     search = None if not search or search == "null" else search
     filters = {"disabled": 0}  # only active products
@@ -19,7 +19,7 @@ def get_all_products(category=None, sortBy=None, search=None):
             SELECT DISTINCT i.name
             FROM `tabItem` i
             INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-            WHERE c.product_category = %s
+            WHERE c.product_category in %s
         """, (category,), as_dict=True)
         product_ids = [p["name"] for p in product_ids]
 
