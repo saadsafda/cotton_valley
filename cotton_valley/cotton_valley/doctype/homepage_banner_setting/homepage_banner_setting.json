@@ -10,6 +10,8 @@
   "show_products",
   "column_break_nklv",
   "show_newsletter",
+  "column_break_tnut",
+  "show_promotion_baners",
   "section_break_uoqb",
   "large_image_view",
   "large_image",
@@ -26,8 +28,16 @@
   "product_row_2",
   "section_break_vbmh",
   "promotion_banner",
+  "link_type",
+  "product",
+  "category",
+  "external_url",
   "column_break_yczr",
   "promotion_subbanner",
+  "sublink_type",
+  "sub_product",
+  "subpromotion_category",
+  "subexternal_url",
   "section_break_onbf",
   "first_title",
   "slide_1_ids",
@@ -78,8 +88,11 @@
    "options": "large_image"
   },
   {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_promotion_baners",
    "fieldname": "section_break_vbmh",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Promotion Banner Section"
   },
   {
    "fieldname": "promotion_banner",
@@ -195,15 +208,15 @@
    "fieldname": "category_title",
    "fieldtype": "Data",
    "label": "Category Title",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.show_categories"
   },
   {
    "description": "at least select 6 categories *",
    "fieldname": "homepage_categories",
    "fieldtype": "Table",
    "label": "HomePage Categories",
-   "options": "HomePage Categories",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.show_categories",
+   "options": "HomePage Categories"
   },
   {
    "description": "Must be select 6 products",
@@ -266,13 +279,81 @@
    "fieldname": "show_newsletter",
    "fieldtype": "Check",
    "label": "Show Newsletter"
+  },
+  {
+   "fieldname": "column_break_tnut",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_promotion_baners",
+   "fieldtype": "Check",
+   "label": "Show Promotion Baners"
+  },
+  {
+   "fieldname": "link_type",
+   "fieldtype": "Select",
+   "label": "Link Type",
+   "options": "\nExternal Url\nCategory\nProduct"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"Product\"",
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "mandatory_depends_on": "eval:doc.link_type == \"Product\"",
+   "options": "Item"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"Category\"",
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "mandatory_depends_on": "eval:doc.link_type == \"Category\"",
+   "options": "Product Category"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"External Url\"",
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "External Url",
+   "mandatory_depends_on": "eval:doc.link_type == \"External Url\""
+  },
+  {
+   "fieldname": "sublink_type",
+   "fieldtype": "Select",
+   "label": "SubLink Type",
+   "options": "\nExternal Url\nCategory\nProduct"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"Product\"",
+   "fieldname": "sub_product",
+   "fieldtype": "Link",
+   "label": "Sub Product",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"Product\"",
+   "options": "Item"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"Category\"",
+   "fieldname": "subpromotion_category",
+   "fieldtype": "Link",
+   "label": "SubPromotion Category",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"Category\"",
+   "options": "Product Category"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"External Url\"",
+   "fieldname": "subexternal_url",
+   "fieldtype": "Data",
+   "label": "SubExternal Url",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"External Url\""
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-01 06:20:02.963501",
+ "modified": "2025-09-02 09:05:38.009244",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",

@@ -19,7 +19,21 @@ def get_homepage_slides():
         first_row_product_ids
     ))
 
+    promotion_link = ""
+    if doc.link_type == "External Url":
+        promotion_link = doc.external_url
+    elif doc.link_type == "Category":
+        promotion_link = doc.category
+    else:
+        promotion_link = doc.product
 
+    subPromotion_link = ""
+    if doc.sublink_type == "External Url":
+        subPromotion_link = doc.subexternal_url
+    elif doc.sublink_type == "Category":
+        subPromotion_link = doc.subpromotion_category
+    else:
+        subPromotion_link = doc.sub_product
 
     result = {
         "content": {
@@ -37,6 +51,22 @@ def get_homepage_slides():
             "products_list_2": {
                 "product_ids": sec_row_product_ids,
                 "status": len(doc.product_row_2) > 0
+            },
+            "promotion_banner": {
+                "banner_1": {
+                    "image_url": doc.promotion_banner,
+                    "redirect_link": {
+                        "link_type": doc.link_type,
+                        "link": promotion_link
+                    }
+                },
+                "banner_2": {
+                    "image_url": doc.promotion_subbanner,
+                    "redirect_link": {
+                        "link_type": doc.sublink_type,
+                        "link": subPromotion_link
+                    }
+                }
             },
             "slider_products": {
                 "status": True,
