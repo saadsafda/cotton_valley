@@ -6,22 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "title",
-  "column_break_ebup",
   "product_name"
  ],
  "fields": [
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Title",
-   "reqd": 1
-  },
-  {
-   "fieldname": "column_break_ebup",
-   "fieldtype": "Column Break"
-  },
   {
    "fieldname": "product_name",
    "fieldtype": "Link",
@@ -35,7 +22,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-23 04:15:41.978542",
+ "modified": "2025-09-02 01:45:22.918526",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Recommended Products",

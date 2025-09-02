@@ -8,12 +8,21 @@ def get_categories():
     return categories
 
 @frappe.whitelist(allow_guest=True)
-def get_category_list():
-     # get all categories
+def get_category_list(category_id=None):
+    # apply filter only if category_id is passed
+    filters = {}
+    if category_id:
+        filters["name"] = category_id
+
+    # get categories
     categories = frappe.get_all(
         "Product Category",
+        filters=filters,
         fields=["name", "title", "category_image"]
     )
+
+    if not categories:
+        return {"data": []}
 
     # get counts of items from child table
     item_counts = frappe.db.sql("""
@@ -48,7 +57,7 @@ def get_category_list():
             "type": "product"
         })
 
-    # attach count and subcategories to categories
+    # attach count and subcategories
     for cat in categories:
         cat['id'] = cat["name"]
         cat['slug'] = cat["name"]

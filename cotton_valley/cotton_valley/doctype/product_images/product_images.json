@@ -6,19 +6,11 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "index",
+  "list_index",
   "column_break_ztje",
   "image"
  ],
  "fields": [
-  {
-   "fieldname": "index",
-   "fieldtype": "Int",
-   "in_list_view": 1,
-   "label": "Index",
-   "non_negative": 1,
-   "reqd": 1
-  },
   {
    "fieldname": "column_break_ztje",
    "fieldtype": "Column Break"
@@ -29,13 +21,21 @@
    "in_list_view": 1,
    "label": "Image",
    "reqd": 1
+  },
+  {
+   "fieldname": "list_index",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Index",
+   "non_negative": 1,
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-23 04:15:43.778420",
+ "modified": "2025-09-02 01:59:58.186657",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Images",

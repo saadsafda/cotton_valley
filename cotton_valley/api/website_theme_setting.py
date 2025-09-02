@@ -244,6 +244,16 @@ def get_file(file_url):
     """return file object with meta if available"""
     if not file_url:
         return None
+    
+    if file_url.startswith("http"):
+        return {
+            "id": file_url,
+            "file_name": file_url,
+            "mime_type": "internet",
+            "size": "123",
+            "original_url": file_url,
+        }
+    
     file_doc = frappe.get_doc("File", {"file_url": file_url})
     return {
         "id": file_doc.name,
@@ -252,4 +262,5 @@ def get_file(file_url):
         "size": file_doc.file_size,
         "original_url": file_doc.file_url,
     }
+
 
