@@ -6,12 +6,15 @@ from cotton_valley.api.website_theme_setting import get_file, get_categories_fro
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(category=None, subcategory=None, sortBy=None, search=None):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     sortBy = None if not sortBy or sortBy == "null" else sortBy
     search = None if not search or search == "null" else search
     filters = {"disabled": 0}  # only active products
+
+    if ids:
+        filters["name"] = ["in", ids]
 
     # --- Category Filter ---
     if category:
@@ -28,7 +31,7 @@ def get_all_products(category=None, subcategory=None, sortBy=None, search=None):
             return {"data": []}  # no products found for this category
 
         filters["name"] = ["in", product_ids]
-        
+
     # --- Subcategory Filter ---
     if subcategory:
         filters["custom_sub_category"] = ["in", subcategory]
