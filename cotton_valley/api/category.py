@@ -54,7 +54,8 @@ def get_category_list(category_id=None):
             "title": sub["title"],
             "id": sub["name"],
             "slug": sub["name"],
-            "type": "product"
+            "type": "product",
+            "product_count": frappe.db.count("Item", filters=[["custom_sub_category", "in", [sub["name"]]]])
         })
 
     # attach count and subcategories
