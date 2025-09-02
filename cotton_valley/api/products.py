@@ -6,11 +6,51 @@ from cotton_valley.api.website_theme_setting import get_file
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products():
+def get_all_products(category=None, sortBy=None, search=None):
+    category = None if not category or category == "null" else category
+    sortBy = None if not sortBy or sortBy == "null" else sortBy
+    search = None if not search or search == "null" else search
+    filters = {"disabled": 0}  # only active products
+
+    # --- Category Filter ---
+    if category:
+        # get all product IDs linked to this category
+        product_ids = frappe.db.sql("""
+            SELECT DISTINCT i.name
+            FROM `tabItem` i
+            INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
+            WHERE c.product_category = %s
+        """, (category,), as_dict=True)
+        product_ids = [p["name"] for p in product_ids]
+
+        if not product_ids:
+            return {"data": []}  # no products found for this category
+
+        filters["name"] = ["in", product_ids]
+
+    # --- Search Filter ---
+    if search:
+        filters["item_name"] = ["like", f"%{search}%"]
+
+    # --- Sort Options ---
+    sort_clause = "item_name asc"
+    if sortBy == "asc":
+        sort_clause = "item_name asc"
+    elif sortBy == "desc":
+        sort_clause = "item_name desc"
+    elif sortBy == "a_z":
+        sort_clause = "item_name asc"
+    elif sortBy == "z_a":
+        sort_clause = "item_name desc"
+    elif sortBy == "low_high":
+        sort_clause = "price asc"
+    elif sortBy == "high_low":
+        sort_clause = "price desc"
+
     # get all items
     items = frappe.get_all(
         "Item",
-        filters={"disabled": 0},  # only active products
+        filters=filters,  # only active products
         fields=[
             "name as id",
             "item_name as name",
@@ -21,9 +61,11 @@ def get_all_products():
             "name as slug",
             "stock_uom as unit",
             "weight_uom as weight",
+            "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
             "disabled as status"
-        ]
+        ],
+        order_by=sort_clause
     )
 
     products = []
