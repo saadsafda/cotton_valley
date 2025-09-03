@@ -1,7 +1,7 @@
 # api/products.py
 from cotton_valley.api.category import get_category_list
-import frappe
-from frappe import _
+import frappe # type: ignore
+from frappe import _ # type: ignore
 from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 
 
@@ -71,7 +71,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             "weight_uom as weight",
             "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
-            "disabled as status"
+            "disabled as status",
+            "brand"
         ],
         order_by=sort_clause
     )
@@ -133,6 +134,16 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         product["reviews_count"] = len(reviews)
         product["rating_count"] = sum([r["rating"] for r in reviews]) / len(reviews) if reviews else 0
 
+        if product["brand"]:
+            brand_data = frappe.get_doc("Brand", product["brand"])
+            product["store"] = {
+                "id": brand_data.name,
+                "store_name": brand_data.brand,
+                "slug": brand_data.name,
+                "description": brand_data.description,
+                "store_logo": get_file(brand_data.image)
+            }
+
         products.append(product)
 
     return {"data": products}
@@ -185,91 +196,6 @@ def get_products(category=None, sortBy=None, search=None):
 
     return products
 
-
-# @frappe.whitelist(allow_guest=True)
-# def get_product(product_id):
-#     # Base product
-#     product = frappe.db.get_value(
-#         "Item",
-#         {"name": product_id},
-#         [
-#             "name as id",
-#             "item_name as name",
-#             "description",
-#             "custom_short_description as short_description",
-#             "image as product_thumbnail",
-#             "stock_uom as unit",
-#             "item_group as category",
-#             "custom_slug as slug",
-#             "is_sales_item as is_sale_enable",
-#             "is_fixed_asset as is_return",
-#             "disabled as status"
-#         ],
-#         as_dict=True
-#     )
-
-#     if not product:
-#         return {}
-
-#     # Pricing
-#     price_data = frappe.db.get_value(
-#         "Item Price",
-#         {"item_code": product["id"], "selling": 1},
-#         ["price_list_rate", "currency"],
-#         as_dict=True
-#     )
-#     if price_data:
-#         product["price"] = float(price_data["price_list_rate"])
-#         # Example: add discount/sale_price from custom fields
-#         product["sale_price"] = frappe.db.get_value("Item", product["id"], "custom_sale_price") or product["price"]
-#         product["discount"] = round(((product["price"] - product["sale_price"]) / product["price"]) * 100, 2) if product["price"] else 0
-
-#     # Stock
-#     qty = frappe.db.sql("""SELECT COALESCE(SUM(actual_qty),0) as qty
-#                            FROM `tabBin` WHERE item_code=%s""", product["id"], as_dict=True)
-#     product["quantity"] = qty[0].qty
-#     product["stock_status"] = "in_stock" if qty[0].qty > 0 else "out_of_stock"
-
-#     # Galleries (linked files)
-#     galleries = frappe.get_all(
-#         "Product Images",
-#         filters={"parent": product["id"], "parenttype": "Item"},
-#         fields=["image as original_url", "idx", "name"]
-#     )
-
-#     product["product_images"] = [
-#         {
-#             "id": g["name"],
-#             "original_url": frappe.utils.get_url(g["original_url"]),
-#             "idx": g["idx"]
-#         }
-#         for g in galleries
-#     ]
-
-#     # Duplicate as galleries
-#     product["product_galleries"] = product["product_images"]
-
-#     # Categories (using Item Group)
-#     product["categories"] = [{
-#         "id": product["category"],
-#         "name": frappe.db.get_value("Item Group", product["category"], "item_group_name"),
-#         "slug": product["category"].lower().replace(" ", "-")
-#     }]
-
-#     # Tags (if you store tags in custom child table)
-#     product["tags"] = []
-
-#     # Store (map to Company or Supplier)
-#     product["store"] = {
-#         "id": 1,
-#         "store_name": frappe.defaults.get_global_default("company"),
-#         "country": frappe.defaults.get_global_default("country"),
-#     }
-
-#     # Reviews placeholder
-#     product["reviews"] = []
-
-#     return product
 
 @frappe.whitelist(allow_guest=True)
 def get_hot_products():
@@ -330,8 +256,10 @@ def get_product(product_id):
             "name as slug",
             "stock_uom as unit",
             "weight_uom as weight",
+            "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
-            "disabled as status"
+            "disabled as status",
+            "brand"
         ],
         as_dict=True
     )
@@ -398,6 +326,19 @@ def get_product(product_id):
     product["reviews"] = reviews
     product["reviews_count"] = len(reviews)
     product["rating_count"] = sum([r["rating"] for r in reviews]) / len(reviews) if reviews else 0
+
+    if product["brand"]:
+        brand_data = frappe.get_doc("Brand", product["brand"])
+        product["store"] = {
+            "id": brand_data.name,
+            "store_name": brand_data.brand,
+            "slug": brand_data.name,
+            "description": brand_data.description,
+            "store_logo": get_file(brand_data.image)
+        }
+
+
+    product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
 
     # store info (if you have linked supplier/vendor)
     # if frappe.db.exists("Supplier", {"supplier_name": frappe.db.get_value("Item", product_id, "supplier")}):

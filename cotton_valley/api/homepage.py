@@ -1,4 +1,4 @@
-import frappe
+import frappe # type: ignore
 
 @frappe.whitelist(allow_guest=True)
 def get_homepage_slides():
@@ -53,6 +53,7 @@ def get_homepage_slides():
                 "status": len(doc.product_row_2) > 0
             },
             "promotion_banner": {
+                "status": doc.show_promotion_baners,
                 "banner_1": {
                     "image_url": doc.promotion_banner,
                     "redirect_link": {

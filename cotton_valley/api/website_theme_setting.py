@@ -121,28 +121,28 @@ def get_website_theme_settings():
             "collection_banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner.png"
             },
             "product": {
-            "product_layout": "product_thumbnail",
-            "is_trending_product": True,
-            "banner_enable": True,
-            "banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner-1.png",
-            "safe_checkout": True,
-            "safe_checkout_image": "https://react.pixelstrap.net/fastkart/assets/payments.png",
-            "secure_checkout": True,
-            "secure_checkout_image": "https://react.pixelstrap.net/fastkart/assets/secure_payments.png",
-            "encourage_order": True,
-            "encourage_max_order_count": 50,
-            "encourage_view": True,
-            "encourage_max_view_count": 50,
-            "sticky_checkout": True,
-            "sticky_product": True,
-            "social_share": True,
-            "shipping_and_return": "<p>Shipping and Returns are integral parts of your shopping experience, and we aim to make them as smooth as possible. We prioritize efficient shipping, striving to deliver your orders promptly within the estimated delivery window, typically ranging from 5 to 7 days. We understand that sometimes your purchase may not meet your expectations, so we offer a straightforward return policy. If you find yourself unsatisfied with your order, eligible items can be returned within 30 days of purchase, ensuring you have ample time to make a decision. Our commitment is to ensure your satisfaction and convenience throughout your shopping journey with us, and we're here to assist you every step of the way.</p><p><strong>Our Shipping Commitment:</strong></p><ul><li>Timely and reliable delivery within 5-7 days.</li><li>Real-time tracking for your orders.</li><li>Exceptional packaging to ensure your items arrive in perfect condition.</li></ul><p>&nbsp;</p><p><strong>Our Hassle-Free Returns:</strong></p><ul><li>Eligible items can be returned within 30 days.</li><li>Easy return initiation through our website.</li><li>Prompt processing of returns for a hassle-free experience.</li></ul><p>&nbsp;</p><p>We understand that your shopping needs may vary, and we are here to accommodate them while providing exceptional service.</p>"
+                "product_layout": "product_thumbnail",
+                "is_trending_product": True,
+                "banner_enable": True,
+                "banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner-1.png",
+                "safe_checkout": True,
+                "safe_checkout_image": "https://react.pixelstrap.net/fastkart/assets/payments.png",
+                "secure_checkout": True,
+                "secure_checkout_image": "https://react.pixelstrap.net/fastkart/assets/secure_payments.png",
+                "encourage_order": True,
+                "encourage_max_order_count": 50,
+                "encourage_view": True,
+                "encourage_max_view_count": 50,
+                "sticky_checkout": True,
+                "sticky_product": True,
+                "social_share": True,
+                "shipping_and_return": "<p>Shipping and Returns are integral parts of your shopping experience, and we aim to make them as smooth as possible. We prioritize efficient shipping, striving to deliver your orders promptly within the estimated delivery window, typically ranging from 5 to 7 days. We understand that sometimes your purchase may not meet your expectations, so we offer a straightforward return policy. If you find yourself unsatisfied with your order, eligible items can be returned within 30 days of purchase, ensuring you have ample time to make a decision. Our commitment is to ensure your satisfaction and convenience throughout your shopping journey with us, and we're here to assist you every step of the way.</p><p><strong>Our Shipping Commitment:</strong></p><ul><li>Timely and reliable delivery within 5-7 days.</li><li>Real-time tracking for your orders.</li><li>Exceptional packaging to ensure your items arrive in perfect condition.</li></ul><p>&nbsp;</p><p><strong>Our Hassle-Free Returns:</strong></p><ul><li>Eligible items can be returned within 30 days.</li><li>Easy return initiation through our website.</li><li>Prompt processing of returns for a hassle-free experience.</li></ul><p>&nbsp;</p><p>We understand that your shopping needs may vary, and we are here to accommodate them while providing exceptional service.</p>"
             },
             "blog": {
-            "blog_style": "grid_view",
-            "blog_sidebar_type": "left_sidebar",
-            "blog_author_enable": True,
-            "read_more_enable": True
+                "blog_style": "grid_view",
+                "blog_sidebar_type": "left_sidebar",
+                "blog_author_enable": True,
+                "read_more_enable": True
             },
             "seller": {
             "about": {
