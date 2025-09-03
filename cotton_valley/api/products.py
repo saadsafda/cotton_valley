@@ -339,6 +339,7 @@ def get_product(product_id):
 
 
     product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
+    product["cross_sell_products"] = []
 
     # store info (if you have linked supplier/vendor)
     # if frappe.db.exists("Supplier", {"supplier_name": frappe.db.get_value("Item", product_id, "supplier")}):
