@@ -262,6 +262,7 @@ def get_product(product_id):
             "brand",
             "custom_sub_category as sub_category",
             "custom_carton_upc as carton_upc",
+            "custom_case_per_pallet as case_per_pallet",
             "custom_cbm as cbm",
             "custom_upc as upc_code",
             "custom_pallet_hi as pallet_hi",

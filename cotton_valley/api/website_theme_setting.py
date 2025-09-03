@@ -39,11 +39,7 @@ def get_website_theme_settings():
                 ],
                 "page_top_bar_dark": False,
                 "support_number": settings.support_number,
-                "today_deals": [
-                    1,
-                    12,
-                    8
-                ],
+                "today_deals": [row.product for row in settings.products],
                 "category_ids": all_category_ids
             },
             "footer": {

@@ -17,6 +17,8 @@
   "footer_logo",
   "header_section",
   "top_bar_content",
+  "today_deals_section",
+  "products",
   "footer_section_section",
   "footer_copyright",
   "copyright_content",
@@ -285,13 +287,24 @@
    "label": "Footer Categories",
    "options": "HomePage Categories",
    "reqd": 1
+  },
+  {
+   "fieldname": "today_deals_section",
+   "fieldtype": "Section Break",
+   "label": "Today Deals"
+  },
+  {
+   "fieldname": "products",
+   "fieldtype": "Table",
+   "label": "Products",
+   "options": "HomePage Products"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-01 08:14:41.046911",
+ "modified": "2025-09-03 09:07:03.875316",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",
