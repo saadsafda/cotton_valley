@@ -259,7 +259,10 @@ def get_product(product_id):
             "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
             "disabled as status",
-            "brand"
+            "brand",
+            "custom_carton_upc as carton_upc",
+            "custom_cbm as cbm",
+            "custom_upc as upc_code"
         ],
         as_dict=True
     )
