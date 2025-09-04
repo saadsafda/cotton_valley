@@ -52,7 +52,10 @@
   "column_break_trxj",
   "og_title",
   "og_image",
-  "og_description"
+  "og_description",
+  "collection_tab",
+  "collection_banner_image_view",
+  "collection_banner_image"
  ],
  "fields": [
   {
@@ -298,13 +301,29 @@
    "fieldtype": "Table",
    "label": "Products",
    "options": "HomePage Products"
+  },
+  {
+   "fieldname": "collection_tab",
+   "fieldtype": "Tab Break",
+   "label": "Collection"
+  },
+  {
+   "fieldname": "collection_banner_image",
+   "fieldtype": "Attach Image",
+   "label": "Collection Banner Image"
+  },
+  {
+   "fieldname": "collection_banner_image_view",
+   "fieldtype": "Image",
+   "label": "Collection Banner Image View",
+   "options": "collection_banner_image"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-03 09:07:03.875316",
+ "modified": "2025-09-04 07:39:47.095390",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",

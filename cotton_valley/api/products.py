@@ -160,7 +160,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         products.append(product)
 
-    return {"data": products, "total": total_count}
+    return {"data": products, "total": total_count, "current_page": page or 1, "per_page": limit_page_length or total_count}
 
 @frappe.whitelist(allow_guest=True)
 def get_products(category=None, sortBy=None, search=None):

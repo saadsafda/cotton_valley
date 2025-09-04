@@ -115,8 +115,8 @@ def get_website_theme_settings():
                 "pinterest": settings.pinterest_url
             },
             "collection": {
-            "collection_layout": "collection_category_slider",
-            "collection_banner_image_url": "https://react.pixelstrap.net/fastkart/assets/banner.png"
+                "collection_layout": "collection_category_slider",
+                "collection_banner_image_url": settings.collection_banner_image,
             },
             "product": {
                 "product_layout": "product_thumbnail",
