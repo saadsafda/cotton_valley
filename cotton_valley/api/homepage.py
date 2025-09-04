@@ -136,7 +136,7 @@ def get_homepage_slides():
 def get_subbanner_link_type(banner_settings):
     if banner_settings == "Product" or banner_settings == "Item":
         return "product"
-    elif banner_settings == "Category":
+    elif banner_settings == "Category" or banner_settings == "Product Category":
         return "collection"
     elif banner_settings == "External Url":
         return "external_url"

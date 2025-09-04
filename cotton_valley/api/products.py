@@ -6,11 +6,13 @@ from cotton_valley.api.website_theme_setting import get_file, get_categories_fro
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     sortBy = None if not sortBy or sortBy == "null" else sortBy
     search = None if not search or search == "null" else search
+    page = None if not page or page == "null" else int(page)
+
     filters = {"disabled": 0}  # only active products
 
     if ids:
@@ -28,7 +30,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         product_ids = [p["name"] for p in product_ids]
 
         if not product_ids:
-            return {"data": []}  # no products found for this category
+            return {"data": [], "total": 0}  # no products found for this category
 
         filters["name"] = ["in", product_ids]
 
@@ -55,6 +57,16 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     elif sortBy == "high_low":
         sort_clause = "price desc"
 
+    # --- Total Count ---
+    total_count = frappe.db.count("Item", filters=filters)
+
+    # --- Pagination ---
+    limit_start = None
+    limit_page_length = None
+    if page and page > 0:
+        limit_start = (page - 1) * 30
+        limit_page_length = 30
+
     # get all items
     items = frappe.get_all(
         "Item",
@@ -74,7 +86,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             "disabled as status",
             "brand"
         ],
-        order_by=sort_clause
+        order_by=sort_clause,
+        limit_start=limit_start,
+        limit_page_length=limit_page_length
     )
 
     products = []
@@ -146,7 +160,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         products.append(product)
 
-    return {"data": products}
+    return {"data": products, "total": total_count}
 
 @frappe.whitelist(allow_guest=True)
 def get_products(category=None, sortBy=None, search=None):
