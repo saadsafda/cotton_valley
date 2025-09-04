@@ -13,11 +13,15 @@
   "column_break_tnut",
   "show_promotion_baners",
   "section_break_uoqb",
-  "large_image_view",
-  "large_image",
-  "column_break_oaoq",
+  "home_banners",
+  "section_break_cnqi",
   "right_top",
+  "right_top_banner_link_type",
+  "right_top_banner_link",
+  "column_break_fjdy",
   "right_bottom",
+  "right_bottom_banner_link_type",
+  "right_bottom_banner_link",
   "categories_section",
   "category_title",
   "homepage_categories",
@@ -59,15 +63,6 @@
  ],
  "fields": [
   {
-   "fieldname": "large_image",
-   "fieldtype": "Attach Image",
-   "label": "Large Image"
-  },
-  {
-   "fieldname": "column_break_oaoq",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "right_top",
    "fieldtype": "Attach Image",
    "label": "Right Top"
@@ -80,12 +75,6 @@
   {
    "fieldname": "section_break_uoqb",
    "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "large_image_view",
-   "fieldtype": "Image",
-   "label": "Large Image View",
-   "options": "large_image"
   },
   {
    "collapsible": 1,
@@ -347,13 +336,53 @@
    "fieldtype": "Data",
    "label": "SubExternal Url",
    "mandatory_depends_on": "eval:doc.sublink_type == \"External Url\""
+  },
+  {
+   "fieldname": "home_banners",
+   "fieldtype": "Table",
+   "label": "Home Banners",
+   "options": "Home Banners"
+  },
+  {
+   "fieldname": "section_break_cnqi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_fjdy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "right_top_banner_link_type",
+   "fieldtype": "Link",
+   "label": "Right Top Banner Link Type",
+   "link_filters": "[[\"DocType\",\"name\",\"in\",[\"Item\",\"Product Category\"]]]",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "right_bottom_banner_link_type",
+   "fieldtype": "Link",
+   "label": "Right Bottom Banner Link Type",
+   "link_filters": "[[\"DocType\",\"name\",\"in\",[\"Item\",\"Product Category\"]]]",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "right_top_banner_link",
+   "fieldtype": "Dynamic Link",
+   "label": "Right Top Banner Link",
+   "options": "right_top_banner_link_type"
+  },
+  {
+   "fieldname": "right_bottom_banner_link",
+   "fieldtype": "Dynamic Link",
+   "label": "Right Bottom Banner Link",
+   "options": "right_bottom_banner_link_type"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-02 09:05:38.009244",
+ "modified": "2025-09-04 03:17:17.078062",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",

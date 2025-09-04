@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-04 02:51:51.582779",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "link_type",
+  "link",
+  "column_break_gerj",
+  "image_view",
+  "image"
+ ],
+ "fields": [
+  {
+   "fieldname": "link_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Link Type",
+   "link_filters": "[[\"DocType\",\"name\",\"in\",[\"Item\",\"Product Category\"]]]",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "link",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Link",
+   "options": "link_type"
+  },
+  {
+   "fieldname": "column_break_gerj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image",
+   "reqd": 1
+  },
+  {
+   "fieldname": "image_view",
+   "fieldtype": "Image",
+   "label": "Image View",
+   "options": "image"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-09-04 03:11:45.522594",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Home Banners",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

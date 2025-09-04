@@ -1,13 +1,42 @@
-import frappe
+import frappe # type: ignore
 
 
 @frappe.whitelist(allow_guest=True)
 def get_website_theme_settings():
     settings = frappe.get_single("Website Theme Settings")
+    doc = frappe.get_single("Homepage Banner Setting")
     all_category_ids = frappe.get_all("Product Category", pluck="name")
+    home_banners = []
+    for row in doc.home_banners:
+        home_banners.append({
+            "image_url": row.image,
+            "redirect_link": {
+                "link": row.link,
+                "link_type": get_subbanner_link_type(row.link_type),
+            }
+        })
+
     result = {
         "id": 1,
         "options": {
+            "home_banner": {
+                "status": True,
+                "main_banner": home_banners,
+                "sub_banner_1": {
+                    "image_url": doc.right_top,
+                    "redirect_link": {
+                        "link": doc.right_top_banner_link,
+                        "link_type": get_subbanner_link_type(doc.right_top_banner_link_type),
+                    }
+                },
+                "sub_banner_2": {
+                    "image_url": doc.right_bottom,
+                    "redirect_link": {
+                        "link": doc.right_bottom_banner_link,
+                        "link_type": get_subbanner_link_type(doc.right_bottom_banner_link_type),
+                    }
+                }
+            },
             "general": {
                 "site_title": settings.site_title,
                 "site_tagline": settings.site_tagline,
@@ -274,3 +303,11 @@ def get_categories_from_string(category_string):
     
     return [cat.strip() for cat in category_string.split(",") if cat.strip()]
 
+
+def get_subbanner_link_type(banner_settings):
+    if banner_settings == "Item":
+        return "product"
+    elif banner_settings == "Category":
+        return "collection"
+    else:
+        return ""
