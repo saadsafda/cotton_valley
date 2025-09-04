@@ -19,6 +19,16 @@ def get_homepage_slides():
         first_row_product_ids
     ))
 
+    home_banners = []
+    for row in doc.home_banners:
+        home_banners.append({
+            "image_url": row.image,
+            "redirect_link": {
+                "link": row.link,
+                "link_type": get_subbanner_link_type(row.link_type),
+            }
+        })
+
     promotion_link = ""
     if doc.link_type == "External Url":
         promotion_link = doc.external_url
@@ -37,6 +47,24 @@ def get_homepage_slides():
 
     result = {
         "content": {
+            "home_banner": {
+                "status": True,
+                "main_banner": home_banners,
+                "sub_banner_1": {
+                    "image_url": doc.right_top,
+                    "redirect_link": {
+                        "link": doc.right_top_banner_link,
+                        "link_type": get_subbanner_link_type(doc.right_top_banner_link_type),
+                    }
+                },
+                "sub_banner_2": {
+                    "image_url": doc.right_bottom,
+                    "redirect_link": {
+                        "link": doc.right_bottom_banner_link,
+                        "link_type": get_subbanner_link_type(doc.right_bottom_banner_link_type),
+                    }
+                }
+            },
             "categories_image_list": {
                 "title": doc.category_title,
                 "category_ids": [d.product_category for d in doc.homepage_categories],
@@ -57,14 +85,14 @@ def get_homepage_slides():
                 "banner_1": {
                     "image_url": doc.promotion_banner,
                     "redirect_link": {
-                        "link_type": doc.link_type,
+                        "link_type": get_subbanner_link_type(doc.link_type),
                         "link": promotion_link
                     }
                 },
                 "banner_2": {
                     "image_url": doc.promotion_subbanner,
                     "redirect_link": {
-                        "link_type": doc.sublink_type,
+                        "link_type": get_subbanner_link_type(doc.sublink_type),
                         "link": subPromotion_link
                     }
                 }
@@ -103,3 +131,14 @@ def get_homepage_slides():
     }
 
     return result
+
+
+def get_subbanner_link_type(banner_settings):
+    if banner_settings == "Product" or banner_settings == "Item":
+        return "product"
+    elif banner_settings == "Category":
+        return "collection"
+    elif banner_settings == "External Url":
+        return "external_url"
+    else:
+        return ""
