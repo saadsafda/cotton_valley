@@ -107,6 +107,14 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         product["sale_price"] = product["price"]
         product["discount"] = 0
 
+        # quantity (stock across all warehouses)
+        qty_data = frappe.db.sql("""
+            SELECT COALESCE(SUM(actual_qty), 0) as qty
+            FROM `tabBin`
+            WHERE item_code = %s
+        """, (product_id,), as_dict=True)
+        product["quantity"] = qty_data[0]["qty"] if qty_data else 0
+
         # related products
         product["related_products"] = [
             row.product_name for row in frappe.get_all(
