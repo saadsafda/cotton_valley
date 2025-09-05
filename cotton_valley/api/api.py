@@ -1,5 +1,5 @@
-import frappe
-from frappe import _
+import frappe # type: ignore
+from frappe import _ # type: ignore
 
 
 @frappe.whitelist()
@@ -113,7 +113,22 @@ def register_customer(data):
                 })
 
         customer.insert(ignore_permissions=True)
+        frappe.db.commit()
+        user = frappe.get_doc({
+            "doctype": "User",
+            "email": data.get("email"),
+            "first_name": data.get("first_name"),
+            "last_name": data.get("last_name"),
+            "enabled": 0,  # user will be enabled after verification
+            "new_password": data.get("password"),  # sets password
+            "send_welcome_email": 0,
+            "user_type": "Website User",  # important! customers are Website Users
+        })
+        user.insert(ignore_permissions=True)
 
+        # link user to customer
+        frappe.db.set_value("Customer", customer.name, "custom_user", user.name)
+        frappe.db.commit()
         # Addresses
         if data.get("shipping_billing_same"):
             make_customer_address(customer.name, data.get("shipping_address"), address_type="Shipping")
