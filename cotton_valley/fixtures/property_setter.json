@@ -2590,21 +2590,5 @@
   "property_type": "Check",
   "row_name": null,
   "value": "1"
- },
- {
-  "default_value": null,
-  "doc_type": "Customer",
-  "docstatus": 0,
-  "doctype": "Property Setter",
-  "doctype_or_field": "DocType",
-  "field_name": null,
-  "is_system_generated": 0,
-  "modified": "2025-08-24 09:26:09.391473",
-  "module": "Cotton Valley",
-  "name": "Customer-main-field_order",
-  "property": "field_order",
-  "property_type": "Data",
-  "row_name": null,
-  "value": "[\"basic_info\", \"naming_series\", \"custom_email_address\", \"custom_phone_number\", \"custom_cell_phone\", \"custom_sales_respresentive\", \"custom_extra_email_address\", \"column_break0\", \"customer_name\", \"custom_password\", \"represents_company\", \"custom_company_name\", \"gender\", \"tax_id\", \"image\", \"custom_store_name\", \"custom_column_break_pjx87\", \"custom_last_name\", \"custom_confirm_password\", \"website\", \"customer_type\", \"customer_group\", \"territory\", \"custom_territory\", \"custom_section_break_g9ma2\", \"custom_column_break_8ob6m\", \"custom_manager_name\", \"custom_column_break_ojua7\", \"custom_manager_number\", \"account_manager\", \"defaults_tab\", \"default_currency\", \"column_break_14\", \"default_price_list\", \"more_info\", \"custom_type_of_buiness\", \"custom_storewarehouse_area_sqft\", \"column_break_45\", \"custom_how_long_have_you_been_in_years\", \"custom_how_did_you_hear_about_us\", \"custom_section_break_75ex1\", \"customer_details\", \"custom_bank_reference\", \"custom_bank_name\", \"custom_bank_address\", \"custom_bank_phone\", \"custom_bank_fax\", \"custom_bank_account_number\", \"custom_column_break_lhzck\", \"custom_bank_city\", \"custom_bank_state\", \"custom_bank_zip_code\", \"custom_bank_account_type\", \"custom_bank_email\", \"custom_trade_referances\", \"custom_business_refereances\", \"custom_hidden_fields\", \"address_contacts\", \"address_html\", \"column_break1\", \"contact_html\", \"custom_section_break_gi8jo\", \"mobile_no\", \"prospect_name\", \"lead_name\", \"default_bank_account\", \"customer_pos_id\", \"industry\", \"language\", \"salutation\", \"market_segment\", \"opportunity_name\", \"internal_customer_section\", \"is_internal_customer\", \"column_break_70\", \"companies\", \"contact_and_address_tab\", \"primary_address_and_contact_detail\", \"column_break_26\", \"customer_primary_address\", \"primary_address\", \"column_break_nwor\", \"customer_primary_contact\", \"email_id\", \"custom_zip_code\", \"tax_tab\", \"taxation_section\", \"custom_column_break_m8ywh\", \"column_break_21\", \"tax_category\", \"tax_withholding_category\", \"accounting_tab\", \"credit_limit_section\", \"payment_terms\", \"credit_limits\", \"default_receivable_accounts\", \"accounts\", \"loyalty_points_tab\", \"loyalty_program\", \"column_break_54\", \"loyalty_program_tier\", \"sales_team_tab\", \"sales_team\", \"sales_team_section\", \"default_sales_partner\", \"column_break_66\", \"default_commission_rate\", \"settings_tab\", \"so_required\", \"dn_required\", \"exempt_from_sales_tax\", \"custom_see_hidden_prices\", \"custom_liftgate_delivery\", \"column_break_53\", \"is_frozen\", \"disabled\", \"custom_email_notifications\", \"custom_payment_alerts\", \"portal_users_tab\", \"portal_users\", \"custom_additional_information\", \"custom_credit_allowed_\", \"custom_customer_rating\", \"custom_column_break_n5iiv\", \"custom_multistore_host\", \"custom_numeric_rating_110\", \"dashboard_tab\"]"
  }
 ]
