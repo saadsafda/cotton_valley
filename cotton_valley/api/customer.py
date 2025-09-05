@@ -6,17 +6,22 @@ from cotton_valley.api.website_theme_setting import get_file
 def customer_login(email, password):
     try:
         # print("user value", email)
-        login_manager = LoginManager()
-        login_manager.authenticate(user=email, pwd=password)
-        login_manager.post_login()
-
-        # Get User
-        user = frappe.get_doc("User", email)
-        # Get full Customer doc
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
         if not customer_id:
             frappe.local.response["http_status_code"] = 404
             return {"status": "error", "message": "Customer not found"}
+        
+        if not frappe.db.exists("User", {"name": email}):
+            return {"status": "error", "message": "User not found"}
+        user = frappe.get_doc("User", email)
+
+        login_manager = LoginManager()
+        login_manager.authenticate(user=email, pwd=password)
+        login_manager.post_login()
+        print("checinf")
+        # Get full Customer doc
+
+        # Get User
 
         customer = frappe.get_doc("Customer", customer_id)
 
@@ -49,6 +54,7 @@ def get_current_customer():
             return {"status": "error", "message": "Unauthorized. Please log in."}
 
         email = frappe.session.user
+        print(email, "checking email id")
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
