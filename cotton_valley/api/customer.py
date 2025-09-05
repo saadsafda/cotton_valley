@@ -5,13 +5,13 @@ from cotton_valley.api.website_theme_setting import get_file
 @frappe.whitelist(allow_guest=True)
 def customer_login(email, password):
     try:
+        # print("user value", email)
         login_manager = LoginManager()
         login_manager.authenticate(user=email, pwd=password)
         login_manager.post_login()
 
         # Get User
         user = frappe.get_doc("User", email)
-
         # Get full Customer doc
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
         if not customer_id:

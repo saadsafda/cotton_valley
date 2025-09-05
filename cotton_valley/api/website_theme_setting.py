@@ -258,7 +258,8 @@ def get_file(file_url):
         "file_name": file_doc.file_name,
         "mime_type": file_doc.file_type,
         "size": file_doc.file_size,
-        "original_url": frappe.utils.get_url(file_doc.file_url),
+        "original_url": file_doc.file_url,
+        # "original_url": frappe.utils.get_url(file_doc.file_url),
     }
 
 def get_categories_from_string(category_string):
