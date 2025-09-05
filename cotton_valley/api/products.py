@@ -114,6 +114,10 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             WHERE item_code = %s
         """, (product_id,), as_dict=True)
         product["quantity"] = qty_data[0]["qty"] if qty_data else 0
+        if product["quantity"] > 0:
+            product["stock_status"] = "in_stock"
+        else:
+            product["stock_status"] = "out_of_stock"
 
         # related products
         product["related_products"] = [
@@ -322,6 +326,10 @@ def get_product(product_id):
         WHERE item_code = %s
     """, (product_id,), as_dict=True)
     product["quantity"] = qty_data[0]["qty"] if qty_data else 0
+    if product["quantity"] > 0:
+            product["stock_status"] = "in_stock"
+    else:
+        product["stock_status"] = "out_of_stock"
 
     product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
 
