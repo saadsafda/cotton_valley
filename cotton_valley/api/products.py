@@ -307,6 +307,14 @@ def get_product(product_id):
     product["sale_price"] = product["price"]  # adjust if you have discount rules
     product["discount"] = 0  # calculate discount if needed
 
+    # quantity (stock across all warehouses)
+    qty_data = frappe.db.sql("""
+        SELECT COALESCE(SUM(actual_qty), 0) as qty
+        FROM `tabBin`
+        WHERE item_code = %s
+    """, (product_id,), as_dict=True)
+    product["quantity"] = qty_data[0]["qty"] if qty_data else 0
+
     product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
