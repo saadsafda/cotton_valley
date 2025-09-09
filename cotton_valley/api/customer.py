@@ -32,7 +32,7 @@ def customer_login(email, password):
             "status": 200,
             "message": "Login successful",
             "access_token": access_token,   # Bearer token
-            "token_type": "Bearer",
+            "token_type": "token",
             "user": {
                 "email": user.email,
                 "full_name": user.full_name,
@@ -44,7 +44,23 @@ def customer_login(email, password):
     except Exception as e:
         frappe.local.response["http_status_code"] = 401
         return {"status": "error", "message": str(e)}
-    
+
+
+@frappe.whitelist()
+def customer_logout():
+    try:
+        if frappe.session.user == "Guest":
+            frappe.local.response["http_status_code"] = 401
+            return {"status": "error", "message": "Unauthorized. Please log in."}
+
+        frappe.local.session_obj.logout()
+        frappe.db.commit()  # Ensure session changes are saved
+
+        return {"status": 200, "message": "Logout successful"}
+
+    except Exception as e:
+        frappe.local.response["http_status_code"] = 500
+        return {"status": "error", "message": str(e)}
 
 @frappe.whitelist(allow_guest=True)
 def get_current_customer():
