@@ -1,5 +1,5 @@
 import frappe
-from cotton_valley.utils.file import get_file
+from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
 def get_about_page():
