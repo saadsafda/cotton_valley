@@ -1,5 +1,6 @@
 import frappe # type: ignore
 from frappe.auth import LoginManager # type: ignore
+from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
@@ -18,8 +19,6 @@ def customer_login(email, password):
         login_manager = LoginManager()
         login_manager.authenticate(user=email, pwd=password)
         login_manager.post_login()
-        print("checinf")
-        # Get full Customer doc
 
         # Get User
 
@@ -40,7 +39,9 @@ def customer_login(email, password):
             },
             "data": customer.as_dict()
         }
-
+    except AuthenticationError:
+        frappe.local.response["http_status_code"] = 404
+        return {"status": "error", "message": "Invalid email or password"}
     except Exception as e:
         frappe.local.response["http_status_code"] = 401
         return {"status": "error", "message": str(e)}
