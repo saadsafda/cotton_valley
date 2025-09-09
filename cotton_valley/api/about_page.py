@@ -10,7 +10,8 @@ def get_about_page():
             clients.append({
                 "title": client.title,
                 "image_icon": get_file(client.image_icon),
-                "description": client.description
+                "description": client.description,
+                "count": client.count
             })
         return {
             "status": "success",
