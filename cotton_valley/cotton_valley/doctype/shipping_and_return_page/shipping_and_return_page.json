@@ -13,7 +13,8 @@
   {
    "fieldname": "banner_image_view",
    "fieldtype": "Image",
-   "label": "Banner Image View"
+   "label": "Banner Image View",
+   "options": "banner_image"
   },
   {
    "fieldname": "banner_image",
@@ -33,7 +34,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-10 04:47:20.343228",
+ "modified": "2025-09-10 07:06:34.973281",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Shipping and Return Page",

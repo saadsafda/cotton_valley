@@ -55,7 +55,12 @@
   "og_description",
   "collection_tab",
   "collection_banner_image_view",
-  "collection_banner_image"
+  "collection_banner_image",
+  "news_letter_tab",
+  "half_banner_view",
+  "half_banner",
+  "column_break_udst",
+  "description"
  ],
  "fields": [
   {
@@ -317,13 +322,37 @@
    "fieldtype": "Image",
    "label": "Collection Banner Image View",
    "options": "collection_banner_image"
+  },
+  {
+   "fieldname": "news_letter_tab",
+   "fieldtype": "Tab Break",
+   "label": "News Letter"
+  },
+  {
+   "fieldname": "half_banner_view",
+   "fieldtype": "Image",
+   "label": "Half Banner View"
+  },
+  {
+   "fieldname": "half_banner",
+   "fieldtype": "Attach Image",
+   "label": "half Banner"
+  },
+  {
+   "fieldname": "column_break_udst",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-04 07:39:47.095390",
+ "modified": "2025-09-10 08:54:01.489735",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",

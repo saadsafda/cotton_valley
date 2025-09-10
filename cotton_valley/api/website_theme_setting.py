@@ -196,6 +196,10 @@ def get_website_theme_settings():
             "store_layout": "basic_store",
             "store_details": "basic_store_details"
             },
+            "newsletter_modal": {
+                "image": get_file(settings.half_banner),
+                "description": settings.description,
+            },
             "contact_us": {
             "contact_image_url": "https://react.pixelstrap.net/fastkart/assets/contact-us.png",
             "detail_1": {
