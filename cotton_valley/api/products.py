@@ -96,16 +96,22 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     for product in items:
         product_id = product["id"]
 
-        # price
-        price_data = frappe.db.sql("""
-            SELECT price_list_rate
-            FROM `tabItem Price`
-            WHERE item_code = %s
-            LIMIT 1
-        """, (product_id,), as_dict=True)
-        product["price"] = price_data[0]["price_list_rate"] if price_data else 0
-        product["sale_price"] = product["price"]
-        product["discount"] = 0
+        # --- Price only if user is logged in ---
+        if frappe.session.user != "Guest":
+            price_data = frappe.db.sql("""
+                SELECT price_list_rate
+                FROM `tabItem Price`
+                WHERE item_code = %s
+                LIMIT 1
+            """, (product_id,), as_dict=True)
+
+            product["price"] = price_data[0]["price_list_rate"] if price_data else 0
+            product["sale_price"] = product["price"]
+            product["discount"] = 0
+        else:
+            product["price"] = None
+            product["sale_price"] = None
+            product["discount"] = None
 
         # quantity (stock across all warehouses)
         qty_data = frappe.db.sql("""
@@ -309,15 +315,21 @@ def get_product(product_id):
         return {"error": "Product not found"}
 
     # Example: handle prices (if you have Price List / Item Price doctype)
-    price_data = frappe.db.sql("""
-        SELECT price_list_rate
-        FROM `tabItem Price`
-        WHERE item_code = %s
-        LIMIT 1
-    """, (product_id,), as_dict=True)
-    product["price"] = price_data[0]["price_list_rate"] if price_data else 0
-    product["sale_price"] = product["price"]  # adjust if you have discount rules
-    product["discount"] = 0  # calculate discount if needed
+
+    if frappe.session.user != "Guest":
+        price_data = frappe.db.sql("""
+            SELECT price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code = %s
+            LIMIT 1
+        """, (product_id,), as_dict=True)
+        product["price"] = price_data[0]["price_list_rate"] if price_data else 0
+        product["sale_price"] = product["price"]  # adjust if you have discount rules
+        product["discount"] = 0  # calculate discount if needed
+    else:
+        product["price"] = None
+        product["sale_price"] = None
+        product["discount"] = None
 
     # quantity (stock across all warehouses)
     qty_data = frappe.db.sql("""

@@ -331,7 +331,8 @@
   {
    "fieldname": "half_banner_view",
    "fieldtype": "Image",
-   "label": "Half Banner View"
+   "label": "Half Banner View",
+   "options": "half_banner"
   },
   {
    "fieldname": "half_banner",
@@ -352,7 +353,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-10 08:54:01.489735",
+ "modified": "2025-09-10 09:22:59.184144",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",
