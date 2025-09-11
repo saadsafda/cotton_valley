@@ -47,15 +47,11 @@ def customer_login(email, password):
         return {"status": "error", "message": str(e)}
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def customer_logout():
     try:
-        if frappe.session.user == "Guest":
-            frappe.local.response["http_status_code"] = 401
-            return {"status": "error", "message": "Unauthorized. Please log in."}
-
-        frappe.local.session_obj.logout()
-        frappe.db.commit()  # Ensure session changes are saved
+        frappe.local.login_manager.logout()
+        frappe.db.commit() # Ensure session changes are saved
 
         return {"status": 200, "message": "Logout successful"}
 
