@@ -84,7 +84,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
             "disabled as status",
-            "brand"
+            "brand",
+            "custom_coming_soon as coming_soon",
+            "custom_new_arrivals as new_arrivals"
         ],
         order_by=sort_clause,
         limit_start=limit_start,
@@ -306,7 +308,9 @@ def get_product(product_id):
             "custom_item_width_inch as item_width",
             "custom_item_length_inch as item_length",
             "custom_item_height_inch as item_height",
-            "custom_item_weight_lbs as item_weight"
+            "custom_item_weight_lbs as item_weight",
+            "custom_coming_soon as coming_soon",
+            "custom_new_arrivals as new_arrivals"
         ],
         as_dict=True
     )
