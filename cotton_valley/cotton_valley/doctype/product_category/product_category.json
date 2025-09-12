@@ -7,6 +7,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "banner_image_view",
+  "banner_image",
+  "section_break_sdiw",
   "title",
   "column_break_gumt",
   "category_image",
@@ -41,13 +44,28 @@
    "fieldname": "category_image",
    "fieldtype": "Attach Image",
    "label": "Category Image"
+  },
+  {
+   "fieldname": "banner_image_view",
+   "fieldtype": "Image",
+   "label": "Banner Image View",
+   "options": "banner_image"
+  },
+  {
+   "fieldname": "banner_image",
+   "fieldtype": "Attach Image",
+   "label": "Banner Image"
+  },
+  {
+   "fieldname": "section_break_sdiw",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-08-25 08:31:07.137095",
+ "modified": "2025-09-12 05:14:58.389294",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",
