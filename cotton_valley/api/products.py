@@ -4,6 +4,8 @@ import frappe # type: ignore
 from frappe import _ # type: ignore
 from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 import requests
+from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
+
 
 
 
@@ -428,7 +430,7 @@ def get_product(product_id):
 @frappe.whitelist()
 def get_prices(item_code):
     url = f"https://erp.cottonvalley.us/ords/unvdst/cmitm/itmrate?ITMID={item_code}"
-    response = requests.get(url, auth=("unvdst", "unvdst23"))
+    response = requests.get(url, auth=(SAP_USER, SAP_PASSWORD))
     data = response.json()
 
     print(data, "Data from API \n\n\n\n\n")  # Debugging line
