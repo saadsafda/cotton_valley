@@ -66,6 +66,7 @@ def get_category_list(category_id=None):
         cat['category_image'] = get_file(cat["category_image"])
         cat["products_count"] = counts_map.get(cat["id"], 0)
         cat["subcategories"] = sub_map.get(cat["id"], [])
+        cat["banner_image"] = get_file(cat["banner_image"])
         cat["type"] = "product"
 
     return {"data": categories}
