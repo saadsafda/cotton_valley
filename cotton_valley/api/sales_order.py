@@ -22,10 +22,10 @@ def create_or_update_sales_order(items):
 
     if not customer:
         return "Customer not found"
-    
+    customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer["id"], "docstatus": 0},
+        filters={"customer": customer_id, "docstatus": 0},
         fields=["name"],
         limit=1,
     )
@@ -35,7 +35,7 @@ def create_or_update_sales_order(items):
         so_doc.items = []  # reset items
     else:
         so_doc = frappe.new_doc("Sales Order")
-        so_doc.customer = customer
+        so_doc.customer = customer_id
         so_doc.transaction_date = nowdate()
 
     for row in items:
