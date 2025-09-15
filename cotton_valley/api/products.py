@@ -440,20 +440,22 @@ def get_prices(item_code):
 
     prices = data["items"][0]
 
-    # Mapping your API keys to ERPNext Price Lists
-    price_map = {
-        "retail": "Retail",
-        "wholesale": "Wholesale",
-        "online-price": "Online",
-        "magic-supp-pr": "Magic Supplier",
-        "dollar days": "Dollar Days"
-        # add more as needed
-    }
-
-    for key, price_list in price_map.items():
-        price_val = prices.get(f"'{key}'")   # because your keys have quotes
-        if not price_val or float(price_val) == 0:
+    for key, price_list in prices.items():
+        if key == "itmid" or key == "itmdsc" or key == "itmgrpdsc":
             continue
+
+        price_val = prices.get(f"{key}")
+        price_list_name = key.replace("'", "")
+        price_list = frappe.db.exists("Price List", price_list_name)
+
+        print(price_list_name, price_val, "Price List Name and Value")  # Debugging line
+
+        if not price_val or float(price_val) <= 0:
+            continue
+
+        if not price_list:
+            continue
+
 
         existing = frappe.db.exists("Item Price", {
             "item_code": item_code,
@@ -474,4 +476,59 @@ def get_prices(item_code):
             }).insert()
 
     frappe.db.commit()
+    return "Prices updated"
+
+
+
+@frappe.whitelist()
+def get_product_prices():
+    items = frappe.get_all("Item", pluck="name")
+    for item_code in items:
+        url = f"https://erp.cottonvalley.us/ords/unvdst/cmitm/itmrate?ITMID={item_code}"
+        response = requests.get(url, auth=(SAP_USER, SAP_PASSWORD))
+        data = response.json()
+
+        print(data, "Data from API \n\n\n\n\n")  # Debugging line
+
+        if not data.get("items"):
+            return "No prices found"
+
+        prices = data["items"][0]
+
+        for key, price_list in prices.items():
+            if key == "itmid" or key == "itmdsc" or key == "itmgrpdsc":
+                continue
+
+            price_val = prices.get(f"{key}")
+            price_list_name = key.replace("'", "")
+            price_list = frappe.db.exists("Price List", price_list_name)
+
+            print(price_list_name, price_val, "Price List Name and Value")  # Debugging line
+
+            if not price_val or float(price_val) <= 0:
+                continue
+
+            if not price_list:
+                continue
+
+
+            existing = frappe.db.exists("Item Price", {
+                "item_code": item_code,
+                "price_list": price_list
+            })
+
+            if existing:
+                ip = frappe.get_doc("Item Price", existing)
+                ip.price_list_rate = float(price_val)
+                ip.save()
+            else:
+                frappe.get_doc({
+                    "doctype": "Item Price",
+                    "item_code": item_code,
+                    "price_list": price_list,
+                    "price_list_rate": float(price_val),
+                    "currency": "USD"   # or your default currency
+                }).insert()
+
+        frappe.db.commit()
     return "Prices updated"

@@ -1,12 +1,43 @@
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
-# @frappe.whitelist()
-# def testapi():
-#     customer = get_current_customer()
-#     if not customer:
-#         return "Customer not found"
-#     return customer["id"]
+from cotton_valley.api.products import get_product
+
+
+@frappe.whitelist()
+def get_cart():
+    customer = get_current_customer()
+    if not customer or not customer.get("id"):
+        return {"items": [], "total": 0.0, "count": 0}
+
+    print(customer)
+    customer_id = customer["id"]
+    so = frappe.get_all(
+        "Sales Order",
+        filters={"customer": customer_id, "docstatus": 0},
+        fields=["name", "grand_total"],
+        limit=1,
+    )
+    if not so:
+        return {"items": [], "total": 0.0, "count": 0}
+
+    so_doc = frappe.get_doc("Sales Order", so[0].name)
+    items = []
+    for item in so_doc.items:
+        product = get_product(item.item_code)
+        items.append({
+            "id": item.name,
+            "product_id": item.item_code,
+            "quantity": item.qty,
+            "sub_total": item.amount,
+            "product": product,
+        })
+    return {
+        "items": items,
+        "total": so[0].grand_total,
+        "count": len(items),
+    }
+
 
 @frappe.whitelist()
 def create_or_update_sales_order(items):
