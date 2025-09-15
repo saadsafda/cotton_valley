@@ -73,6 +73,11 @@ def create_or_update_sales_order(items):
         so_doc.delivery_date = nowdate()
         so_doc.order_type = "Shopping Cart"
 
+    if items is None or len(items) == 0:
+        so_doc.delete()
+        frappe.db.commit()
+        return None
+
     for row in items:
         so_doc.append("items", {
             "item_code": row["item_code"],
