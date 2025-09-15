@@ -1,6 +1,12 @@
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
+# @frappe.whitelist()
+# def testapi():
+#     customer = get_current_customer()
+#     if not customer:
+#         return "Customer not found"
+#     return customer["id"]
 
 @frappe.whitelist()
 def create_or_update_sales_order(items):
@@ -19,7 +25,7 @@ def create_or_update_sales_order(items):
     
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer.get("id"), "docstatus": 0},
+        filters={"customer": customer["id"], "docstatus": 0},
         fields=["name"],
         limit=1,
     )
