@@ -15,11 +15,11 @@ def create_or_update_sales_order(items):
     items = frappe.parse_json(items)
 
     if not customer:
-        return
+        return "Customer not found"
     
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer.id, "docstatus": 0},
+        filters={"customer": customer.get("id"), "docstatus": 0},
         fields=["name"],
         limit=1,
     )
