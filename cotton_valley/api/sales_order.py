@@ -37,6 +37,8 @@ def create_or_update_sales_order(items):
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
         so_doc.transaction_date = nowdate()
+        so_doc.delivery_date = nowdate()
+        so_doc.order_type = "Shopping Cart"
 
     for row in items:
         so_doc.append("items", {
