@@ -23,7 +23,7 @@ def get_about_page():
                 "second_image": get_file(about_page.sec_image),
                 "client_title": about_page.client_title,
                 "client_subtitle": about_page.client_sub_title,
-                "clients": about_page.get("clients")
+                "clients": clients
             }
         }
     except Exception as e:
