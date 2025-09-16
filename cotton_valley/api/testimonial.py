@@ -4,7 +4,7 @@ from cotton_valley.api.website_theme_setting import get_file
 @frappe.whitelist(allow_guest=True)
 def get_testimonials():
     try:
-        testimonials = frappe.get_all("Testimonial", fields=["customer_name as name", "title as short_description", "designation", "company", "profile_image", "review", "description"])
+        testimonials = frappe.get_all("Testimonial", fields=["customer_name as name", "title as short_description", "designation", "profile_image", "review", "description"])
         for testimonial in testimonials:
             testimonial["image"] = get_file(testimonial["image"])
         

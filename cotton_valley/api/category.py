@@ -4,7 +4,7 @@ from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
 def get_categories():
-    categories = frappe.get_all("Category", fields=["name", "category_name"])
+    categories = frappe.get_all("Category", fields=["name", "category_name"], order_by="category_name")
     return categories
 
 @frappe.whitelist(allow_guest=True)
@@ -18,7 +18,8 @@ def get_category_list(category_id=None):
     categories = frappe.get_all(
         "Product Category",
         filters=filters,
-        fields=["name", "title", "category_image", "banner_image"]
+        fields=["name", "title", "category_image", "banner_image"],
+        order_by="title"
     )
 
     if not categories:
