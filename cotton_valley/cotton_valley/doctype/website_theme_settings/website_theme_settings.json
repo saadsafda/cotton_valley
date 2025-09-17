@@ -60,7 +60,11 @@
   "half_banner_view",
   "half_banner",
   "column_break_udst",
-  "description"
+  "description",
+  "order_tab",
+  "min_order_amount",
+  "column_break_npoj",
+  "min_order_free_shipping"
  ],
  "fields": [
   {
@@ -347,14 +351,35 @@
    "fieldname": "description",
    "fieldtype": "Text Editor",
    "label": "Description"
+  },
+  {
+   "fieldname": "order_tab",
+   "fieldtype": "Tab Break",
+   "label": "Order"
+  },
+  {
+   "fieldname": "min_order_amount",
+   "fieldtype": "Float",
+   "label": "Min Order Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_npoj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "min_order_free_shipping",
+   "fieldtype": "Float",
+   "label": "Min Order Free Shipping",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-10 09:22:59.184144",
- "modified_by": "Administrator",
+ "modified": "2025-09-17 02:01:47.090317",
+ "modified_by": "saad@gmail.com",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",
  "owner": "Administrator",
