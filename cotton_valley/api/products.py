@@ -63,7 +63,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         sort_clause = "price desc"
 
     # --- Total Count ---
-    total_count = frappe.db.count("Item", filters=filters)
+    total_count = 0
 
     # --- Pagination ---
     limit_start = None
@@ -205,7 +205,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 "description": brand_data.description,
                 "store_logo": get_file(brand_data.image)
             }
-
+        total_count += 1
         products.append(product)
 
     return {"data": products, "total": total_count, "current_page": page or 1, "per_page": limit_page_length or total_count}
