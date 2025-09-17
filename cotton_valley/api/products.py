@@ -10,9 +10,10 @@ from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
+    attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
     sortBy = None if not sortBy or sortBy == "null" else sortBy
     search = None if not search or search == "null" else search
     page = None if not page or page == "null" else int(page)
@@ -141,10 +142,18 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             WHERE item_code = %s
         """, (product_id,), as_dict=True)
         product["quantity"] = qty_data[0]["qty"] if qty_data else 0
-        if product["quantity"] > 0:
-            product["stock_status"] = "in_stock"
-        else:
-            product["stock_status"] = "out_of_stock"
+        
+        product["stock_status"] = "in_stock" if product["quantity"] > 0 else "out_of_stock"
+
+        # --- Stock Filter ---
+        if attribute:
+            # if only "in_stock" selected → only keep items with qty > 0
+            if attribute == ["in_stock"] and product["quantity"] <= 0:
+                continue
+            # if only "out_stock" selected → only keep items with qty = 0
+            if attribute == ["out_stock"] and product["quantity"] > 0:
+                continue
+            # if both are passed, ignore filter (show all)
 
         # related products
         product["related_products"] = [
