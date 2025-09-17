@@ -89,6 +89,21 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             "image as product_thumbnail_id",
             "disabled as status",
             "brand",
+            "custom_sub_category as sub_category",
+            "custom_carton_upc as carton_upc",
+            "custom_case_per_pallet as case_per_pallet",
+            "custom_cbm as cbm",
+            "custom_upc as upc_code",
+            "custom_pallet_hi as pallet_hi",
+            "custom_pallet_ti as pallet_ti",
+            "custom_package_width_inch as package_width",
+            "custom_package_length_inch as package_length",
+            "custom_package_height_inch as package_height",
+            "custom_weight_lbs as package_weight",
+            "custom_item_width_inch as item_width",
+            "custom_item_length_inch as item_length",
+            "custom_item_height_inch as item_height",
+            "custom_item_weight_lbs as item_weight",
             "custom_coming_soon as coming_soon",
             "custom_new_arrivals as new_arrivals"
         ],
@@ -321,6 +336,16 @@ def get_product(product_id):
 
     if not product:
         return {"error": "Product not found"}
+    
+    if product["sub_category"]:
+        subcat_data = frappe.db.get_value(
+            "Product Subcategory",
+            product["sub_category"],
+            ["title"],
+            as_dict=True
+        )
+        if subcat_data:
+            product["sub_category_name"] = subcat_data.title
 
     # Example: handle prices (if you have Price List / Item Price doctype)
 

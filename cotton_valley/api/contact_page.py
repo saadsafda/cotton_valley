@@ -35,6 +35,7 @@ def submit_contact_form(name, email, phone, subject, message):
             "custom_subject": subject,
             "custom_message": message
         })
+        contact_form.append("email_ids", {"email_id": email, "is_primary": 1})
         contact_form.insert(ignore_permissions=True)
         return {"status": "success", "message": "Contact form submitted successfully."}
     except Exception as e:
