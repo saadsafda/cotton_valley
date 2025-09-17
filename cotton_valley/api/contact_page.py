@@ -22,3 +22,21 @@ def get_contact_page():
     except Exception as e:
         frappe.local.response["http_status_code"] = 500
         return {"status": "error", "message": str(e)}
+    
+@frappe.whitelist(allow_guest=True)
+def submit_contact_form(name, email, phone, subject, message):
+    try:
+        contact_form = frappe.get_doc({
+            "doctype": "Contact",
+            "first_name": name,
+            "email_id": email,
+            "status": "Open",
+            "phone": phone,
+            "custom_subject": subject,
+            "custom_message": message
+        })
+        contact_form.insert(ignore_permissions=True)
+        return {"status": "success", "message": "Contact form submitted successfully."}
+    except Exception as e:
+        frappe.local.response["http_status_code"] = 500
+        return {"status": "error", "message": str(e)}
