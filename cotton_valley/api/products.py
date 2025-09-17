@@ -48,18 +48,18 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         filters["item_name"] = ["like", f"%{search}%"]
 
     # --- Sort Options ---
-    sort_clause = "item_name asc"
+    sort_clause = "creation asc"
     if sortBy == "asc":
-        sort_clause = "item_name asc"
+        sort_clause = "creation asc"
     elif sortBy == "desc":
-        sort_clause = "item_name desc"
-    elif sortBy == "a_z":
+        sort_clause = "creation desc"
+    elif sortBy == "a-z":
         sort_clause = "item_name asc"
-    elif sortBy == "z_a":
+    elif sortBy == "z-a":
         sort_clause = "item_name desc"
-    elif sortBy == "low_high":
+    elif sortBy == "low-high":
         sort_clause = "price asc"
-    elif sortBy == "high_low":
+    elif sortBy == "high-low":
         sort_clause = "price desc"
 
     # --- Total Count ---
