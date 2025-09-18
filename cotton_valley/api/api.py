@@ -14,7 +14,7 @@ def get_home_banners():
 
 @frappe.whitelist(allow_guest=True)
 def get_country_list():
-    return frappe.get_all("Country", fields=["name", "country_name"])
+    return frappe.get_all("Country", fields=["name as id", "country_name as name"])
 
 
 @frappe.whitelist(allow_guest=True)
