@@ -16,19 +16,28 @@ def add_address(address):
         "pincode": address.get("pincode"),
         "country": address.get("country"),
         "phone": address.get("phone"),
-        "email_id": address.get("email_id"),
         "links": [{
             "link_doctype": "Customer",
             "link_name": customer.get("id")
         }]
     }).insert(ignore_permissions=True)
 
-    return address
+    return {
+                "id": address.name,
+                "title": address.address_title,
+                "address_type": address.address_type,
+                "street": address.address_line1,
+                "city": address.city,
+                "pincode": address.pincode,
+                "phone": address.phone,
+                "country": {"id": address.country, "name": address.country},
+                "state": {"id": address.state, "name": address.state},
+            }
 
 @frappe.whitelist()
 def update_address(address):
     customer = get_current_customer()
-    addr = frappe.get_doc("Address", address.get("name"))
+    addr = frappe.get_doc("Address", address.get("id"))
     addr.address_title = address.get("address_title")
     addr.address_type = address.get("address_type")
     addr.address_line1 = address.get("address_line1")
@@ -38,7 +47,16 @@ def update_address(address):
     addr.pincode = address.get("pincode")
     addr.country = address.get("country")
     addr.phone = address.get("phone")
-    addr.email_id = address.get("email_id")
     addr.save(ignore_permissions=True)
 
-    return addr
+    return {
+                "id": addr.name,
+                "title": addr.address_title,
+                "address_type": addr.address_type,
+                "street": addr.address_line1,
+                "city": addr.city,
+                "pincode": addr.pincode,
+                "phone": addr.phone,
+                "country": {"id": addr.country, "name": addr.country},
+                "state": {"id": addr.state, "name": addr.state},
+            }
