@@ -126,6 +126,7 @@ def get_current_customer():
                 "id": addr_doc.name,
                 "title": addr_doc.address_title,
                 "street": addr_doc.address_line1,
+                "address_type": addr_doc.address_type,
                 "city": addr_doc.city,
                 "pincode": addr_doc.pincode,
                 "is_default": 1 if addr_doc.name == customer.customer_primary_address else 0,
