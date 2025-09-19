@@ -94,8 +94,8 @@ def get_current_customer():
             customer['sales_person'] = {
                 "id": sales_rep.name,
                 "name": sales_rep.sales_person_name,
-                "email": sales_employee.get("user_id", ""),
-                "phone": sales_employee.get("cell_number", ""),
+                "email": sales_employee.user_id if sales_employee else "",
+                "phone": sales_employee.cell_number if sales_employee else "",
             }
 
         # --- Role ---
