@@ -73,6 +73,14 @@ def get_current_customer():
             return {"status": "error", "message": "Customer not found"}
 
         customer = frappe.get_doc("Customer", customer_id)
+        if customer.custom_sales_respresentive:
+            sales_rep = frappe.get_doc("Sales Person", customer.custom_sales_respresentive)
+            customer.sales_person = {
+                "id": sales_rep.name,
+                "name": sales_rep.sales_person_name,
+                "email": sales_rep.email_id,
+                "phone": sales_rep.phone,
+            }
 
         # --- Base Customer Info ---
         customer_data = {

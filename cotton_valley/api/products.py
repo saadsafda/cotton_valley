@@ -48,29 +48,21 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         filters["item_name"] = ["like", f"%{search}%"]
 
     # --- Sort Options ---
-    sort_clause = "creation asc"
-    if sortBy == "asc":
-        sort_clause = "creation asc"
-    elif sortBy == "desc":
-        sort_clause = "creation desc"
-    elif sortBy == "a-z":
-        sort_clause = "item_name asc"
-    elif sortBy == "z-a":
-        sort_clause = "item_name desc"
-    elif sortBy == "low-high":
-        sort_clause = "price asc"
-    elif sortBy == "high-low":
-        sort_clause = "price desc"
+    sort_clause = {
+        "asc": "creation asc",
+        "desc": "creation desc",
+        "a-z": "item_name asc",
+        "z-a": "item_name desc",
+        "low-high": "price asc",
+        "high-low": "price desc"
+    }.get(sortBy, "creation asc")
 
     # --- Total Count ---
     total_count = frappe.db.count("Item", filters=filters)
 
     # --- Pagination ---
-    limit_start = None
-    limit_page_length = None
-    if page and page > 0:
-        limit_start = (page - 1) * 30
-        limit_page_length = 30
+    limit_start = (page - 1) * 30 if page and page > 0 else None
+    limit_page_length = 30 if page else None
 
     # get all items
     items = frappe.get_all(
@@ -113,37 +105,87 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         limit_page_length=limit_page_length
     )
 
-    products = []
+    if not items:
+        return {"data": [], "total": total_count, "current_page": page or 1, "per_page": 30}
 
+    item_ids = [p["id"] for p in items]
+
+    # --- Batch Queries ---
+    # Prices
+    price_map = {}
+    if frappe.session.user != "Guest":
+        price_data = frappe.db.sql("""
+            SELECT item_code, price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code in %s
+        """, (item_ids,), as_dict=True)
+        price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
+
+    # Stock
+    stock_data = frappe.db.sql("""
+        SELECT item_code, SUM(actual_qty) as qty
+        FROM `tabBin`
+        WHERE item_code in %s
+        GROUP BY item_code
+    """, (item_ids,), as_dict=True)
+    stock_map = {s["item_code"]: s["qty"] for s in stock_data}
+
+    # Product Images
+    galleries_data = frappe.get_all(
+        "Product Images",
+        filters={"parent": ["in", item_ids]},
+        fields=["parent", "list_index", "image"],
+        order_by="list_index asc"
+    )
+    galleries_map = {}
+    for g in galleries_data:
+        galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
+
+    # Categories
+    categories_data = frappe.db.sql("""
+        SELECT c.parent, c.product_category as id
+        FROM `tabProduct Categoris` c
+        WHERE c.parent in %s
+    """, (item_ids,), as_dict=True)
+    categories_map = {}
+    for cat in categories_data:
+        cat_data = get_category_list(cat["id"])["data"]
+        if cat_data:
+            categories_map.setdefault(cat["parent"], []).append(cat_data[0])
+
+    # Brands
+    brand_ids = [p["brand"] for p in items if p.get("brand")]
+    brand_map = {}
+    if brand_ids:
+        brands = frappe.get_all("Brand", filters={"name": ["in", brand_ids]},
+                                fields=["name", "brand", "description", "image"])
+        brand_map = {b["name"]: b for b in brands}
+
+
+    # --- Final Assembly ---
+    products = []
     for product in items:
         product_id = product["id"]
 
-        # --- Price only if user is logged in ---
+        # Price
         if frappe.session.user != "Guest":
-            price_data = frappe.db.sql("""
-                SELECT price_list_rate
-                FROM `tabItem Price`
-                WHERE item_code = %s
-                LIMIT 1
-            """, (product_id,), as_dict=True)
-
-            product["price"] = price_data[0]["price_list_rate"] if price_data else 0
+            product["price"] = price_map.get(product_id, 0)
             product["sale_price"] = product["price"]
             product["discount"] = 0
         else:
-            product["price"] = None
-            product["sale_price"] = None
-            product["discount"] = None
+            product["price"] = product["sale_price"] = product["discount"] = None
 
-        # quantity (stock across all warehouses)
-        qty_data = frappe.db.sql("""
-            SELECT COALESCE(SUM(actual_qty), 0) as qty
-            FROM `tabBin`
-            WHERE item_code = %s
-        """, (product_id,), as_dict=True)
-        product["quantity"] = qty_data[0]["qty"] if qty_data else 0
-        
-        product["stock_status"] = "in_stock" if product["quantity"] > 0 else "out_of_stock"
+        # Stock
+        qty = stock_map.get(product_id, 0)
+        product["quantity"] = qty
+        product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
+
+        # Stock Filter
+        if attribute:
+            if attribute == ["in_stock"] and qty <= 0:
+                continue
+            if attribute == ["out_stock"] and qty > 0:
+                continue
 
         # --- Stock Filter ---
         if attribute:
@@ -166,45 +208,28 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         # images
         product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
-        galleries = frappe.get_all(
-            "Product Images",
-            filters={"parent": product_id},
-            fields=["list_index", "image"],
-            order_by="list_index asc"
-        )
-        product["product_galleries"] = [get_file(g.image) for g in galleries if g.image]
+        product["product_galleries"] = galleries_map.get(product_id, [])
         product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
-        # categories
-        categories = frappe.db.sql("""
-            SELECT c.product_category as id
-            FROM `tabProduct Categoris` c
-            INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
-            WHERE c.parent = %s
-        """, (product_id,), as_dict=True)
-
-        category_list = []
-        for cat in categories:
-            category_data = get_category_list(cat.id)["data"]
-            if category_data:
-                category_list.append(category_data[0])
-        product["categories"] = category_list
+        # Categories
+        product["categories"] = categories_map.get(product_id, [])
 
         # reviews
-        reviews = []  # extend later if needed
-        product["reviews"] = reviews
-        product["reviews_count"] = len(reviews)
-        product["rating_count"] = sum([r["rating"] for r in reviews]) / len(reviews) if reviews else 0
+        product["reviews"] = []
+        product["reviews_count"] = 0
+        product["rating_count"] = 0
 
+        # Brand / Store
         if product["brand"]:
-            brand_data = frappe.get_doc("Brand", product["brand"])
-            product["store"] = {
-                "id": brand_data.name,
-                "store_name": brand_data.brand,
-                "slug": brand_data.name,
-                "description": brand_data.description,
-                "store_logo": get_file(brand_data.image)
-            }
+            brand_data = brand_map.get(product["brand"])
+            if brand_data:
+                product["store"] = {
+                    "id": brand_data["name"],
+                    "store_name": brand_data["brand"],
+                    "slug": brand_data["name"],
+                    "description": brand_data["description"],
+                    "store_logo": get_file(brand_data["image"])
+                }
 
         products.append(product)
 
