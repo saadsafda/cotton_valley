@@ -90,12 +90,12 @@ def get_current_customer():
             sales_rep = frappe.get_doc("Sales Person", customer.custom_sales_respresentive)
             sales_employee = {}
             if sales_rep.employee:
-                sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, "name")
+                sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, ["user_id", "cell_number"], as_dict=True)
             customer['sales_person'] = {
                 "id": sales_rep.name,
                 "name": sales_rep.sales_person_name,
-                "email": sales_employee.user_id if sales_employee else "",
-                "phone": sales_employee.cell_number if sales_employee else "",
+                "email": sales_employee.get("user_id", ""),
+                "phone": sales_employee.get("cell_number", ""),
             }
 
         # --- Role ---
