@@ -67,20 +67,11 @@ def get_current_customer():
             return {"status": "error", "message": "Unauthorized. Please log in."}
 
         email = frappe.session.user
-        print(email, "checking email id")
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
 
         customer = frappe.get_doc("Customer", customer_id)
-        if customer.custom_sales_respresentive:
-            sales_rep = frappe.get_doc("Sales Person", customer.custom_sales_respresentive)
-            customer.sales_person = {
-                "id": sales_rep.name,
-                "name": sales_rep.sales_person_name,
-                "email": sales_rep.email_id,
-                "phone": sales_rep.phone,
-            }
 
         # --- Base Customer Info ---
         customer_data = {
@@ -94,6 +85,18 @@ def get_current_customer():
             "created_at": customer.creation,
             "updated_at": customer.modified,
         }
+
+        if customer.custom_sales_respresentive:
+            sales_rep = frappe.get_doc("Sales Person", customer.custom_sales_respresentive)
+            sales_employee = {}
+            if sales_rep.employee:
+                sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, "name")
+            customer['sales_person'] = {
+                "id": sales_rep.name,
+                "name": sales_rep.sales_person_name,
+                "email": sales_employee.get("user_id", ""),
+                "phone": sales_employee.get("cell_number", ""),
+            }
 
         # --- Role ---
         customer_data["role"] = {
