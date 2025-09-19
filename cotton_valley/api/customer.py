@@ -91,7 +91,7 @@ def get_current_customer():
             sales_employee = {}
             if sales_rep.employee:
                 sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, ["user_id", "cell_number"], as_dict=True)
-            customer['sales_person'] = {
+            customer_data['sales_person'] = {
                 "id": sales_rep.name,
                 "name": sales_rep.sales_person_name,
                 "email": sales_employee.get("user_id", ""),
