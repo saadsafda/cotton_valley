@@ -8,6 +8,276 @@ from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
 
 
 
+@frappe.whitelist(allow_guest=True)
+def get_all_products_sql(
+    ids=None,
+    category=None,
+    subcategory=None,
+    sortBy=None,
+    search=None,
+    page=None,
+    attribute=None,
+):
+    """
+    Fetch products using a raw SQL query with dynamic filters. The results
+    include prices, stock quantities, categories, recommended products,
+    gallery images and brand/store information. Pagination and sorting
+    follow the same semantics as the original get_all_products API.
+    """
+    # Helper to split comma-separated parameters
+    def split_param(val):
+        return [s.strip() for s in val.split(",") if s.strip()] if val else None
+
+    # Convert inputs into usable lists/values
+    id_list = split_param(ids) if ids and ids != "null" else None
+    category_list = split_param(category) if category and category != "null" else None
+    subcategory_list = split_param(subcategory) if subcategory and subcategory != "null" else None
+    attribute_list = split_param(attribute) if attribute and attribute != "null" else None
+    sortBy = None if not sortBy or sortBy == "null" else sortBy
+    search = None if not search or search == "null" else search
+    page = int(page) if page and page != "null" else None
+
+    # Build WHERE conditions and parameter dictionary
+    where_clauses = ["i.disabled = 0"]
+    params = {}
+
+    # Filter by specific IDs
+    if id_list:
+        where_clauses.append("i.name IN %(ids)s")
+        params["ids"] = tuple(id_list)
+
+    # Category filter via Product Categoris join
+    if category_list:
+        where_clauses.append("pc.product_category IN %(categories)s")
+        params["categories"] = tuple(category_list)
+
+    # Subcategory filter
+    if subcategory_list:
+        where_clauses.append("i.custom_sub_category IN %(subcategories)s")
+        params["subcategories"] = tuple(subcategory_list)
+
+    # Search filter on item_name
+    if search:
+        where_clauses.append("i.item_name LIKE %(search)s")
+        params["search"] = f"%{search}%"
+
+    # Core SELECT with joins and aggregates
+    select_sql = """
+        SELECT
+            i.name AS id,
+            i.item_name AS name,
+            i.custom_short_description AS short_description,
+            i.description,
+            i.item_group AS type,
+            i.name AS sku,
+            i.name AS slug,
+            i.stock_uom AS unit,
+            i.weight_uom AS weight,
+            i.custom_case_pack AS case_pack,
+            i.image AS product_thumbnail_id,
+            i.disabled AS status,
+            i.custom_sub_category AS sub_category,
+            i.custom_carton_upc AS carton_upc,
+            i.custom_case_per_pallet AS case_per_pallet,
+            i.custom_cbm AS cbm,
+            i.custom_upc AS upc_code,
+            i.custom_pallet_hi AS pallet_hi,
+            i.custom_pallet_ti AS pallet_ti,
+            i.custom_package_width_inch AS package_width,
+            i.custom_package_length_inch AS package_length,
+            i.custom_package_height_inch AS package_height,
+            i.custom_weight_lbs AS package_weight,
+            i.custom_item_width_inch AS item_width,
+            i.custom_item_length_inch AS item_length,
+            i.custom_item_height_inch AS item_height,
+            i.custom_item_weight_lbs AS item_weight,
+            i.custom_coming_soon AS coming_soon,
+            i.custom_new_arrivals AS new_arrivals,
+
+            -- Price (taking the maximum price_list_rate if multiple)
+            COALESCE(MAX(ip.price_list_rate), 0) AS price,
+            COALESCE(MAX(ip.price_list_rate), 0) AS sale_price,
+            0 AS discount,
+
+            -- Stock quantity
+            COALESCE(SUM(stock.actual_qty), 0) AS quantity,
+
+            -- Aggregate recommended products
+            GROUP_CONCAT(DISTINCT rp.product_name) AS related_products,
+
+            -- Aggregate categories
+            GROUP_CONCAT(DISTINCT pc.product_category) AS categories,
+
+            -- Aggregate gallery image URLs
+            GROUP_CONCAT(DISTINCT pi.image) AS product_galleries,
+
+            -- Brand details
+            b.name AS brand_id,
+            b.brand AS brand_name,
+            b.description AS brand_description,
+            b.image AS brand_image
+
+        FROM `tabItem` AS i
+        LEFT JOIN `tabProduct Categoris` AS pc ON pc.parent = i.name
+        LEFT JOIN `tabItem Price` AS ip ON ip.item_code = i.name
+        LEFT JOIN `tabBin` AS stock ON stock.item_code = i.name
+        LEFT JOIN `tabRecommended Products` AS rp ON rp.parent = i.name
+        LEFT JOIN `tabProduct Images` AS pi ON pi.parent = i.name
+        LEFT JOIN `tabBrand` AS b ON b.name = i.brand
+    """
+
+    # Apply WHERE conditions
+    if where_clauses:
+        select_sql += "\nWHERE " + " AND ".join(where_clauses)
+
+    # Group by item to aggregate related rows
+    select_sql += "\nGROUP BY i.name"
+
+    # Stock status filtering via HAVING
+    if attribute_list:
+        attrs = set(attribute_list)
+        if attrs == {"in_stock"}:
+            select_sql += "\nHAVING quantity > 0"
+        elif attrs == {"out_stock"}:
+            select_sql += "\nHAVING quantity = 0"
+
+    # Sorting
+    order_clause = {
+        "asc": "i.creation ASC",
+        "desc": "i.creation DESC",
+        "a-z": "i.item_name ASC",
+        "z-a": "i.item_name DESC",
+        "low-high": "price ASC",
+        "high-low": "price DESC",
+    }.get(sortBy, "i.creation ASC")
+    select_sql += f"\nORDER BY {order_clause}"
+
+    # Pagination (30 items per page)
+    per_page = 30
+    if page and page > 0:
+        offset = (page - 1) * per_page
+        select_sql += "\nLIMIT %(per_page)s OFFSET %(offset)s"
+        params["per_page"] = per_page
+        params["offset"] = offset
+
+    # Run the query
+
+    # print(select_sql, "checking sql qurry \n\n\n\n")
+    rows = frappe.db.sql(select_sql, params, as_dict=True)
+
+    # Determine total record count with the same filters
+    count_sql = """
+        SELECT COUNT(DISTINCT i.name) AS total
+        FROM `tabItem` AS i
+        LEFT JOIN `tabProduct Categoris` AS pc ON pc.parent = i.name
+    """
+    if where_clauses:
+        count_sql += "\nWHERE " + " AND ".join(where_clauses)
+    total_result = frappe.db.sql(count_sql, params, as_dict=True)
+    total_count = total_result[0]["total"] if total_result else 0
+
+    # Post-process rows: split aggregates and call get_file/get_category_list
+    products = []
+    for row in rows:
+        pid = row["id"]
+        product = {
+            "id": pid,
+            "name": row["name"],
+            "short_description": row["short_description"],
+            "description": row.get("description"),
+            "type": row["type"],
+            "sku": row["sku"],
+            "slug": row["slug"],
+            "unit": row.get("unit"),
+            "weight": row.get("weight"),
+            "case_pack": row.get("case_pack"),
+            "product_thumbnail_id": row.get("product_thumbnail_id"),
+            "status": row.get("status"),
+            "sub_category": row.get("sub_category"),
+            "carton_upc": row.get("carton_upc"),
+            "case_per_pallet": row.get("case_per_pallet"),
+            "cbm": row.get("cbm"),
+            "upc_code": row.get("upc_code"),
+            "pallet_hi": row.get("pallet_hi"),
+            "pallet_ti": row.get("pallet_ti"),
+            "package_width": row.get("package_width"),
+            "package_length": row.get("package_length"),
+            "package_height": row.get("package_height"),
+            "package_weight": row.get("package_weight"),
+            "item_width": row.get("item_width"),
+            "item_length": row.get("item_length"),
+            "item_height": row.get("item_height"),
+            "item_weight": row.get("item_weight"),
+            "coming_soon": row.get("coming_soon"),
+            "new_arrivals": row.get("new_arrivals"),
+            "price": row.get("price"),
+            "sale_price": row.get("sale_price"),
+            "discount": row.get("discount"),
+        }
+
+        qty = row.get("quantity") or 0
+        product["quantity"] = qty
+        product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
+
+        # Parse comma-separated recommended products
+        rel = row.get("related_products")
+        product["related_products"] = rel.split(",") if rel else []
+
+        # Parse gallery URLs and map to file objects
+        galleries = row.get("product_galleries")
+        gallery_urls = galleries.split(",") if galleries else []
+        product["product_galleries"] = [get_file(url) if url else None for url in gallery_urls]
+
+        # Thumbnail and meta image
+        thumb_url = row.get("product_thumbnail_id")
+        product["product_thumbnail"] = get_file(thumb_url)
+        product["product_meta_image"] = get_file(thumb_url)
+
+        # Parse categories and resolve via get_category_list
+        cat_ids = row.get("categories").split(",") if row.get("categories") else []
+        categories_list = []
+        for cid in cat_ids:
+            cid = cid.strip()
+            if cid:
+                try:
+                    cat_data = get_category_list(cid).get("data")
+                    if cat_data:
+                        categories_list.append(cat_data[0])
+                except Exception:
+                    pass
+        product["categories"] = categories_list
+
+        # Reviews placeholders
+        product["reviews"] = []
+        product["reviews_count"] = 0
+        product["rating_count"] = 0
+
+        # Brand/store info
+        brand_name = row.get("brand_id")
+        if brand_name:
+            logo_url = row.get("brand_image")
+            product["store"] = {
+                "id": brand_name,
+                "store_name": row.get("brand_name") or brand_name,
+                "slug": brand_name,
+                "description": row.get("brand_description"),
+                "store_logo": get_file(logo_url) if logo_url else None,
+            }
+        else:
+            product["store"] = None
+
+        products.append(product)
+
+    current_page = page or 1
+    return {
+        "data": products,
+        "total": total_count,
+        "current_page": current_page,
+        "per_page": per_page if page else total_count,
+    }
+
+
+
 
 @frappe.whitelist(allow_guest=True)
 def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None):
