@@ -420,25 +420,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     for g in galleries_data:
         galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
 
-    # Categories
-    categories_data = frappe.db.sql("""
-        SELECT c.parent, c.product_category as id
-        FROM `tabProduct Categoris` c
-        WHERE c.parent in %s
-    """, (item_ids,), as_dict=True)
-    categories_map = {}
-    for cat in categories_data:
-        cat_data = get_category_list(cat["id"])["data"]
-        if cat_data:
-            categories_map.setdefault(cat["parent"], []).append(cat_data[0])
-
-    # Brands
-    brand_ids = [p["brand"] for p in items if p.get("brand")]
-    brand_map = {}
-    if brand_ids:
-        brands = frappe.get_all("Brand", filters={"name": ["in", brand_ids]},
-                                fields=["name", "brand", "description", "image"])
-        brand_map = {b["name"]: b for b in brands}
 
 
     # --- Final Assembly ---
@@ -476,39 +457,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 continue
             # if both are passed, ignore filter (show all)
 
-        # related products
-        product["related_products"] = [
-            row.product_name for row in frappe.get_all(
-                "Recommended Products",
-                filters={"parent": product_id},
-                fields=["product_name"]
-            )
-        ]
 
         # images
         product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
         product["product_galleries"] = galleries_map.get(product_id, [])
         product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
-        # Categories
-        product["categories"] = categories_map.get(product_id, [])
-
-        # reviews
-        product["reviews"] = []
-        product["reviews_count"] = 0
-        product["rating_count"] = 0
-
-        # Brand / Store
-        if product["brand"]:
-            brand_data = brand_map.get(product["brand"])
-            if brand_data:
-                product["store"] = {
-                    "id": brand_data["name"],
-                    "store_name": brand_data["brand"],
-                    "slug": brand_data["name"],
-                    "description": brand_data["description"],
-                    "store_logo": get_file(brand_data["image"])
-                }
 
         products.append(product)
 
