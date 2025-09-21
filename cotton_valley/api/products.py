@@ -1147,18 +1147,7 @@ def get_all_with_category_and_stock(ids=None, category=None, subcategory=None, s
     for g in galleries_data:
         galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
 
-    # Categories
-    categories_data = frappe.db.sql("""
-        SELECT c.parent, c.product_category as id
-        FROM `tabProduct Categoris` c
-        WHERE c.parent in %s
-    """, (item_ids,), as_dict=True)
-    categories_map = {}
-    for cat in categories_data:
-        cat_data = get_category_list(cat["id"])["data"]
-        if cat_data:
-            categories_map.setdefault(cat["parent"], []).append(cat_data[0])
-
+    
     # Brands
     brand_ids = [p["brand"] for p in items if p.get("brand")]
     brand_map = {}
@@ -1195,14 +1184,6 @@ def get_all_with_category_and_stock(ids=None, category=None, subcategory=None, s
                 continue
             # if both are passed, ignore filter (show all)
 
-        # related products
-        product["related_products"] = [
-            row.product_name for row in frappe.get_all(
-                "Recommended Products",
-                filters={"parent": product_id},
-                fields=["product_name"]
-            )
-        ]
 
         # images
         product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
@@ -1210,12 +1191,6 @@ def get_all_with_category_and_stock(ids=None, category=None, subcategory=None, s
         product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
         # Categories
-        product["categories"] = categories_map.get(product_id, [])
-
-        # reviews
-        product["reviews"] = []
-        product["reviews_count"] = 0
-        product["rating_count"] = 0
 
         # Brand / Store
         if product["brand"]:
