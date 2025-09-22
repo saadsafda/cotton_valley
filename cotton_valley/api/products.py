@@ -277,6 +277,7 @@ def get_product(product_id):
         product["stock_status"] = "out_of_stock"
 
     product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
+    product["trending_products"] = frappe.get_all("Slides Items", filters={"parent": product_id}, fields=["product"], pluck='product')
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
     # galleries (attachments of Item)
