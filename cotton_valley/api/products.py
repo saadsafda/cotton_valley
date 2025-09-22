@@ -188,8 +188,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
 
         products.append(product)
-
-    return {"data": products, "total": total_count, "current_page": page or 1, "per_page": limit_page_length or total_count}
+    product_showing = page * 30 if page and page > 0 else total_count
+    from_showing = (product_showing - 30) + 1 if page and page > 0 else 1
+    return {"data": products, "total": total_count, "from": from_showing, "to": product_showing, "current_page": page or 1, "per_page": limit_page_length or total_count}
 
 
 @frappe.whitelist(allow_guest=True)
