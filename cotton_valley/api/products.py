@@ -10,9 +10,6 @@ from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
 def get_product_ids(search=None):
     filters = {"disabled": 0}  # only active products
 
-    if search:
-        filters["item_name"] = ["like", f"%{search}%"]
-
     or_filters = {}
     if search:
         or_filters = {
