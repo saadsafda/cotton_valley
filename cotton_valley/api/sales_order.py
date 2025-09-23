@@ -100,7 +100,7 @@ def create_or_update_sales_order(items, submit=False, billing_address_id=None, s
         })
     so_doc.save(ignore_permissions=True)
     if submit:
-        so_doc.submit(ignore_permissions=True)
+        so_doc.submit()
     frappe.db.commit()
     return so_doc.name
 
