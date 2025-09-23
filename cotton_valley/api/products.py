@@ -43,8 +43,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         filters["custom_sub_category"] = ["in", subcategory]
 
     # --- Search Filter ---
+    or_filters = {}
     if search:
-        filters["item_name"] = ["like", f"%{search}%"]
+        or_filters = {
+            "item_name": ["like", f"%{search}%"],
+            "name": ["like", f"%{search}%"]
+        }
 
     # --- Sort Options ---
     sort_clause = {
@@ -67,6 +71,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     items = frappe.get_all(
         "Item",
         filters=filters,
+        or_filters=or_filters,
         fields=[
             "name as id",
             "item_name as name",
