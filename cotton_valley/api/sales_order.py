@@ -40,7 +40,7 @@ def get_cart():
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items):
+def create_or_update_sales_order(items, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -50,6 +50,10 @@ def create_or_update_sales_order(items):
     ]
     """
     items = frappe.parse_json(items)
+    billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
+    shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
+    delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
+    payment_method = None if not payment_method or payment_method == "null" else payment_method
 
     if not customer:
         return "Customer not found"
@@ -77,6 +81,16 @@ def create_or_update_sales_order(items):
         so_doc.delete()
         frappe.db.commit()
         return None
+    
+    if billing_address_id:
+        so_doc.customer_address = billing_address_id
+    if shipping_address_id:
+        so_doc.shipping_address_name = shipping_address_id
+    if delivery_description:
+        so_doc.custom_shipping_method = delivery_description
+    if payment_method:
+        so_doc.custom_mode_of_payment = payment_method
+
 
     for row in items:
         so_doc.append("items", {
@@ -85,6 +99,8 @@ def create_or_update_sales_order(items):
             "rate": row["rate"],
         })
     so_doc.save(ignore_permissions=True)
+    if submit:
+        so_doc.submit(ignore_permissions=True)
     frappe.db.commit()
     return so_doc.name
 
