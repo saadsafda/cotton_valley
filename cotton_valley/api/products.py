@@ -6,6 +6,30 @@ from cotton_valley.api.website_theme_setting import get_file, get_categories_fro
 import requests
 from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
 
+@frappe.whitelist(allow_guest=True)
+def get_product_ids(search=None):
+    filters = {"disabled": 0}  # only active products
+
+    if search:
+        filters["item_name"] = ["like", f"%{search}%"]
+
+    or_filters = {}
+    if search:
+        or_filters = {
+            "item_name": ["like", f"%{search}%"],
+            "name": ["like", f"%{search}%"]
+        }
+
+    product_ids = frappe.get_all(
+        "Item",
+        filters=filters,
+        or_filters=or_filters,
+        fields=["name as id", "item_name as name"],
+        limit_page_length=1000  # limit to 1000 results for performance
+    )
+
+    return product_ids
+
 
 @frappe.whitelist(allow_guest=True)
 def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None):
