@@ -21,31 +21,20 @@ frappe.ui.form.on('Customer', {
                                 args: {
                                     customer_id: customer_id
                                 },
-                                callback: function(r) {
-                                    if (r.message && r.message.status === 200) {
+                                callback: function (r) {
+                                    if (r.message && r.message.status === "success") {
+                                        let token = r.message?.message?.access_token;
                                         frappe.msgprint(__('Login successful! Navigating to portal...'));
-                                        
+
                                         // Open new window and set cookie
-                                        let newWindow = window.open("http://156.67.27.94:3001/", "_blank");
-                                        
-                                        // Wait for the window to load then set the cookie
-                                        setTimeout(function() {
-                                            try {
-                                                // Set the UAT cookie with session ID
-                                                newWindow.document.cookie = "uat=" + r.message.access_token + "; path=/; domain=156.67.27.94";
-                                                // Optionally reload the page after setting cookie
-                                                newWindow.location.reload();
-                                            } catch (e) {
-                                                console.log("Could not set cookie due to CORS policy:", e);
-                                                frappe.msgprint(__('Opened portal. Please manually set token: ' + r.message.access_token));
-                                            }
-                                        }, 2000);
-                                        
+                                        // Open portal in new tab
+                                        window.open(`http://156.67.27.94:3001/en/auth/erplogin?token=${token}`, "_blank");
+
                                     } else {
                                         frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
                                     }
                                 },
-                                error: function(r) {
+                                error: function (r) {
                                     frappe.msgprint(__('Login error: ' + r.responseText));
                                 }
                             });
