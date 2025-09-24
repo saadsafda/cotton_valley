@@ -6,7 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "product_subcategory"
+  "product_subcategory",
+  "column_break_yqup",
+  "subcategory_name"
  ],
  "fields": [
   {
@@ -16,13 +18,24 @@
    "label": "Product Subcategory",
    "options": "Product Subcategory",
    "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yqup",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "product_subcategory.title",
+   "fieldname": "subcategory_name",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "Subcategory Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-23 04:15:41.574721",
+ "modified": "2025-09-24 07:42:37.005653",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "SubCategories",
