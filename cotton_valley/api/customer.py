@@ -3,6 +3,23 @@ from frappe.auth import LoginManager # type: ignore
 from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
 
+
+@frappe.whitelist(allow_guest=True)
+def sale_rep_as_customer(customer_id):
+    try:
+        customer = frappe.get_doc("Customer", customer_id)
+        if customer:
+            email = customer.custom_user
+            password = customer.get_password('custom_password')
+
+            print("Decoded password:", password)
+            result = customer_login(email, password)
+            return {"status": "success", "message": result}
+        else:
+            return {"status": "error", "message": "Customer not found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @frappe.whitelist(allow_guest=True)
 def customer_login(email, password):
     try:

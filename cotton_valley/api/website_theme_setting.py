@@ -78,7 +78,7 @@ def settings():
             },
             "payment_methods": [
             {
-                "name": "cod",
+                "name": "COD",
                 "status": True
             },
             {
