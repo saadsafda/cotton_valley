@@ -5,6 +5,18 @@ from cotton_valley.api.website_theme_setting import get_file
 
 
 @frappe.whitelist(allow_guest=True)
+def is_email_exists(email):
+    try:
+        customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
+        if customer_id:
+            return {"status": "success", "exists": True}
+        else:
+            return {"status": "error", "exists": False}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
 def sale_rep_as_customer(customer_id):
     try:
         customer = frappe.get_doc("Customer", customer_id)
