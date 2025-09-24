@@ -5,7 +5,8 @@ from cotton_valley.api.products import get_product
 
 
 @frappe.whitelist()
-def get_submited_orders(page=1):
+def get_submited_orders(page=None):
+    page = None if not page or page == "null" else int(page)
     # --- Pagination ---
     limit_start = (page - 1) * 10 if page and page > 0 else None
     limit_page_length = 10 if page else None
