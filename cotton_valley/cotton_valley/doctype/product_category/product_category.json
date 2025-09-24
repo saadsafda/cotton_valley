@@ -11,7 +11,7 @@
   "banner_image",
   "section_break_sdiw",
   "title",
-  "compnay",
+  "company",
   "column_break_gumt",
   "category_image",
   "section_break_fcxy",
@@ -62,10 +62,10 @@
    "fieldtype": "Section Break"
   },
   {
-   "default": "Cotton Valley",
-   "fieldname": "compnay",
+   "default": "Cotton Val",
+   "fieldname": "company",
    "fieldtype": "Link",
-   "label": "Compnay",
+   "label": "Company",
    "options": "Company",
    "reqd": 1
   }
@@ -74,7 +74,7 @@
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-24 06:00:16.277333",
+ "modified": "2025-09-24 07:10:01.562623",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",
