@@ -5,6 +5,32 @@ from cotton_valley.api.products import get_product
 
 
 @frappe.whitelist()
+def get_submited_orders(page=1):
+    # --- Pagination ---
+    limit_start = (page - 1) * 10 if page and page > 0 else None
+    limit_page_length = 10 if page else None
+    customer = get_current_customer()
+    if not customer or not customer.get("id"):
+        return {"data": [], "total": 0, "from": 0, "to": 0, "current_page": 0, "per_page": 0}
+
+    customer_id = customer["id"]
+    total_count = frappe.db.count("Sales Order", filters={"customer": customer_id, "docstatus": 1})
+
+    orders = frappe.get_all(
+        "Sales Order",
+        filters={"customer": customer_id, "docstatus": 1},
+        fields=["name as order_number", "grand_total as total", "status as payment_status", "transaction_date as created_at", "custom_mode_of_payment as payment_method"],
+        order_by="creation desc",
+        limit_start=limit_start,
+        limit_page_length=limit_page_length
+    )
+    from_showing = limit_start + 1 if limit_start is not None else 1
+    to_showing = limit_start + limit_page_length if limit_start is not None else total_count
+
+    return {"data": orders, "total": total_count, "from": from_showing, "to": to_showing, "current_page": page or 1, "per_page": limit_page_length or total_count}
+
+
+@frappe.whitelist()
 def get_cart():
     customer = get_current_customer()
     if not customer or not customer.get("id"):
@@ -66,17 +92,17 @@ def create_or_update_sales_order(items, submit=False, billing_address_id=None, s
         limit=1,
     )
 
-
+    so_doc = {}
     if so:
         so_doc = frappe.get_doc("Sales Order", so[0].name)
         so_doc.items = []  # reset items
     else:
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
-        so_doc.transaction_date = nowdate()
-        so_doc.delivery_date = nowdate()
         so_doc.order_type = "Shopping Cart"
 
+    so_doc.transaction_date = nowdate()
+    so_doc.delivery_date = nowdate()
     if items is None or len(items) == 0:
         so_doc.delete()
         frappe.db.commit()
