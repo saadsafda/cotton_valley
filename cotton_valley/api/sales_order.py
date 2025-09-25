@@ -4,7 +4,7 @@ from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_product
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_submited_orders(page=None):
     page = None if not page or page == "null" else int(page)
     # --- Pagination ---
@@ -31,13 +31,12 @@ def get_submited_orders(page=None):
     return {"data": orders, "total": total_count, "from": from_showing, "to": to_showing, "current_page": page or 1, "per_page": limit_page_length or total_count}
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_cart():
     customer = get_current_customer()
     if not customer or not customer.get("id"):
         return {"items": [], "total": 0.0, "count": 0}
 
-    print(customer)
     customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
@@ -66,7 +65,7 @@ def get_cart():
     }
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def create_or_update_sales_order(items, company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
     customer = get_current_customer()
     """

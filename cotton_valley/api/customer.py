@@ -1,7 +1,9 @@
-import frappe # type: ignore
+import frappe, secrets # type: ignore
 from frappe.auth import LoginManager # type: ignore
 from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
+from cotton_valley.api.common import get_customer_from_token
+from frappe.utils.data import add_days, now_datetime
 
 
 @frappe.whitelist(allow_guest=True)
@@ -21,7 +23,7 @@ def sale_rep_as_customer(customer_id):
     try:
         customer = frappe.get_doc("Customer", customer_id)
         if customer:
-            email = customer.custom_user
+            email = customer.custom_email_address
             password = customer.get_password('custom_password')
 
             result = customer_login(email, password)
@@ -30,39 +32,42 @@ def sale_rep_as_customer(customer_id):
             return {"status": "error", "message": "Customer not found"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+    
 
 @frappe.whitelist(allow_guest=True)
 def customer_login(email, password):
     try:
-        # print("user value", email)
+        # Find customer by custom email
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
         if not customer_id:
-            frappe.local.response["http_status_code"] = 404
             return {"status": "error", "message": "Customer not found"}
         
-        if not frappe.db.exists("User", {"name": email}):
-            return {"status": "error", "message": "User not found"}
-        user = frappe.get_doc("User", email)
-
-        login_manager = LoginManager()
-        login_manager.authenticate(user=email, pwd=password)
-        login_manager.post_login()
-
-        # Get User
-
         customer = frappe.get_doc("Customer", customer_id)
 
-        # Prepare token (Bearer)
-        access_token = frappe.session.sid  
+        # Check password
+        if customer.get_password("custom_password") != password:
+            return {"status": "error", "message": "Invalid email or password"}
+
+        # Generate token
+        token = secrets.token_urlsafe(32)
+        valid_till = add_days(now_datetime(), 1)  # 1 day validity
+
+        # Store in Customer Token
+        frappe.get_doc({
+            "doctype": "Customer Token",
+            "customer": customer.name,
+            "token": token,
+            "valid_till": valid_till
+        }).insert(ignore_permissions=True)
 
         return {
             "status": 200,
             "message": "Login successful",
-            "access_token": access_token,   # Bearer token
+            "access_token": token,   # Bearer token
             "token_type": "token",
             "user": {
-                "email": user.email,
-                "full_name": user.full_name,
+                "email": customer.custom_email_address,
+                "full_name": customer.full_name,
                 "customer_id": customer.name
             },
             "data": customer.as_dict()
@@ -75,11 +80,64 @@ def customer_login(email, password):
         return {"status": "error", "message": str(e)}
 
 
+# @frappe.whitelist(allow_guest=True)
+# def customer_login(email, password):
+#     try:
+#         # print("user value", email)
+#         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
+#         if not customer_id:
+#             frappe.local.response["http_status_code"] = 404
+#             return {"status": "error", "message": "Customer not found"}
+        
+#         if not frappe.db.exists("User", {"name": email}):
+#             return {"status": "error", "message": "User not found"}
+#         user = frappe.get_doc("User", email)
+
+#         login_manager = LoginManager()
+#         login_manager.authenticate(user=email, pwd=password)
+#         login_manager.post_login()
+
+#         # Get User
+
+#         customer = frappe.get_doc("Customer", customer_id)
+
+#         # Prepare token (Bearer)
+#         access_token = frappe.session.sid  
+
+#         return {
+#             "status": 200,
+#             "message": "Login successful",
+#             "access_token": access_token,   # Bearer token
+#             "token_type": "token",
+#             "user": {
+#                 "email": user.email,
+#                 "full_name": user.full_name,
+#                 "customer_id": customer.name
+#             },
+#             "data": customer.as_dict()
+#         }
+#     except AuthenticationError:
+#         frappe.local.response["http_status_code"] = 404
+#         return {"status": "error", "message": "Invalid email or password"}
+#     except Exception as e:
+#         frappe.local.response["http_status_code"] = 401
+#         return {"status": "error", "message": str(e)}
+
+
 @frappe.whitelist(allow_guest=True)
 def customer_logout():
     try:
-        frappe.local.login_manager.logout()
-        frappe.db.commit() # Ensure session changes are saved
+        auth_header = frappe.get_request_header("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            frappe.throw("Missing or invalid token", frappe.PermissionError)
+
+        token = auth_header.split(" ")[1]
+
+        token_doc = frappe.db.get_value("Customer Token", {"token": token}, "name")
+
+        customer_token = frappe.get_doc("Customer Token", token_doc)
+        customer_token.active = 0
+        customer_token.save()
 
         return {"status": 200, "message": "Logout successful"}
 
@@ -90,12 +148,7 @@ def customer_logout():
 @frappe.whitelist(allow_guest=True)
 def get_current_customer():
     try:
-        if frappe.session.user == "Guest":
-            frappe.local.response["http_status_code"] = 401
-            return {"status": "error", "message": "Unauthorized. Please log in."}
-
-        email = frappe.session.user
-        customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
+        customer_id = get_customer_from_token()
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
 
