@@ -5,6 +5,8 @@ from frappe import _ # type: ignore
 from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 import requests
 from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
+from cotton_valley.api.common import check_customer_token
+
 
 @frappe.whitelist(allow_guest=True)
 def get_product_ids(search=None, company="Cotton Valley"):
@@ -137,9 +139,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         limit_page_length=limit_page_length
     )
 
-    print(items, filters, sort_clause, limit_start, limit_page_length, "Search Term \n\n\n\n\n\n")
-
-
     if not items:
         return {"data": [], "total": total_count, "current_page": page or 1, "per_page": 30}
 
@@ -148,7 +147,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     # --- Batch Queries ---
     # Prices
     price_map = {}
-    if frappe.session.user != "Guest":
+    if check_customer_token():
         price_data = frappe.db.sql("""
             SELECT item_code, price_list_rate
             FROM `tabItem Price`
@@ -282,7 +281,7 @@ def get_product(product_id):
 
     # Example: handle prices (if you have Price List / Item Price doctype)
 
-    if frappe.session.user != "Guest":
+    if check_customer_token():
         price_data = frappe.db.sql("""
             SELECT price_list_rate
             FROM `tabItem Price`
