@@ -67,7 +67,7 @@ def get_cart():
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
+def create_or_update_sales_order(items, company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -77,6 +77,7 @@ def create_or_update_sales_order(items, submit=False, billing_address_id=None, s
     ]
     """
     items = frappe.parse_json(items)
+    company = "Cotton Valley" if not company or company == "null" else company
     billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
@@ -88,7 +89,7 @@ def create_or_update_sales_order(items, submit=False, billing_address_id=None, s
     customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0},
+        filters={"customer": customer_id, "docstatus": 0, "company": company},
         fields=["name"],
         limit=1,
     )
@@ -104,6 +105,7 @@ def create_or_update_sales_order(items, submit=False, billing_address_id=None, s
 
     so_doc.transaction_date = nowdate()
     so_doc.delivery_date = nowdate()
+    so_doc.company = company
     if items is None or len(items) == 0:
         so_doc.delete()
         frappe.db.commit()

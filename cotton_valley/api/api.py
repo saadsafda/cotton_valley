@@ -2,11 +2,6 @@ import frappe # type: ignore
 from frappe import _ # type: ignore
 
 
-@frappe.whitelist()
-def get_items():
-    items = frappe.get_all("Item", fields=["name", "item_name", "item_group"])
-    return items
-
 @frappe.whitelist(allow_guest=True)
 def get_home_banners():
     return frappe.get_doc("Homepage Banner Setting")
@@ -15,39 +10,6 @@ def get_home_banners():
 @frappe.whitelist(allow_guest=True)
 def get_country_list():
     return frappe.get_all("Country", fields=["name as id", "country_name as name"])
-
-
-@frappe.whitelist(allow_guest=True)
-def get_product_categories():
-    return frappe.get_all("Product Category", fields=["name", "title", "category_image"])
-
-
-@frappe.whitelist(allow_guest=True)
-def get_product_categories_with_count():
-    # get all categories
-    categories = frappe.get_all(
-        "Product Category",
-        fields=["name", "title", "category_image"]
-    )
-
-    # get counts of items from child table
-    item_counts = frappe.db.sql("""
-        SELECT c.product_category as category, COUNT(DISTINCT i.name) as total
-        FROM `tabItem` i
-        INNER JOIN `tabProduct Categoris` c
-            ON c.parent = i.name
-        WHERE c.product_category IS NOT NULL
-        GROUP BY c.product_category
-    """, as_dict=True)
-
-    # convert to dict for lookup
-    counts_map = {row["category"]: row["total"] for row in item_counts}
-
-    # attach count to categories
-    for cat in categories:
-        cat["item_count"] = counts_map.get(cat["name"], 0)
-
-    return categories
 
 @frappe.whitelist(allow_guest=True)
 def register_customer(data):

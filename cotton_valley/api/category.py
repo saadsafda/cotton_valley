@@ -3,14 +3,14 @@ from cotton_valley.api.website_theme_setting import get_file
 
 
 @frappe.whitelist(allow_guest=True)
-def get_categories():
-    categories = frappe.get_all("Category", fields=["name", "category_name"], order_by="category_name")
-    return categories
-
-@frappe.whitelist(allow_guest=True)
-def get_category_list(category_id=None):
+def get_category_list(category_id=None, company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
     # apply filter only if category_id is passed
     filters = {}
+
+    if company:
+        filters["company"] = company
+
     if category_id:
         filters["name"] = category_id
 
@@ -32,8 +32,9 @@ def get_category_list(category_id=None):
         INNER JOIN `tabProduct Categoris` c
             ON c.parent = i.name
         WHERE c.product_category IS NOT NULL
+            AND i.company = %s
         GROUP BY c.product_category
-    """, as_dict=True)
+    """, company, as_dict=True)
     counts_map = {row["category"]: row["total"] for row in item_counts}
 
     # fetch child subcategories linked inside Product Category
@@ -45,7 +46,8 @@ def get_category_list(category_id=None):
         FROM `tabSubCategories` sc
         INNER JOIN `tabProduct Subcategory` sub
             ON sub.name = sc.product_subcategory
-    """, as_dict=True)
+        WHERE sub.company = %s
+    """, company, as_dict=True)
 
     # group subcategories under their parent category
     sub_map = {}
