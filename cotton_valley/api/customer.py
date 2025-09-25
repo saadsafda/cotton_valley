@@ -67,7 +67,7 @@ def customer_login(email, password):
             "token_type": "token",
             "user": {
                 "email": customer.custom_email_address,
-                "full_name": customer.customer_name + (" " + customer.customer_last_name if customer.customer_last_name else ""),
+                "full_name": customer.customer_name + (" " + customer.custom_last_name if customer.custom_last_name else ""),
                 "customer_id": customer.name
             },
             "data": customer.as_dict()
