@@ -24,7 +24,6 @@ def sale_rep_as_customer(customer_id):
             email = customer.custom_user
             password = customer.get_password('custom_password')
 
-            print("Decoded password:", password)
             result = customer_login(email, password)
             return {"status": "success", "message": result}
         else:
