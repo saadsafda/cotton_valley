@@ -183,7 +183,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         product_id = product["id"]
 
         # Price
-        if frappe.session.user != "Guest":
+        if check_customer_token():
             product["price"] = price_map.get(product_id, 0)
             product["sale_price"] = product["price"]
             product["discount"] = 0
