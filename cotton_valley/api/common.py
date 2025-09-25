@@ -2,10 +2,9 @@ import frappe
 from frappe.utils.data import now_datetime
 
 def get_customer_from_token():
-    auth_header = frappe.get_request_header("Authorization")
+    auth_header = frappe.get_request_header("Customer-Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         frappe.throw("Missing or invalid token", frappe.PermissionError)
-
     token = auth_header.split(" ")[1]
 
     token_doc = frappe.db.get_value(
@@ -16,6 +15,7 @@ def get_customer_from_token():
     )
 
     if not token_doc:
+        print("token_doc", "token_doc")
         frappe.throw("Invalid token", frappe.PermissionError)
 
     if now_datetime() > token_doc.valid_till:
@@ -26,7 +26,7 @@ def get_customer_from_token():
 
 def check_customer_token():
     try:
-        auth_header = frappe.get_request_header("Authorization")
+        auth_header = frappe.get_request_header("Customer-Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             return False
 

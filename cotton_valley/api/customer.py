@@ -57,7 +57,8 @@ def customer_login(email, password):
             "doctype": "Customer Token",
             "customer": customer.name,
             "token": token,
-            "valid_till": valid_till
+            "valid_till": valid_till,
+            "active": 1
         }).insert(ignore_permissions=True)
 
         return {
@@ -149,6 +150,7 @@ def customer_logout():
 def get_current_customer():
     try:
         customer_id = get_customer_from_token()
+        print(customer_id, "customer_id")
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
 
