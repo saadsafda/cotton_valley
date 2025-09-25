@@ -81,54 +81,10 @@ def customer_login(email, password):
         return {"status": "error", "message": str(e)}
 
 
-# @frappe.whitelist(allow_guest=True)
-# def customer_login(email, password):
-#     try:
-#         # print("user value", email)
-#         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
-#         if not customer_id:
-#             frappe.local.response["http_status_code"] = 404
-#             return {"status": "error", "message": "Customer not found"}
-        
-#         if not frappe.db.exists("User", {"name": email}):
-#             return {"status": "error", "message": "User not found"}
-#         user = frappe.get_doc("User", email)
-
-#         login_manager = LoginManager()
-#         login_manager.authenticate(user=email, pwd=password)
-#         login_manager.post_login()
-
-#         # Get User
-
-#         customer = frappe.get_doc("Customer", customer_id)
-
-#         # Prepare token (Bearer)
-#         access_token = frappe.session.sid  
-
-#         return {
-#             "status": 200,
-#             "message": "Login successful",
-#             "access_token": access_token,   # Bearer token
-#             "token_type": "token",
-#             "user": {
-#                 "email": user.email,
-#                 "full_name": user.full_name,
-#                 "customer_id": customer.name
-#             },
-#             "data": customer.as_dict()
-#         }
-#     except AuthenticationError:
-#         frappe.local.response["http_status_code"] = 404
-#         return {"status": "error", "message": "Invalid email or password"}
-#     except Exception as e:
-#         frappe.local.response["http_status_code"] = 401
-#         return {"status": "error", "message": str(e)}
-
-
 @frappe.whitelist(allow_guest=True)
 def customer_logout():
     try:
-        auth_header = frappe.get_request_header("Authorization")
+        auth_header = frappe.get_request_header("Customer-Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
             frappe.throw("Missing or invalid token", frappe.PermissionError)
 

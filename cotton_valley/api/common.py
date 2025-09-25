@@ -15,7 +15,6 @@ def get_customer_from_token():
     )
 
     if not token_doc:
-        print("token_doc", "token_doc")
         frappe.throw("Invalid token", frappe.PermissionError)
 
     if now_datetime() > token_doc.valid_till:
