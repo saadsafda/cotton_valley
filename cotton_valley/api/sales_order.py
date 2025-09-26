@@ -2,7 +2,7 @@ import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_product
-
+from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
 def get_submited_orders(page=None):
@@ -53,7 +53,7 @@ def get_order_details(order_number):
         items.append({
             "id": item.name,
             "name": item.item_name,
-            "product_thumbnail": frappe.utils.get_url(item.image) if item.image else None,
+            "product_thumbnail": get_file(item.image),
             "product_id": item.item_code,
             "quantity": item.qty,
             "sub_total": item.amount,
