@@ -50,13 +50,14 @@ def get_order_details(order_number):
     so_doc = frappe.get_doc("Sales Order", so[0].name)
     items = []
     for item in so_doc.items:
-        product = get_product(item.item_code)
         items.append({
             "id": item.name,
+            "name": item.item_name,
+            "product_thumbnail": frappe.utils.get_url(item.image) if item.image else None,
             "product_id": item.item_code,
             "quantity": item.qty,
             "sub_total": item.amount,
-            "product": product,
+            "price": item.rate,
         })
     return {
         "order_number": so_doc.name,
