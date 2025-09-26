@@ -91,12 +91,15 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     }.get(sortBy, "creation asc")
 
     # --- Total Count ---
-    # total_count = frappe.db.count("Item", filters=filters)
-    total_count = frappe.db.sql("""
-        SELECT COUNT(*) 
-        FROM `tabItem`
-        WHERE item_name LIKE %s OR item_code LIKE %s
-    """, (f"%{search}%", f"%{search}%"))[0][0]
+    total_count = 0
+    if search:
+        total_count = frappe.db.sql("""
+            SELECT COUNT(*) 
+            FROM `tabItem`
+            WHERE item_name LIKE %s OR item_code LIKE %s
+        """, (f"%{search}%", f"%{search}%"))[0][0]
+    else:
+        total_count = frappe.db.count("Item", filters=filters)
 
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None

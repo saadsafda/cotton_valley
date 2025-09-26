@@ -32,6 +32,46 @@ def get_submited_orders(page=None):
 
 
 @frappe.whitelist(allow_guest=True)
+def get_order_details(order_number):
+    customer = get_current_customer()
+    if not customer or not customer.get("id"):
+        return None
+
+    customer_id = customer["id"]
+    so = frappe.get_all(
+        "Sales Order",
+        filters={"name": order_number, "customer": customer_id, "docstatus": 1},
+        fields=["name"],
+        limit=1,
+    )
+    if not so:
+        return None
+
+    so_doc = frappe.get_doc("Sales Order", so[0].name)
+    items = []
+    for item in so_doc.items:
+        product = get_product(item.item_code)
+        items.append({
+            "id": item.name,
+            "product_id": item.item_code,
+            "quantity": item.qty,
+            "sub_total": item.amount,
+            "product": product,
+        })
+    return {
+        "order_number": so_doc.name,
+        "total": so_doc.grand_total,
+        "payment_status": so_doc.status,
+        "created_at": so_doc.transaction_date,
+        "payment_method": so_doc.custom_mode_of_payment,
+        "billing_address_id": so_doc.customer_address,
+        "shipping_address_id": so_doc.shipping_address_name,
+        "delivery_description": so_doc.custom_shipping_method,
+        "products": items,
+    }
+
+
+@frappe.whitelist(allow_guest=True)
 def get_cart():
     customer = get_current_customer()
     if not customer or not customer.get("id"):
