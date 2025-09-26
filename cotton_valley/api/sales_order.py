@@ -103,6 +103,7 @@ def get_cart():
     return {
         "items": items,
         "total": so[0].grand_total,
+        "discount": so[0].discount_amount,
         "count": len(items),
     }
 
