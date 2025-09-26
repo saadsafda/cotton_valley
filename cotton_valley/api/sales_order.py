@@ -61,6 +61,7 @@ def get_order_details(order_number):
         })
     return {
         "order_number": so_doc.name,
+        "amount": so_doc.total,
         "total": so_doc.grand_total,
         "payment_status": so_doc.status,
         "created_at": so_doc.transaction_date,
@@ -173,4 +174,49 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
     frappe.db.commit()
     return so_doc.name
 
-    
+
+
+@frappe.whitelist(allow_guest=True)
+def apply_coupon(code, company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
+    if not code or code == "null":
+        return {"success": False, "message": "Coupon code is required."}
+
+    customer = get_current_customer()
+    if not customer or not customer.get("id"):
+        return {"success": False, "message": "Customer not found."}
+
+    customer_id = customer["id"]
+    so = frappe.get_all(
+        "Sales Order",
+        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        fields=["name"],
+        limit=1,
+    )
+    if not so:
+        return {"success": False, "message": "Sales Order not found."}
+
+    so_doc = frappe.get_doc("Sales Order", so[0].name)
+    coupon = frappe.get_all(
+        "Coupon Code",
+        filters={"coupon_code": code, "valid_from": ("<=", nowdate()), "valid_upto": (">=", nowdate())},
+        fields=["name", "max_order_amount", "min_order_amount"],
+        limit=1,
+    )
+    if not coupon:
+        return {"success": False, "message": "Invalid or expired coupon code."}
+
+    coupon_doc = frappe.get_doc("Coupon Code", coupon[0].name)
+    if so_doc.grand_total < coupon_doc.min_order_amount:
+        return {"success": False, "message": f"Minimum purchase amount for this coupon is {coupon_doc.min_order_amount}."}
+
+    if coupon_doc.max_order_amount and so_doc.grand_total > coupon_doc.max_order_amount:
+        return {"success": False, "message": f"Maximum purchase amount for this coupon is {coupon_doc.max_order_amount}."}
+
+    so_doc.coupon_code = coupon_doc.name
+    so_doc.delivery_date = nowdate()
+    so_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {"success": True, "message": f"Coupon applied successfully.", "discount_amount": so_doc.discount_amount, "new_total": so_doc.grand_total}
+
