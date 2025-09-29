@@ -52,8 +52,9 @@ def get_order_details(order_number):
     items = []
     for item in so_doc.items:
         items.append({
-            "id": item.name,
+            "id": item.item_code,
             "name": item.item_name,
+            "sku": item.item_code,
             "product_thumbnail": get_file(item.image),
             "product_id": item.item_code,
             "quantity": item.qty,
@@ -71,6 +72,10 @@ def get_order_details(order_number):
         "shipping_address_id": so_doc.shipping_address_name,
         "delivery_description": so_doc.custom_shipping_method,
         "products": items,
+        "order_status": {
+            "status": so_doc.status,
+            "sequence": 2 if so_doc.status == "To Deliver and Bill" else 4 if so_doc.status == "Completed" else 3 if so_doc.status == "Cancelled" else 1,
+        }
     }
 
 
@@ -224,5 +229,5 @@ def apply_coupon(code, company="Cotton Valley"):
     so_doc.save(ignore_permissions=True)
     frappe.db.commit()
 
-    return {"success": True, "message": f"Coupon applied successfully.", "discount_amount": so_doc.discount_amount, "new_total": so_doc.grand_total}
+    return {"success": True, "message": f"Coupon applied successfully. You saved {so_doc.discount_amount}!", "discount_amount": so_doc.discount_amount, "new_total": so_doc.grand_total}
 
