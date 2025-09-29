@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-29 03:21:31.612708",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "page_banner_view",
+  "page_banner",
+  "section_break_vjpz",
+  "first_image",
+  "first_image_view",
+  "column_break_dlbj",
+  "sec_image",
+  "sec_image_view",
+  "column_break_awlw",
+  "title",
+  "description",
+  "section_break_pwzj",
+  "client_title",
+  "client_sub_title",
+  "clients"
+ ],
+ "fields": [
+  {
+   "fieldname": "page_banner_view",
+   "fieldtype": "Image",
+   "label": "page_banner_view",
+   "options": "page_banner"
+  },
+  {
+   "fieldname": "page_banner",
+   "fieldtype": "Attach Image",
+   "label": "Page Banner"
+  },
+  {
+   "fieldname": "section_break_vjpz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "first_image",
+   "fieldtype": "Attach Image",
+   "label": "First Image"
+  },
+  {
+   "fieldname": "first_image_view",
+   "fieldtype": "Image",
+   "label": "First Image View",
+   "options": "first_image"
+  },
+  {
+   "fieldname": "column_break_dlbj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sec_image",
+   "fieldtype": "Attach Image",
+   "label": "Sec Image"
+  },
+  {
+   "fieldname": "sec_image_view",
+   "fieldtype": "Image",
+   "label": "Sec Image View",
+   "options": "sec_image"
+  },
+  {
+   "fieldname": "column_break_awlw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "section_break_pwzj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "client_title",
+   "fieldtype": "Data",
+   "label": "Client Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client_sub_title",
+   "fieldtype": "Data",
+   "label": "Client Sub Title"
+  },
+  {
+   "fieldname": "clients",
+   "fieldtype": "Table",
+   "label": "Clients",
+   "options": "About Features"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-09-29 03:21:31.612708",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "UDC About Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,12 +1,6 @@
 import frappe # type: ignore
 from frappe import _ # type: ignore
 
-
-@frappe.whitelist(allow_guest=True)
-def get_home_banners():
-    return frappe.get_doc("Homepage Banner Setting")
-
-
 @frappe.whitelist(allow_guest=True)
 def get_country_list():
     return frappe.get_all("Country", fields=["name as id", "country_name as name"])

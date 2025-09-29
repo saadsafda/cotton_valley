@@ -2,8 +2,12 @@ import frappe # type: ignore
 
 
 @frappe.whitelist(allow_guest=True)
-def settings():
-    settings = frappe.get_single("Website Theme Settings")
+def settings(company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
+    doctype = "Website Theme Settings"
+    if company != "Cotton Valley":
+        doctype = f"UDC {doctype}"
+    settings = frappe.get_single(doctype)
     data = {
         "values": {
             "general": {
@@ -103,8 +107,12 @@ def settings():
     return data
 
 @frappe.whitelist(allow_guest=True)
-def get_website_theme_settings():
-    settings = frappe.get_single("Website Theme Settings")
+def get_website_theme_settings(company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
+    doctype = "Website Theme Settings"
+    if company != "Cotton Valley":
+        doctype = f"UDC {doctype}"
+    settings = frappe.get_single(doctype)
     all_category_ids = frappe.get_all("Product Category", pluck="name")
     
 

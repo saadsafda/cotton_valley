@@ -2,21 +2,25 @@ import frappe
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
-def get_contact_page():
+def get_contact_page(company="Cotton Valley"):
     try:
-        about_page = frappe.get_single("Contact Page")
+        doctype = "Contact Page"
+        company = "Cotton Valley" if not company or company == "null" else company
+        if company != "Cotton Valley":
+            doctype = f"UDC Contact Page"
+        contact = frappe.get_single(doctype)
         
         return {
             "status": "success",
             "data": {
-                "title": about_page.title,
-                "banner_image": get_file(about_page.page_banner),
-                "phone": about_page.phone,
-                "email": about_page.email,
-                "location_title": about_page.location_title,
-                "location_address": about_page.location_address,
-                "office_title": about_page.office_title,
-                "office_address": about_page.office_address,
+                "title": contact.title,
+                "banner_image": get_file(contact.page_banner),
+                "phone": contact.phone,
+                "email": contact.email,
+                "location_title": contact.location_title,
+                "location_address": contact.location_address,
+                "office_title": contact.office_title,
+                "office_address": contact.office_address,
             }
         }
     except Exception as e:

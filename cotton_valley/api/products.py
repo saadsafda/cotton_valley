@@ -454,8 +454,6 @@ def get_product_prices():
         response = requests.get(url, auth=(SAP_USER, SAP_PASSWORD))
         data = response.json()
 
-        print(data, "Data from API \n\n\n\n\n")  # Debugging line
-
         if not data.get("items"):
             return "No prices found"
 

@@ -1,0 +1,407 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-29 03:20:36.258231",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "show_categories",
+  "column_break_cnch",
+  "show_products",
+  "column_break_nklv",
+  "show_newsletter",
+  "column_break_tnut",
+  "show_promotion_baners",
+  "section_break_uoqb",
+  "home_banners",
+  "section_break_cnqi",
+  "right_top",
+  "right_top_banner_link_type",
+  "right_top_banner_link",
+  "column_break_fjdy",
+  "right_bottom",
+  "right_bottom_banner_link_type",
+  "right_bottom_banner_link",
+  "categories_section",
+  "category_title",
+  "homepage_categories",
+  "section_break_tjbc",
+  "title",
+  "description",
+  "product_row_1",
+  "product_row_2",
+  "section_break_vbmh",
+  "promotion_banner",
+  "link_type",
+  "product",
+  "category",
+  "external_url",
+  "column_break_yczr",
+  "promotion_subbanner",
+  "sublink_type",
+  "sub_product",
+  "subpromotion_category",
+  "subexternal_url",
+  "section_break_onbf",
+  "first_title",
+  "slide_1_ids",
+  "column_break_rfdd",
+  "sec_title",
+  "slide_2_ids",
+  "section_break_knfe",
+  "column_break_ybtv",
+  "third_title",
+  "slide_3_ids",
+  "column_break_qwsw",
+  "forth_title",
+  "slide_4_ids",
+  "news_letter_section_section",
+  "news_title",
+  "sub_title",
+  "column_break_frlg",
+  "newsletter_background"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "show_categories",
+   "fieldtype": "Check",
+   "label": "Show Categories"
+  },
+  {
+   "fieldname": "column_break_cnch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_products",
+   "fieldtype": "Check",
+   "label": "Show Products"
+  },
+  {
+   "fieldname": "column_break_nklv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_newsletter",
+   "fieldtype": "Check",
+   "label": "Show Newsletter"
+  },
+  {
+   "fieldname": "column_break_tnut",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_promotion_baners",
+   "fieldtype": "Check",
+   "label": "Show Promotion Baners"
+  },
+  {
+   "fieldname": "section_break_uoqb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "home_banners",
+   "fieldtype": "Table",
+   "label": "Home Banners",
+   "options": "Home Banners"
+  },
+  {
+   "fieldname": "section_break_cnqi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "right_top",
+   "fieldtype": "Attach Image",
+   "label": "Right Top"
+  },
+  {
+   "fieldname": "right_top_banner_link_type",
+   "fieldtype": "Link",
+   "label": "Right Top Banner Link Type",
+   "link_filters": "[[\"DocType\",\"name\",\"in\",[\"Item\",\"Product Category\"]]]",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "right_top_banner_link",
+   "fieldtype": "Dynamic Link",
+   "label": "Right Top Banner Link",
+   "options": "right_top_banner_link_type"
+  },
+  {
+   "fieldname": "column_break_fjdy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "right_bottom",
+   "fieldtype": "Attach Image",
+   "label": "Right Bottom"
+  },
+  {
+   "fieldname": "right_bottom_banner_link_type",
+   "fieldtype": "Link",
+   "label": "Right Bottom Banner Link Type",
+   "link_filters": "[[\"DocType\",\"name\",\"in\",[\"Item\",\"Product Category\"]]]",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "right_bottom_banner_link",
+   "fieldtype": "Dynamic Link",
+   "label": "Right Bottom Banner Link",
+   "options": "right_bottom_banner_link_type"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_categories",
+   "fieldname": "categories_section",
+   "fieldtype": "Section Break",
+   "label": "Categories"
+  },
+  {
+   "fieldname": "category_title",
+   "fieldtype": "Data",
+   "label": "Category Title",
+   "mandatory_depends_on": "eval:doc.show_categories"
+  },
+  {
+   "description": "at least select 6 categories *",
+   "fieldname": "homepage_categories",
+   "fieldtype": "Table",
+   "label": "HomePage Categories",
+   "mandatory_depends_on": "eval:doc.show_categories",
+   "options": "HomePage Categories"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_products",
+   "fieldname": "section_break_tjbc",
+   "fieldtype": "Section Break",
+   "label": "Product Heading"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "mandatory_depends_on": "eval:doc.show_products"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "description": "Must be select 6 products",
+   "fieldname": "product_row_1",
+   "fieldtype": "Table",
+   "label": "Product Row 1",
+   "mandatory_depends_on": "eval:doc.show_products",
+   "options": "HomePage Products"
+  },
+  {
+   "fieldname": "product_row_2",
+   "fieldtype": "Table",
+   "label": "Product Row 2",
+   "options": "HomePage Products"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_promotion_baners",
+   "fieldname": "section_break_vbmh",
+   "fieldtype": "Section Break",
+   "label": "Promotion Banner Section"
+  },
+  {
+   "fieldname": "promotion_banner",
+   "fieldtype": "Attach Image",
+   "label": "Promotion Banner"
+  },
+  {
+   "fieldname": "link_type",
+   "fieldtype": "Select",
+   "label": "Link Type",
+   "options": "\nExternal Url\nCategory\nProduct"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"Product\"",
+   "fieldname": "product",
+   "fieldtype": "Link",
+   "label": "Product",
+   "mandatory_depends_on": "eval:doc.link_type == \"Product\"",
+   "options": "Item"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"Category\"",
+   "fieldname": "category",
+   "fieldtype": "Link",
+   "label": "Category",
+   "mandatory_depends_on": "eval:doc.link_type == \"Category\"",
+   "options": "Product Category"
+  },
+  {
+   "depends_on": "eval:doc.link_type == \"External Url\"",
+   "fieldname": "external_url",
+   "fieldtype": "Data",
+   "label": "External Url",
+   "mandatory_depends_on": "eval:doc.link_type == \"External Url\""
+  },
+  {
+   "fieldname": "column_break_yczr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "promotion_subbanner",
+   "fieldtype": "Attach Image",
+   "label": "Promotion SubBanner"
+  },
+  {
+   "fieldname": "sublink_type",
+   "fieldtype": "Select",
+   "label": "SubLink Type",
+   "options": "\nExternal Url\nCategory\nProduct"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"Product\"",
+   "fieldname": "sub_product",
+   "fieldtype": "Link",
+   "label": "Sub Product",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"Product\"",
+   "options": "Item"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"Category\"",
+   "fieldname": "subpromotion_category",
+   "fieldtype": "Link",
+   "label": "SubPromotion Category",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"Category\"",
+   "options": "Product Category"
+  },
+  {
+   "depends_on": "eval:doc.sublink_type == \"External Url\"",
+   "fieldname": "subexternal_url",
+   "fieldtype": "Data",
+   "label": "SubExternal Url",
+   "mandatory_depends_on": "eval:doc.sublink_type == \"External Url\""
+  },
+  {
+   "fieldname": "section_break_onbf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "first_title",
+   "fieldtype": "Data",
+   "label": "First Title"
+  },
+  {
+   "fieldname": "slide_1_ids",
+   "fieldtype": "Table",
+   "label": "Slide 1 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "column_break_rfdd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sec_title",
+   "fieldtype": "Data",
+   "label": "Sec Title"
+  },
+  {
+   "fieldname": "slide_2_ids",
+   "fieldtype": "Table",
+   "label": "Slide 2 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "section_break_knfe",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ybtv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "third_title",
+   "fieldtype": "Data",
+   "label": "Third Title"
+  },
+  {
+   "fieldname": "slide_3_ids",
+   "fieldtype": "Table",
+   "label": "Slide 3 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "fieldname": "column_break_qwsw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "forth_title",
+   "fieldtype": "Data",
+   "label": "Forth Title"
+  },
+  {
+   "fieldname": "slide_4_ids",
+   "fieldtype": "Table",
+   "label": "Slide 4 Ids",
+   "options": "Slides Items"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_newsletter",
+   "fieldname": "news_letter_section_section",
+   "fieldtype": "Section Break",
+   "label": "News Letter Section"
+  },
+  {
+   "fieldname": "news_title",
+   "fieldtype": "Data",
+   "label": "News Title",
+   "mandatory_depends_on": "eval:doc.show_newsletter"
+  },
+  {
+   "fieldname": "sub_title",
+   "fieldtype": "Data",
+   "label": "Sub Title",
+   "mandatory_depends_on": "eval:doc.show_newsletter"
+  },
+  {
+   "fieldname": "column_break_frlg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "newsletter_background",
+   "fieldtype": "Attach Image",
+   "label": "Newsletter Background"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-09-29 03:20:36.258231",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "UDC Home Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

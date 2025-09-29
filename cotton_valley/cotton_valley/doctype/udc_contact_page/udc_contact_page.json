@@ -1,0 +1,103 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-09-29 03:23:16.418793",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "page_banner_view",
+  "page_banner",
+  "title",
+  "section_break_bktr",
+  "phone",
+  "location_title",
+  "location_address",
+  "column_break_uxda",
+  "email",
+  "office_title",
+  "office_address"
+ ],
+ "fields": [
+  {
+   "fieldname": "page_banner_view",
+   "fieldtype": "Image",
+   "label": "page_banner_view",
+   "options": "page_banner"
+  },
+  {
+   "fieldname": "page_banner",
+   "fieldtype": "Attach Image",
+   "label": "Page Banner"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_bktr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "location_title",
+   "fieldtype": "Data",
+   "label": "Location Title"
+  },
+  {
+   "fieldname": "location_address",
+   "fieldtype": "Data",
+   "label": "Location Address"
+  },
+  {
+   "fieldname": "column_break_uxda",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "office_title",
+   "fieldtype": "Data",
+   "label": "Office Title"
+  },
+  {
+   "fieldname": "office_address",
+   "fieldtype": "Data",
+   "label": "Office Address"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-09-29 03:23:16.418793",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "UDC Contact Page",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

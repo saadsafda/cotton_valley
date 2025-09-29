@@ -5,7 +5,8 @@ from cotton_valley.api.products import get_product
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
-def get_submited_orders(page=None):
+def get_submited_orders(company="Cotton Valley", page=None):
+    company = "Cotton Valley" if not company or company == "null" else company
     page = None if not page or page == "null" else int(page)
     # --- Pagination ---
     limit_start = (page - 1) * 10 if page and page > 0 else None
@@ -15,11 +16,11 @@ def get_submited_orders(page=None):
         return {"data": [], "total": 0, "from": 0, "to": 0, "current_page": 0, "per_page": 0}
 
     customer_id = customer["id"]
-    total_count = frappe.db.count("Sales Order", filters={"customer": customer_id, "docstatus": 1})
+    total_count = frappe.db.count("Sales Order", filters={"customer": customer_id, "company": company, "docstatus": 1})
 
     orders = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 1},
+        filters={"customer": customer_id, "company": company, "docstatus": 1},
         fields=["name as order_number", "grand_total as total", "status as payment_status", "transaction_date as created_at", "custom_mode_of_payment as payment_method"],
         order_by="creation desc",
         limit_start=limit_start,
@@ -74,7 +75,8 @@ def get_order_details(order_number):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_cart():
+def get_cart(company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
     customer = get_current_customer()
     if not customer or not customer.get("id"):
         return {"items": [], "total": 0.0, "count": 0}
@@ -82,12 +84,12 @@ def get_cart():
     customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0},
+        filters={"customer": customer_id, "docstatus": 0, "company": company},
         fields=["name", "grand_total"],
         limit=1,
     )
     if not so:
-        return {"items": [], "total": 0.0, "count": 0}
+        return {"items": [], "total": 0.0, "discount": 0.0, "count": 0}
 
     so_doc = frappe.get_doc("Sales Order", so[0].name)
     items = []
@@ -102,8 +104,8 @@ def get_cart():
         })
     return {
         "items": items,
-        "total": so[0].grand_total,
-        "discount": so[0].discount_amount,
+        "total": so_doc.grand_total,
+        "discount": so_doc.discount_amount,
         "count": len(items),
     }
 
@@ -168,9 +170,12 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
             "item_code": row["item_code"],
             "qty": row["qty"],
             "rate": row["rate"],
+            "delivery_date": nowdate(),
         })
     so_doc.save(ignore_permissions=True)
     if submit:
+        for row in so_doc.payment_schedule:
+            row.due_date = nowdate()
         so_doc.submit()
     frappe.db.commit()
     return so_doc.name

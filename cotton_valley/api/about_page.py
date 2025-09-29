@@ -2,9 +2,14 @@ import frappe
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
-def get_about_page():
+def get_about_page(company="Cotton Valley"):
     try:
-        about_page = frappe.get_single("About Page")
+        doctype = "About Page"
+        company = "Cotton Valley" if not company or company == "null" else company
+        if company != "Cotton Valley":
+            doctype = f"UDC About Page"
+
+        about_page = frappe.get_single(doctype)
         clients = []
         for client in about_page.clients:
             clients.append({

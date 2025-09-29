@@ -1,9 +1,13 @@
 import frappe # type: ignore
 
 @frappe.whitelist(allow_guest=True)
-def get_homepage_slides():
+def get_homepage_slides(company="Cotton Valley"):
     # Get the first (or active) Homepage Banner Setting doc
-    doc = frappe.get_single("Homepage Banner Setting")
+    doctype = "Homepage Banner Setting"
+    company = "Cotton Valley" if not company or company == "null" else company
+    if company != "Cotton Valley":
+        doctype = f"UDC Home Page"
+    doc = frappe.get_single(doctype)
     first_row_product_ids = [row.product for row in doc.product_row_1]
     sec_row_product_ids = [row.product for row in doc.product_row_2]
     first_slide_product_ids = [row.product for row in doc.slide_1_ids]

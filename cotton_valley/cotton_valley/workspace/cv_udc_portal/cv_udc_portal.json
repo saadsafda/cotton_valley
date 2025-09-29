@@ -1,0 +1,199 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"XDTDEEDnYB\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CV Link</span>\",\"col\":12}},{\"id\":\"loAH_KoZkS\",\"type\":\"card\",\"data\":{\"card_name\":\"CV Pages\",\"col\":4}},{\"id\":\"alWeMg-I3O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Website Theme Settings\",\"col\":3}},{\"id\":\"DzlWOXjRbg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Testimonial\",\"col\":3}},{\"id\":\"c7D5G5Xb3A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>UDC Link</b></span>\",\"col\":12}},{\"id\":\"YNtRz-K4fA\",\"type\":\"card\",\"data\":{\"card_name\":\"UDC Pages\",\"col\":4}},{\"id\":\"xJ-yyCEG7x\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Website Theme Settings\",\"col\":3}},{\"id\":\"cCP_uo2qNG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Testimonial\",\"col\":3}}]",
+ "creation": "2025-09-29 02:51:13.063554",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "website",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "CV UDC Portal",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Pages",
+   "link_count": 6,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Home Page",
+   "link_count": 0,
+   "link_to": "Homepage Banner Setting",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV About Page",
+   "link_count": 0,
+   "link_to": "About Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Contact Page",
+   "link_count": 0,
+   "link_to": "Contact Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Terms and Condition Page",
+   "link_count": 0,
+   "link_to": "Terms and Condition Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Privacy Policy Page",
+   "link_count": 0,
+   "link_to": "Privacy Policy Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "CV Shipping and Return Page",
+   "link_count": 0,
+   "link_to": "Shipping and Return Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Pages",
+   "link_count": 6,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Home Page",
+   "link_count": 0,
+   "link_to": "UDC Home Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC About Page",
+   "link_count": 0,
+   "link_to": "UDC About Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Contact Page",
+   "link_count": 0,
+   "link_to": "UDC Contact Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Terms and Condition Page",
+   "link_count": 0,
+   "link_to": "UDC Terms and Condition Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Privacy Policy Page",
+   "link_count": 0,
+   "link_to": "UDC Privacy Policy Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UDC Shipping and Return Page",
+   "link_count": 0,
+   "link_to": "UDC Shipping and Return Page",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2025-09-29 03:41:57.245617",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "CV UDC Portal",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "CV Website Theme Settings",
+   "link_to": "Website Theme Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "UDC Website Theme Settings",
+   "link_to": "UDC Website Theme Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Testimonial",
+   "link_to": "Testimonial",
+   "stats_filter": "[[\"Testimonial\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "Testimonial",
+   "link_to": "Testimonial",
+   "stats_filter": "[[\"Testimonial\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  }
+ ],
+ "title": "CV UDC Portal"
+}
