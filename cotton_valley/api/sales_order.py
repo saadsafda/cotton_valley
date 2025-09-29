@@ -152,7 +152,6 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
         so_doc.customer = customer_id
         so_doc.order_type = "Shopping Cart"
 
-    so_doc.transaction_date = nowdate()
     so_doc.delivery_date = nowdate()
     so_doc.company = company
     if items is None or len(items) == 0:
@@ -179,8 +178,6 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
         })
     so_doc.save(ignore_permissions=True)
     if submit:
-        for row in so_doc.payment_schedule:
-            row.due_date = nowdate()
         so_doc.submit()
     frappe.db.commit()
     return so_doc.name
