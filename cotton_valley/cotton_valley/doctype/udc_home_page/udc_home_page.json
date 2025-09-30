@@ -171,7 +171,7 @@
    "fieldtype": "Table",
    "label": "HomePage Categories",
    "mandatory_depends_on": "eval:doc.show_categories",
-   "options": "HomePage Categories"
+   "options": "UDC HomePage Categories"
   },
   {
    "collapsible": 1,
@@ -382,7 +382,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-29 03:20:36.258231",
+ "modified": "2025-09-30 03:22:06.325086",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "UDC Home Page",
