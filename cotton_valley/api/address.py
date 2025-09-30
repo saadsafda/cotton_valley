@@ -2,7 +2,7 @@ import frappe
 from cotton_valley.api.customer import get_current_customer
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def add_address(address):
     customer = get_current_customer()
     address = frappe.get_doc({
@@ -34,7 +34,7 @@ def add_address(address):
                 "state": {"id": address.state, "name": address.state},
             }
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def update_address(address):
     customer = get_current_customer()
     addr = frappe.get_doc("Address", address.get("id"))
@@ -60,3 +60,11 @@ def update_address(address):
                 "country": {"id": addr.country, "name": addr.country},
                 "state": {"id": addr.state, "name": addr.state},
             }
+
+
+@frappe.whitelist(allow_guest=True)
+def delete_address(address_id):
+    customer = get_current_customer()
+    addr = frappe.get_doc("Address", address_id)
+    addr.delete(ignore_permissions=True)
+    return {"status": "success", "message": "Address deleted successfully"}
