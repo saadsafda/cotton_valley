@@ -298,7 +298,7 @@
    "fieldname": "slide_1_ids",
    "fieldtype": "Table",
    "label": "Slide 1 Ids",
-   "options": "Slides Items"
+   "options": "UDC Slides Items"
   },
   {
    "fieldname": "column_break_rfdd",
@@ -347,7 +347,7 @@
    "fieldname": "slide_4_ids",
    "fieldtype": "Table",
    "label": "Slide 4 Ids",
-   "options": "Slides Items"
+   "options": "UDC Slides Items"
   },
   {
    "collapsible": 1,
@@ -382,7 +382,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-30 03:22:06.325086",
+ "modified": "2025-09-30 03:44:58.276401",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "UDC Home Page",
