@@ -9,6 +9,25 @@ from cotton_valley.api.common import check_customer_token
 
 
 @frappe.whitelist(allow_guest=True)
+def get_product_types_with_count(company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
+    filters = {}
+    if company:
+        filters["company"] = company
+
+    # get product counts for each category
+    product_types_with_count = frappe.db.sql("""
+        SELECT item_group, COUNT(*) as product_count
+        FROM `tabItem`
+        WHERE disabled = 0
+        {company_filter}
+        GROUP BY item_group
+    """.format(company_filter="AND company = %s"), (company,), as_dict=True)
+
+    return product_types_with_count
+
+
+@frappe.whitelist(allow_guest=True)
 def get_product_ids(search=None, company="Cotton Valley"):
     filters = {"disabled": 0}  # only active products
     company = "Cotton Valley" if not company or company == "null" else company
