@@ -19,7 +19,7 @@ def get_product_types_with_count(category=None, subcategory=None, company="Cotto
         SELECT item_group, COUNT(*) as product_count
         FROM `tabItem` i
         INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-        WHERE disabled = 0
+        WHERE i.disabled = 0
         {company_filter}
         GROUP BY item_group
     """.format(company_filter="AND i.company = %s AND i.custom_sub_category = %s AND c.product_category in %s"), (company, subcategory, category), as_dict=True)
