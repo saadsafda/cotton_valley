@@ -14,17 +14,31 @@ def get_product_types_with_count(category=None, subcategory=None, company="Cotto
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
 
-    # get product counts for each category
-    product_types_with_count = frappe.db.sql("""
+    conditions = ["i.disabled = 0", "i.company = %s"]
+    values = [company]
+
+    if subcategory:
+        conditions.append("i.custom_sub_category = %s")
+        values.append(subcategory)
+
+    if category:
+        # build placeholders for IN clause dynamically
+        placeholders = ", ".join(["%s"] * len(category)) if isinstance(category, (list, tuple)) else "%s"
+        conditions.append(f"c.product_category IN ({placeholders})")
+        if isinstance(category, (list, tuple)):
+            values.extend(category)
+        else:
+            values.append(category)
+
+    query = f"""
         SELECT i.item_group, COUNT(*) as product_count
         FROM `tabItem` i
         INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-        WHERE i.disabled = 0
-        {company_filter}
+        WHERE {" AND ".join(conditions)}
         GROUP BY i.item_group
-    """.format(company_filter="AND i.company = %s AND i.custom_sub_category = %s AND c.product_category in %s"), (company, subcategory, category), as_dict=True)
+    """
 
-    return product_types_with_count
+    return frappe.db.sql(query, tuple(values), as_dict=True)
 
 
 @frappe.whitelist(allow_guest=True)
