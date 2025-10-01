@@ -136,6 +136,67 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
         return "Customer not found"
 
     customer_id = customer["id"]
+
+    if submit and company != "Cotton Valley":
+        so = frappe.get_all(
+            "Sales Order",
+            filters={"customer": customer_id, "docstatus": 0, "company": company},
+            fields=["name"],
+            limit=1,
+        )
+
+        draft_items = items
+        if so:
+            draft_doc = frappe.get_doc("Sales Order", so[0].name)
+            # delete draft cart after extracting items
+            draft_doc.delete()
+            frappe.db.commit()
+        
+        regular_items = [i for i in items if i.get("product_type") == "regular"]
+        cod_items = [i for i in items if i.get("product_type") == "cod"]
+
+        created_orders = []
+
+        def make_so(item_list, so_type):
+            if not item_list:
+                return None
+            so_doc = frappe.new_doc("Sales Order")
+            so_doc.customer = customer_id
+            so_doc.order_type = "Shopping Cart"
+            so_doc.delivery_date = nowdate()
+            so_doc.company = company
+            so_doc.product_type = so_type
+
+            if billing_address_id:
+                so_doc.customer_address = billing_address_id
+            if shipping_address_id:
+                so_doc.shipping_address_name = shipping_address_id
+            if delivery_description:
+                so_doc.custom_shipping_method = delivery_description
+            if payment_method:
+                so_doc.custom_mode_of_payment = payment_method
+
+            for row in item_list:
+                so_doc.append("items", {
+                    "item_code": row["item_code"],
+                    "qty": row["qty"],
+                    "rate": row["rate"],
+                    "delivery_date": nowdate(),
+                })
+
+            so_doc.save(ignore_permissions=True)
+            so_doc.submit()
+            frappe.db.commit()
+
+            created_orders.append({"type": so_type, "name": so_doc.name})
+            return so_doc.name
+
+        make_so(regular_items, "regular")
+        make_so(cod_items, "cod")
+
+        return created_orders
+
+
     so = frappe.get_all(
         "Sales Order",
         filters={"customer": customer_id, "docstatus": 0, "company": company},
