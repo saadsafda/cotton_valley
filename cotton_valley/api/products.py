@@ -234,7 +234,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
 
 @frappe.whitelist(allow_guest=True)
-def get_product(product_id):
+def get_product(product_id, company="Cotton Valley"):
+    company = "Cotton Valley" if not company or company == "null" else company
+
     # get main product info
     product = frappe.db.get_value(
         "Item",
@@ -342,7 +344,7 @@ def get_product(product_id):
 
     category_list = []
     for cat in categories:
-        category_list.append(get_category_list(cat.id)["data"][0])
+        category_list.append(get_category_list(cat.id, company)["data"][0])
 
     product["categories"] = category_list
 
