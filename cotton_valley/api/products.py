@@ -9,11 +9,10 @@ from cotton_valley.api.common import check_customer_token
 
 
 @frappe.whitelist(allow_guest=True)
-def get_product_types_with_count(company="Cotton Valley"):
+def get_product_types_with_count(category=None, subcategory=None, company="Cotton Valley"):
     company = "Cotton Valley" if not company or company == "null" else company
-    filters = {}
-    if company:
-        filters["company"] = company
+    category = None if not category or category == "null" else get_categories_from_string(category)
+    subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
 
     # get product counts for each category
     product_types_with_count = frappe.db.sql("""
@@ -22,7 +21,7 @@ def get_product_types_with_count(company="Cotton Valley"):
         WHERE disabled = 0
         {company_filter}
         GROUP BY item_group
-    """.format(company_filter="AND company = %s"), (company,), as_dict=True)
+    """.format(company_filter="AND company = %s AND custom_sub_category = %s"), (company, subcategory), as_dict=True)
 
     return product_types_with_count
 
@@ -53,10 +52,11 @@ def get_product_ids(search=None, company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, company="Cotton Valley"):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company="Cotton Valley"):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
+    producttype = None if not producttype or producttype == "null" else get_categories_from_string(producttype)
     sortBy = None if not sortBy or sortBy == "null" else sortBy
     search = None if not search or search == "null" else search
     page = None if not page or page == "null" else int(page)
@@ -70,6 +70,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
     if company:
         filters["company"] = company
+
+    if producttype:
+        filters["item_group"] = ["in", producttype]
 
     # --- Category Filter ---
     if category:
