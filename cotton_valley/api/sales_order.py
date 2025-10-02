@@ -152,8 +152,8 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
             draft_doc.delete()
             frappe.db.commit()
         
-        regular_items = [i for i in items if i.get("product_type") == "regular"]
-        cod_items = [i for i in items if i.get("product_type") == "cod"]
+        regular_items = [i for i in items if i.get("product_type") == "Regular"]
+        cod_items = [i for i in items if i.get("product_type") == "COD"]
 
         created_orders = []
 
@@ -191,8 +191,10 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
             created_orders.append({"type": so_type, "name": so_doc.name})
             return so_doc.name
 
-        make_so(regular_items, "regular")
-        make_so(cod_items, "cod")
+        if len(regular_items) > 0:
+            make_so(regular_items, "Regular")
+        if len(cod_items) > 0:
+            make_so(cod_items, "COD")
 
         return created_orders
 
