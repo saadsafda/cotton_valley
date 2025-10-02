@@ -149,7 +149,7 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
         if so:
             draft_doc = frappe.get_doc("Sales Order", so[0].name)
             # delete draft cart after extracting items
-            draft_doc.delete()
+            frappe.delete_doc("Sales Order", draft_doc.name, ignore_permissions=True)
             frappe.db.commit()
         
         regular_items = [i for i in items if i.get("product_type") == "Regular"]
