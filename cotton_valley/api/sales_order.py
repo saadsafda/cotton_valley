@@ -1,4 +1,3 @@
-from datetime import datetime
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
@@ -22,14 +21,12 @@ def get_submited_orders(company="Cotton Valley", page=None):
     orders = frappe.get_all(
         "Sales Order",
         filters={"customer": customer_id, "company": company, "docstatus": 1},
-        fields=["name as order_number", "grand_total as total", "status as payment_status", "creation as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
+        fields=["name as order_number", "grand_total as total", "status as payment_status", "submit_datetime as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
         order_by="creation desc",
         limit_start=limit_start,
         limit_page_length=limit_page_length
     )
-    # Format creation into 12-hour time with AM/PM
-    for o in orders:
-        o["created_at"] = datetime.strftime(o["created_at"], "%d/%m/%Y %I:%M %p")
+    
     from_showing = limit_start + 1 if limit_start is not None else 1
     to_showing = limit_start + limit_page_length if limit_start is not None else total_count
 
@@ -120,7 +117,7 @@ def get_cart(company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
+def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -167,6 +164,7 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
             so_doc.customer = customer_id
             so_doc.order_type = "Shopping Cart"
             so_doc.delivery_date = nowdate()
+            so_doc.submit_datetime = submit_datetime
             so_doc.company = company
             so_doc.product_type = so_type
 
@@ -219,6 +217,7 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
         so_doc.order_type = "Shopping Cart"
 
     so_doc.delivery_date = nowdate()
+    so_doc.submit_datetime = submit_datetime
     so_doc.company = company
     if items is None or len(items) == 0:
         so_doc.delete()
