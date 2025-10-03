@@ -21,7 +21,7 @@ def get_submited_orders(company="Cotton Valley", page=None):
     orders = frappe.get_all(
         "Sales Order",
         filters={"customer": customer_id, "company": company, "docstatus": 1},
-        fields=["name as order_number", "grand_total as total", "status as payment_status", "creation as created_at", "custom_mode_of_payment as payment_method"],
+        fields=["name as order_number", "grand_total as total", "status as payment_status", "creation as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
         order_by="creation desc",
         limit_start=limit_start,
         limit_page_length=limit_page_length
@@ -145,7 +145,6 @@ def create_or_update_sales_order(items, company="Cotton Valley", submit=False, b
             limit=1,
         )
 
-        draft_items = items
         if so:
             draft_doc = frappe.get_doc("Sales Order", so[0].name)
             # delete draft cart after extracting items
