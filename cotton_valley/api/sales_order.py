@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
