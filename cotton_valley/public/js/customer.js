@@ -13,35 +13,35 @@ frappe.ui.form.on('Customer', {
                     }
                 ],
                     function (values) {
-                        if (values.portal === 'Cotton Valley') {
-                            let customer_id = frm.doc.name;
-                            // Make login API call
-                            frappe.call({
-                                method: 'cotton_valley.api.customer.sale_rep_as_customer',
-                                args: {
-                                    customer_id: customer_id
-                                },
-                                callback: function (r) {
-                                    if (r.message && r.message.status === "success") {
-                                        let token = r.message?.message?.access_token;
-                                        frappe.msgprint(__('Login successful! Navigating to portal...'));
+                        let customer_id = frm.doc.name;
+                        // Make login API call
+                        frappe.call({
+                            method: 'cotton_valley.api.customer.sale_rep_as_customer',
+                            args: {
+                                customer_id: customer_id
+                            },
+                            callback: function (r) {
+                                if (r.message && r.message.status === "success") {
+                                    let token = r.message?.message?.access_token;
+                                    frappe.msgprint(__('Login successful! Navigating to portal...'));
+                                    if (values.portal === 'Cotton Valley') {
 
                                         // Open new window and set cookie
                                         // Open portal in new tab
                                         window.open(`http://156.67.27.94:3001/en/auth/erplogin?token=${token}`, "_blank");
 
                                     } else {
-                                        frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
+                                        window.open(`http://156.67.27.94:3002/en/auth/erplogin?token=${token}`, "_blank");
                                     }
-                                },
-                                error: function (r) {
-                                    frappe.msgprint(__('Login error: ' + r.responseText));
+                                } else {
+                                    frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
                                 }
-                            });
+                            },
+                            error: function (r) {
+                                frappe.msgprint(__('Login error: ' + r.responseText));
+                            }
+                        });
 
-                        } else {
-                            frappe.msgprint(__('UDC login flow not implemented yet.'));
-                        }
                     },
                     __('Login Options'),
                     __('Next')
