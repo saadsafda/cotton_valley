@@ -1,3 +1,4 @@
+import datetime
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
@@ -26,6 +27,9 @@ def get_submited_orders(company="Cotton Valley", page=None):
         limit_start=limit_start,
         limit_page_length=limit_page_length
     )
+    # Format creation into 12-hour time with AM/PM
+    for o in orders:
+        o["created_at"] = datetime.strftime(o["created_at"], "%d/%m/%Y %I:%M %p")
     from_showing = limit_start + 1 if limit_start is not None else 1
     to_showing = limit_start + limit_page_length if limit_start is not None else total_count
 

@@ -6,8 +6,9 @@ def get_country_list():
     return frappe.get_all("Country", fields=["name as id", "country_name as name"])
 
 @frappe.whitelist(allow_guest=True)
-def register_customer(data):
+def register_customer(data, company="Cotton Valley"):
     try:
+        company = "Cotton Valley" if not company or company == "null" else company
         # Ensure incoming data is a dict (from JSON string)
         if isinstance(data, str):
             import json
@@ -15,7 +16,7 @@ def register_customer(data):
 
         if frappe.db.exists("Customer", {"custom_email_address": data.get("email")}):
             frappe.local.response["http_status_code"] = 409
-            frappe.local.response["message"] = f"{data.get('email')} email is already exist"
+            frappe.local.response["message"] = f"{data.get('email')} email is already exist in our company."
             frappe.local.response["status"] = "error"
             return
 
@@ -51,6 +52,8 @@ def register_customer(data):
             "custom_bank_zip_code": data.get("bank_zip_code"),
             "custom_account_type": data.get("account_type"),
             "custom_bank_email": data.get("bank_email"),
+            "company": company,
+            "disabled": 0,
         })
 
         # References

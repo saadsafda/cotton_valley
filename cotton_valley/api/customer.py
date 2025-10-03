@@ -38,7 +38,7 @@ def sale_rep_as_customer(customer_id):
 def customer_login(email, password):
     try:
         # Find customer by custom email
-        customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
+        customer_id = frappe.db.get_value("Customer", {"custom_email_address": email, "disabled": 0}, "name")
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
         
@@ -106,7 +106,7 @@ def customer_logout():
 def get_current_customer():
     try:
         customer_id = get_customer_from_token()
-        print(customer_id, "customer_id")
+        
         if not customer_id:
             return {"status": "error", "message": "Customer not found"}
 
