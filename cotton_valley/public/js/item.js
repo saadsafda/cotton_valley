@@ -1,5 +1,7 @@
 frappe.ui.form.on('Item', {
     refresh: function(frm) {
+        $("[data-label='View']").hide();
+        $("[data-label='Actions']").hide();
         if (!frm.is_new()) {
             frm.add_custom_button(__('Get Prices'), function() {
                 frappe.call({
