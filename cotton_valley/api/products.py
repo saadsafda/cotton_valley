@@ -9,6 +9,22 @@ from cotton_valley.api.common import check_customer_token
 
 
 @frappe.whitelist(allow_guest=True)
+def make_product_views(product_id):
+    # Validate input
+    if not frappe.db.exists("Item", product_id):
+        return {"status": "error", "message": "Invalid product ID"}
+
+    # Get current value
+    current_clicks = frappe.db.get_value("Item", product_id, "custom_no_of_clicks") or 0
+
+    # Increment and update
+    frappe.db.set_value("Item", product_id, "custom_no_of_clicks", current_clicks + 1)
+    frappe.db.commit()
+
+    return {"status": "success", "message": "Product views updated successfully"}
+
+
+@frappe.whitelist(allow_guest=True)
 def get_product_types_with_count(category=None, subcategory=None, company="Cotton Valley"):
     company = "Cotton Valley" if not company or company == "null" else company
     category = None if not category or category == "null" else get_categories_from_string(category)
