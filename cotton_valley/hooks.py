@@ -169,6 +169,9 @@ doc_events = {
 		"on_submit": "cotton_valley.server_scripts.stock_ledger.on_submit",
 		# "on_cancel": "method",
 		# "on_trash": "method"
+	},
+    "Sales Order": {
+		"on_submit": "cotton_valley.server_scripts.sales_order.update_customer_order_summary",
 	}
 }
 
