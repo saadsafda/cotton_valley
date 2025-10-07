@@ -52,8 +52,8 @@ def register_customer(data, company="Cotton Valley"):
             "custom_bank_zip_code": data.get("bank_zip_code"),
             "custom_account_type": data.get("account_type"),
             "custom_bank_email": data.get("bank_email"),
-            "represents_company": company,
-            "disabled": 0,
+            "register_company": company,
+            "disabled": 1,  # Customer will be enabled after verification
         })
 
         # References

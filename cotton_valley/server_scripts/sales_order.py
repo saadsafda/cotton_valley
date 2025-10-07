@@ -20,8 +20,8 @@ def update_customer_order_summary(doc, method):
 
     # Update Customer fields
     frappe.db.set_value("Customer", doc.customer, {
-        "total_orders": total_orders,
-        "total_order_amount": total_amount
+        "no_of_orders": total_orders,
+        "orders_amount": total_amount
     })
 
     frappe.db.commit()
