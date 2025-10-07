@@ -117,7 +117,7 @@ def get_cart(company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None):
+def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -132,6 +132,9 @@ def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cott
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
     payment_method = None if not payment_method or payment_method == "null" else payment_method
+    client_ip = None if not client_ip or client_ip == "null" else client_ip
+    client_latitude = None if not client_latitude or client_latitude == "null" else client_latitude
+    client_longitude = None if not client_longitude or client_longitude == "null" else client_longitude
 
     if not customer:
         return "Customer not found"
@@ -167,6 +170,10 @@ def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cott
             so_doc.submit_datetime = submit_datetime
             so_doc.company = company
             so_doc.product_type = so_type
+            if client_ip:
+                so_doc.customer_ip = client_ip
+            if client_latitude and client_longitude:
+                so_doc.customer_lat__long = f"{client_latitude}, {client_longitude}"
 
             if billing_address_id:
                 so_doc.customer_address = billing_address_id
@@ -232,6 +239,11 @@ def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cott
         so_doc.custom_shipping_method = delivery_description
     if payment_method:
         so_doc.custom_mode_of_payment = payment_method
+
+    if client_ip:
+        so_doc.customer_ip = client_ip
+    if client_latitude and client_longitude:
+        so_doc.customer_lat__long = f"{client_latitude}, {client_longitude}"
 
 
     for row in items:

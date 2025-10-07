@@ -164,13 +164,13 @@ doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/j
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Stock Ledger Entry": {
+		"on_submit": "cotton_valley.server_scripts.stock_ledger.on_submit",
+		# "on_cancel": "method",
+		# "on_trash": "method"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
