@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"kb3XPLg8lb\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\",\"col\":12}},{\"id\":\"nWd2KJPW8l\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Product\",\"col\":3}},{\"id\":\"yPMhCzuydj\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Product\",\"col\":3}},{\"id\":\"snrzfbFr5Y\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Customer\",\"col\":3}},{\"id\":\"d_KVM1gsf9\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"JVu8-FJZCu\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Masters</b></span>\",\"col\":12}},{\"id\":\"JiuSi0ubOg\",\"type\":\"card\",\"data\":{\"card_name\":\"Accounting\",\"col\":4}},{\"id\":\"ji2Jlm3Q8i\",\"type\":\"card\",\"data\":{\"card_name\":\"Stock\",\"col\":4}},{\"id\":\"N61oiXpuwK\",\"type\":\"card\",\"data\":{\"card_name\":\"CRM\",\"col\":4}},{\"id\":\"6J0CVl1mPo\",\"type\":\"card\",\"data\":{\"card_name\":\"Data Import and Settings\",\"col\":4}}]",
+ "content": "[{\"id\":\"kb3XPLg8lb\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>CV Masters</b></span>\",\"col\":12}},{\"id\":\"nWd2KJPW8l\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Product\",\"col\":3}},{\"id\":\"snrzfbFr5Y\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Customer\",\"col\":3}},{\"id\":\"nzRpz0y7f_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Sales Order\",\"col\":3}},{\"id\":\"3xli-CBaL_\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Sales Invoice\",\"col\":3}},{\"id\":\"fxZeG8I9W3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Product Category\",\"col\":3}},{\"id\":\"Qeeh0aO5yS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Product Subcategory\",\"col\":3}},{\"id\":\"tntgnKowZe\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Contact\",\"col\":3}},{\"id\":\"RtBpxitGQU\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Lead\",\"col\":3}},{\"id\":\"gyw6tQnzJl\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Brand\",\"col\":3}},{\"id\":\"LM9jJHgCD7\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>UDC Masters</b><b></b></span>\",\"col\":12}},{\"id\":\"yPMhCzuydj\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Product\",\"col\":3}},{\"id\":\"lRTdKQYZx7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Customer\",\"col\":3}},{\"id\":\"z1EkOz-A_q\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Sales Order\",\"col\":3}},{\"id\":\"19WhSGEBG2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Sales Invoice\",\"col\":3}},{\"id\":\"dVITHfAGF6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Product Category\",\"col\":3}},{\"id\":\"7VWfR59GT-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Product Subcategory\",\"col\":3}},{\"id\":\"zU656YXfP8\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Contact\",\"col\":3}},{\"id\":\"18d1tAKECm\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Lead\",\"col\":3}},{\"id\":\"p_TwpBnO7S\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Brand\",\"col\":3}}]",
  "creation": "2020-01-23 13:46:38.833076",
  "custom_blocks": [],
  "docstatus": 0,
@@ -12,14 +12,6 @@
  "is_hidden": 0,
  "label": "Home",
  "links": [
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Accounting",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
   {
    "dependencies": "",
    "hidden": 0,
@@ -63,14 +55,6 @@
    "link_type": "DocType",
    "onboard": 1,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Stock",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
   },
   {
    "dependencies": "",
@@ -128,14 +112,6 @@
    "type": "Link"
   },
   {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "CRM",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
    "dependencies": "",
    "hidden": 0,
    "is_query_report": 0,
@@ -167,14 +143,6 @@
    "link_type": "DocType",
    "onboard": 1,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Data Import and Settings",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
   },
   {
    "dependencies": "",
@@ -232,7 +200,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-10-06 04:05:38.880035",
+ "modified": "2025-10-07 03:27:08.762369",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Home",
@@ -246,6 +214,23 @@
  "sequence_id": 2.0,
  "shortcuts": [
   {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Sales Order",
+   "link_to": "Sales Order",
+   "stats_filter": "[[\"Sales Order\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Product",
+   "link_to": "Item",
+   "stats_filter": "[[\"Item\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
    "doc_view": "List",
    "label": "CV Product",
    "link_to": "Item",
@@ -253,18 +238,123 @@
    "type": "DocType"
   },
   {
-   "doc_view": "Report Builder",
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Customer",
+   "link_to": "Customer",
+   "stats_filter": "[[\"Customer\",\"represents_company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Sales Invoice",
+   "link_to": "Sales Invoice",
+   "stats_filter": "[[\"Sales Invoice\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Sales Order",
+   "link_to": "Sales Order",
+   "stats_filter": "[[\"Sales Order\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
    "label": "CV Customer",
    "link_to": "Customer",
    "stats_filter": "[[\"Customer\",\"represents_company\",\"=\",\"Cotton Valley\",false]]",
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Red",
    "doc_view": "List",
-   "label": "UDC Product",
-   "link_to": "Item",
-   "stats_filter": "[[\"Item\",\"company\",\"=\",\"UDC\",false]]",
+   "label": "UDC Sales Invoice",
+   "link_to": "Sales Invoice",
+   "stats_filter": "[[\"Sales Invoice\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Product Category",
+   "link_to": "Product Category",
+   "stats_filter": "[[\"Product Category\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Product Category",
+   "link_to": "Product Category",
+   "stats_filter": "[[\"Product Category\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Product Subcategory",
+   "link_to": "Product Subcategory",
+   "stats_filter": "[[\"Product Subcategory\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Product Subcategory",
+   "link_to": "Product Subcategory",
+   "stats_filter": "[[\"Product Subcategory\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Contact",
+   "link_to": "Contact",
+   "stats_filter": "[[\"Contact\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Contact",
+   "link_to": "Contact",
+   "stats_filter": "[[\"Contact\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Lead",
+   "link_to": "Lead",
+   "stats_filter": "[[\"Lead\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Lead",
+   "link_to": "Lead",
+   "stats_filter": "[[\"Lead\",\"company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Brand",
+   "link_to": "Brand",
+   "stats_filter": "[[\"Item Default\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Brand",
+   "link_to": "Brand",
+   "stats_filter": "[[\"Item Default\",\"company\",\"=\",\"Cotton Valley\",false]]",
    "type": "DocType"
   }
  ],
