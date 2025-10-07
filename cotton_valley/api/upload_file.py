@@ -8,12 +8,12 @@ def guest_upload(file_name, file_data, doctype=None, docname=None, folder=None, 
 
     # Save file
     file_doc = save_file(
-        file_name=file_name,
-        content=content,
-        doctype=doctype,
-        docname=docname,
-        folder=folder or "Home/Attachments",
-        is_private=is_private,
+        file_name,
+        content,
+        doctype,
+        docname,
+        folder or "Home/Attachments",
+        is_private,
     )
 
     return {
