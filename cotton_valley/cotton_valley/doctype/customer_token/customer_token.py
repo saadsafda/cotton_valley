@@ -21,5 +21,4 @@ class CustomerToken(Document):
 
 		# Update the no_of_login field
 		frappe.db.set_value("Customer", self.customer, "no_of_login", token_count)
-
-		
+		frappe.db.set_value("Customer", self.customer, "last_login_date", frappe.utils.now())
