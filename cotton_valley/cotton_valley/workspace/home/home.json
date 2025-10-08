@@ -200,7 +200,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-10-07 03:27:08.762369",
+ "modified": "2025-10-08 06:19:52.037748",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Home",
@@ -213,6 +213,14 @@
  "roles": [],
  "sequence_id": 2.0,
  "shortcuts": [
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "label": "CV Customer",
+   "link_to": "Customer",
+   "stats_filter": "[[\"Customer\",\"register_company\",\"=\",\"Cotton Valley\",false]]",
+   "type": "DocType"
+  },
   {
    "color": "Orange",
    "doc_view": "List",
@@ -230,19 +238,19 @@
    "type": "DocType"
   },
   {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Customer",
+   "link_to": "Customer",
+   "stats_filter": "[[\"Customer\",\"register_company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
+  {
    "color": "Orange",
    "doc_view": "List",
    "label": "CV Product",
    "link_to": "Item",
    "stats_filter": "[[\"Item\",\"company\",\"=\",\"Cotton Valley\",false]]",
-   "type": "DocType"
-  },
-  {
-   "color": "Red",
-   "doc_view": "List",
-   "label": "UDC Customer",
-   "link_to": "Customer",
-   "stats_filter": "[[\"Customer\",\"represents_company\",\"=\",\"UDC\",false]]",
    "type": "DocType"
   },
   {
@@ -259,14 +267,6 @@
    "label": "UDC Sales Order",
    "link_to": "Sales Order",
    "stats_filter": "[[\"Sales Order\",\"company\",\"=\",\"UDC\",false]]",
-   "type": "DocType"
-  },
-  {
-   "color": "Orange",
-   "doc_view": "List",
-   "label": "CV Customer",
-   "link_to": "Customer",
-   "stats_filter": "[[\"Customer\",\"represents_company\",\"=\",\"Cotton Valley\",false]]",
    "type": "DocType"
   },
   {

@@ -37,6 +37,10 @@ def sale_rep_as_customer(customer_id):
 @frappe.whitelist(allow_guest=True)
 def customer_login(email, password):
     try:
+        customer_id = frappe.db.get_value("Customer", {"custom_email_address": email, "disabled": 1}, "name")
+        if customer_id:
+            return {"status": "error", "message": "Your account has been disabled. Please contact support."}
+
         # Find customer by custom email
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email, "disabled": 0}, "name")
         if not customer_id:
