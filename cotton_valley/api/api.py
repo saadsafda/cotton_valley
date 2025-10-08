@@ -6,9 +6,11 @@ def get_country_list():
     return frappe.get_all("Country", fields=["name as id", "country_name as name"])
 
 @frappe.whitelist(allow_guest=True)
-def register_customer(data, company="Cotton Valley"):
+def register_customer(data, ip_address=None, lat_long=None, company="Cotton Valley"):
     try:
         company = "Cotton Valley" if not company or company == "null" else company
+        lat_long = lat_long if lat_long and lat_long != "null" else None
+        ip_address = ip_address if ip_address and ip_address != "null" else None
         # Ensure incoming data is a dict (from JSON string)
         if isinstance(data, str):
             import json
@@ -54,6 +56,8 @@ def register_customer(data, company="Cotton Valley"):
             "custom_bank_email": data.get("bank_email"),
             "register_company": company,
             "disabled": 1,  # Customer will be enabled after verification
+            "custom_ip_address": ip_address,
+            "custom_lat__long": lat_long,
         })
 
         # References

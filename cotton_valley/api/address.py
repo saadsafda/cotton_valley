@@ -22,6 +22,9 @@ def add_address(address):
         }]
     }).insert(ignore_permissions=True)
 
+    if address.get("is_default"):
+        frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", address.name)
+
     return {
                 "id": address.name,
                 "title": address.address_title,
@@ -48,6 +51,9 @@ def update_address(address):
     addr.country = address.get("country")
     addr.phone = address.get("phone")
     addr.save(ignore_permissions=True)
+
+    if address.get("is_default"):
+        frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", addr.name)
 
     return {
                 "id": addr.name,

@@ -54,6 +54,7 @@ def get_order_details(order_number):
     for item in so_doc.items:
         items.append({
             "id": item.item_code,
+            "case_pack": item.custom_case_pack,
             "name": item.item_name,
             "sku": item.item_code,
             "product_thumbnail": get_file(item.image),
@@ -66,16 +67,26 @@ def get_order_details(order_number):
         "order_number": so_doc.name,
         "amount": so_doc.total,
         "total": so_doc.grand_total,
-        "payment_status": so_doc.status,
+        "payment_status": so_doc.order_status,
         "created_at": so_doc.transaction_date,
         "payment_method": so_doc.custom_mode_of_payment,
         "billing_address_id": so_doc.customer_address,
+        "billing_address_details": so_doc.billing_address_details,
+        "billing_state": so_doc.state,
+        "billing_country": so_doc.country,
+        "billing_zip_code": so_doc.zip_code,
+        "billing_phone": so_doc.custom_billing_phone,
         "shipping_address_id": so_doc.shipping_address_name,
+        "shipping_address_details": so_doc.shipping_address_details,
+        "shipping_state": so_doc.shipping_state,
+        "shipping_country": so_doc.shipping_country,
+        "shipping_zip_code": so_doc.shipping_zip,
+        "shipping_phone": so_doc.custom_shipping_phone,
         "delivery_description": so_doc.custom_shipping_method,
         "products": items,
         "order_status": {
-            "status": so_doc.status,
-            "sequence": 2 if so_doc.status == "To Deliver and Bill" else 4 if so_doc.status == "Completed" else 3 if so_doc.status == "Cancelled" else 1,
+            "status": so_doc.order_status,
+            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.order_status == "Processing" else 3 if so_doc.order_status == "Shipped" else 1,
         }
     }
 
