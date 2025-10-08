@@ -81,7 +81,7 @@ def get_order_details(order_number):
         "shipping_state": so_doc.shipping_state,
         "shipping_country": so_doc.shipping_country,
         "shipping_zip_code": so_doc.shipping_zip_code,
-        "shipping_phone": so_doc.custom_shipping_phone,
+        "shipping_phone": so_doc.shipping_phone,
         "delivery_description": so_doc.custom_shipping_method,
         "products": items,
         "order_status": {
