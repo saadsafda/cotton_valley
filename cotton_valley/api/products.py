@@ -397,7 +397,7 @@ def get_product(product_id, company="Cotton Valley"):
 
     category_list = []
     for cat in categories:
-        category_list.append(get_category_list(cat.id, company)["data"][0])
+        category_list.append(get_category_list(cat.id, company)["data"][0] if get_category_list(cat.id, company)["data"] else {"id": cat.id, "name": cat.id, "slug": cat.id, "category_image": None, "banner_image": None, "products_count": 0, "subcategories": []})
 
     product["categories"] = category_list
 
