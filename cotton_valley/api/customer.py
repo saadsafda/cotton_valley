@@ -176,6 +176,13 @@ def get_current_customer():
         addresses = []
         for link in links:
             addr_doc = frappe.get_doc("Address", link.parent)
+            is_default = 0
+            if addr_doc.address_type == "Shipping" and addr_doc.name == customer.customer_primary_address:
+                is_default = 1
+
+            if addr_doc.address_type == "Billing" and addr_doc.name == customer.customer_billing_address:
+                is_default = 1
+
             addresses.append({
                 "id": addr_doc.name,
                 "title": addr_doc.address_title,
@@ -183,7 +190,7 @@ def get_current_customer():
                 "address_type": addr_doc.address_type,
                 "city": addr_doc.city,
                 "pincode": addr_doc.pincode,
-                "is_default": 1 if addr_doc.name == customer.customer_primary_address else 0,
+                "is_default": is_default,
                 "country_code": customer_data["country_code"],
                 "phone": addr_doc.phone,
                 "country": {"id": addr_doc.country, "name": addr_doc.country},

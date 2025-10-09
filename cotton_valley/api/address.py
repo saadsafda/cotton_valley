@@ -22,8 +22,11 @@ def add_address(address):
         }]
     }).insert(ignore_permissions=True)
 
-    if address.get("is_default"):
+    if address.get("is_default") and address.address_type == "Shipping":
         frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", address.name)
+
+    if address.get("is_default") and address.address_type == "Billing":
+        frappe.db.set_value("Customer", customer.get("id"), "customer_billing_address", address.name)
 
     return {
                 "id": address.name,
@@ -52,8 +55,11 @@ def update_address(address):
     addr.phone = address.get("phone")
     addr.save(ignore_permissions=True)
 
-    if address.get("is_default"):
+    if address.get("is_default") and addr.address_type == "Shipping":
         frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", addr.name)
+
+    if address.get("is_default") and addr.address_type == "Billing":
+        frappe.db.set_value("Customer", customer.get("id"), "customer_billing_address", addr.name)
 
     return {
                 "id": addr.name,

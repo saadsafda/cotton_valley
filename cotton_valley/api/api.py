@@ -119,6 +119,9 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
         address.insert(ignore_permissions=True)
         if address_type == "Shipping":
             frappe.db.set_value("Customer", customer_id, "customer_primary_address", address.name)
+
+        if address_type == "Billing":
+            frappe.db.set_value("Customer", customer_id, "customer_billing_address", address.name)
         frappe.db.commit()
 
         return {"status": "success", "message": "Customer address created successfully", "address_id": address.name}
