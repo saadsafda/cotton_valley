@@ -1,7 +1,7 @@
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
-from cotton_valley.api.products import get_product
+from cotton_valley.api.products import get_product, get_all_products
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
@@ -111,7 +111,8 @@ def get_cart(company="Cotton Valley"):
     so_doc = frappe.get_doc("Sales Order", so[0].name)
     items = []
     for item in so_doc.items:
-        product = get_product(item.item_code)
+        # product = get_product(item.item_code)
+        product = get_all_products(item.item_code, company)["data"][0] if get_all_products(item.item_code, company)["data"] else product
         items.append({
             "id": item.name,
             "product_id": item.item_code,
