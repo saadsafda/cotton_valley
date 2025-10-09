@@ -112,7 +112,7 @@ def get_cart(company="Cotton Valley"):
     items = []
     for item in so_doc.items:
         # product = get_product(item.item_code)
-        all_products = get_all_products(id=item.item_code, company=company)["data"]
+        all_products = get_all_products(ids=item.item_code, company=company)["data"]
         product = all_products[0] if len(all_products) > 0 else {}
         items.append({
             "id": item.name,
