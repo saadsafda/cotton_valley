@@ -8,6 +8,7 @@ def settings(company="Cotton Valley"):
     if company != "Cotton Valley":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
+    mode_of_payment = frappe.get_all("Mode of Payment", filters={"enabled": 1}, fields=["name", "enabled as status"])
     data = {
         "values": {
             "general": {
@@ -80,28 +81,7 @@ def settings(company="Cotton Valley"):
                 "original_url": "https://react.pixelstrap.net/fastkart/assets/maintainance.jpg"
             }
             },
-            "payment_methods": [
-            {
-                "name": "COD",
-                "status": True
-            },
-            {
-                "name": "paypal",
-                "status": False
-            },
-            {
-                "name": "stripe",
-                "status": False
-            },
-            {
-                "name": "mollie",
-                "status": False
-            },
-            {
-                "name": "razorpay",
-                "status": False
-            }
-            ]
+            "payment_methods": mode_of_payment
         }
         }
     return data
