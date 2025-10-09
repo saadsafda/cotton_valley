@@ -79,8 +79,8 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
         frappe.db.commit()
         
         # Addresses
+        make_customer_address(customer.name, data.get("shipping_address"), address_type="Shipping")
         if data.get("shipping_billing_same"):
-            make_customer_address(customer.name, data.get("shipping_address"), address_type="Shipping")
             make_customer_address(customer.name, data.get("shipping_address"), address_type="Billing")
 
         if not data.get("shipping_billing_same") and data.get("billing_address"):

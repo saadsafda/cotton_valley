@@ -4,7 +4,7 @@ import frappe # type: ignore
 from frappe import _ # type: ignore
 from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 import requests
-from cotton_valley.secrets import SAP_USER, SAP_PASSWORD
+from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 from cotton_valley.api.common import check_customer_token
 
 
@@ -449,9 +449,20 @@ def get_product(product_id, company="Cotton Valley"):
 
 
 @frappe.whitelist()
-def get_prices(item_code):
-    url = f"https://erp.cottonvalley.us/ords/unvdst/cmitm/itmrate?ITMID={item_code}"
-    response = requests.get(url, auth=(SAP_USER, SAP_PASSWORD))
+def get_prices(item_code, company="Cotton Valley"):
+    url = ""
+    username = ""
+    password = ""
+    company = "Cotton Valley" if not company or company == "null" else company
+    if company == "Cotton Valley":
+        url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+        username = CV_USER
+        password = CV_PASSWORD
+    elif company == "UDC":
+        url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+        username = UDC_USER
+        password = UDC_PASSWORD
+    response = requests.get(url, auth=(username, password))
     data = response.json()
 
     print(data, "Data from API \n\n\n\n\n")  # Debugging line
@@ -459,21 +470,14 @@ def get_prices(item_code):
     if not data.get("items"):
         return "No prices found"
 
-    prices = data["items"][0]
+    for item in data["items"]:
+        region_name = item.get("rgnname")
+        rate = item.get("rate")
 
-    for key, price_list in prices.items():
-        if key == "itmid" or key == "itmdsc" or key == "itmgrpdsc":
+        if not region_name or not rate or float(rate) <= 0:
             continue
 
-        price_val = prices.get(f"{key}")
-        price_list_name = key.replace("'", "")
-        price_list = frappe.db.exists("Price List", price_list_name)
-
-        print(price_list_name, price_val, "Price List Name and Value")  # Debugging line
-
-        if not price_val or float(price_val) <= 0:
-            continue
-
+        price_list = frappe.db.exists("Price List", region_name)
         if not price_list:
             continue
 
@@ -485,14 +489,14 @@ def get_prices(item_code):
 
         if existing:
             ip = frappe.get_doc("Item Price", existing)
-            ip.price_list_rate = float(price_val)
+            ip.price_list_rate = float(rate)
             ip.save()
         else:
             frappe.get_doc({
                 "doctype": "Item Price",
                 "item_code": item_code,
                 "price_list": price_list,
-                "price_list_rate": float(price_val),
+                "price_list_rate": float(rate),
                 "currency": "USD"   # or your default currency
             }).insert()
 
@@ -504,29 +508,32 @@ def get_prices(item_code):
 @frappe.whitelist()
 def get_product_prices():
     items = frappe.get_all("Item", pluck="name")
+    username = ""
+    password = ""
     for item_code in items:
-        url = f"https://erp.cottonvalley.us/ords/unvdst/cmitm/itmrate?ITMID={item_code}"
-        response = requests.get(url, auth=(SAP_USER, SAP_PASSWORD))
+        company = frappe.get_value("Item", item_code, "company")
+        if company == "Cotton Valley":
+            url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+            username = CV_USER
+            password = CV_PASSWORD
+        elif company == "UDC":
+            url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+            username = UDC_USER
+            password = UDC_PASSWORD
+        response = requests.get(url, auth=(username, password))
         data = response.json()
 
         if not data.get("items"):
             return "No prices found"
 
-        prices = data["items"][0]
+        for item in data["items"]:
+            region_name = item.get("rgnname")
+            rate = item.get("rate")
 
-        for key, price_list in prices.items():
-            if key == "itmid" or key == "itmdsc" or key == "itmgrpdsc":
+            if not region_name or not rate or float(rate) <= 0:
                 continue
 
-            price_val = prices.get(f"{key}")
-            price_list_name = key.replace("'", "")
-            price_list = frappe.db.exists("Price List", price_list_name)
-
-            print(price_list_name, price_val, "Price List Name and Value")  # Debugging line
-
-            if not price_val or float(price_val) <= 0:
-                continue
-
+            price_list = frappe.db.exists("Price List", region_name)
             if not price_list:
                 continue
 
@@ -538,14 +545,14 @@ def get_product_prices():
 
             if existing:
                 ip = frappe.get_doc("Item Price", existing)
-                ip.price_list_rate = float(price_val)
+                ip.price_list_rate = float(rate)
                 ip.save()
             else:
                 frappe.get_doc({
                     "doctype": "Item Price",
                     "item_code": item_code,
                     "price_list": price_list,
-                    "price_list_rate": float(price_val),
+                    "price_list_rate": float(rate),
                     "currency": "USD"   # or your default currency
                 }).insert()
 
