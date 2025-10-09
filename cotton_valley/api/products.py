@@ -465,7 +465,7 @@ def get_prices(item_code, company="Cotton Valley"):
     response = requests.get(url, auth=(username, password))
     data = response.json()
 
-    print(data, "Data from API \n\n\n\n\n")  # Debugging line
+    # print(data, "Data from API \n\n\n\n\n")  # Debugging line
 
     if not data.get("items"):
         return "No prices found"
