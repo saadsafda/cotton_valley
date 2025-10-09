@@ -18,7 +18,7 @@ frappe.ui.form.on('Item', {
                     }
                 });
             });
-            frm.add_custom_button(__('Get Prices'), function() {
+            frm.add_custom_button(__('Updates Item Data'), function() {
                 frappe.call({
                     method: "cotton_valley.api.products.sync_item_from_api",
                     args: {
