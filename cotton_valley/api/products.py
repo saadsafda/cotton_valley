@@ -504,6 +504,83 @@ def get_prices(item_code, company="Cotton Valley"):
     return "Prices updated"
 
 
+@frappe.whitelist()
+def sync_item_from_api(item_code, company="Cotton Valley"):
+    url = ""
+    username = ""
+    password = ""
+    company = "Cotton Valley" if not company or company == "null" else company
+    if company == "Cotton Valley":
+        url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID={item_code}"
+        username = CV_USER
+        password = CV_PASSWORD
+    elif company == "UDC":
+        url = f"https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID={item_code}"
+        username = UDC_USER
+        password = UDC_PASSWORD
+
+    response = requests.get(url, auth=(username, password))
+    data = response.json()
+
+    print(data, "\n\nData from API\n\n")
+
+    if not data.get("items"):
+        return "No item found"
+
+    item_data = data["items"][0]
+
+    # Check if item exists in ERPNext
+    if not frappe.db.exists("Item", item_code):
+        return f"Item {item_code} not found in ERPNext"
+
+    item_doc = frappe.get_doc("Item", item_code)
+
+    # Map and update relevant fields
+    field_mapping = {
+        "item_name": item_data.get("itmdsc"),
+        "item_group": item_data.get("itmgrpdsc") or "All Item Groups",
+        "brand": item_data.get("branddsc"),
+        "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
+        "stock_uom": "Nos",
+        "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
+        "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
+        "custom_carton_upc": item_data.get("cart_upc"),
+        "custom_cbm": float(item_data.get("casecbm") or 0),
+        "custom_case_pack": int(item_data.get("itmpack") or 0),
+    }
+
+    updated = False
+    for field, value in field_mapping.items():
+        if value not in [None, "", 0, "0", "null"]:
+            item_doc.set(field, value)
+
+    item_doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    # Update warehouse stock quantity
+    if qty_avlbl not in [None, "", "null"]:
+        qty_avlbl = float(item_data.get("qty_avlbl") or 0)
+        warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
+
+        # Check if Bin exists for item and warehouse
+        bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
+        if bin_exists:
+            bin_doc = frappe.get_doc("Bin", bin_exists)
+            bin_doc.actual_qty = qty_avlbl
+            bin_doc.save(ignore_permissions=True)
+        else:
+            frappe.get_doc({
+                "doctype": "Bin",
+                "item_code": item_code,
+                "warehouse": warehouse,
+                "actual_qty": qty_avlbl
+            }).insert(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    return f"Item {item_code} and warehouse quantity updated successfully"
+
+
 
 @frappe.whitelist()
 def get_product_prices():
