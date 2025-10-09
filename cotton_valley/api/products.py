@@ -463,7 +463,18 @@ def get_prices(item_code, company="Cotton Valley"):
         username = UDC_USER
         password = UDC_PASSWORD
     response = requests.get(url, auth=(username, password))
-    data = response.json()
+    # Check if API responded successfully
+    if response.status_code != 200:
+        frappe.throw(f"API Error {response.status_code}: {response.text}")
+
+    # Check if response is not empty and is JSON
+    if not response.text.strip():
+        frappe.throw("Empty response from API")
+
+    try:
+        data = response.json()
+    except Exception:
+        frappe.throw(f"Invalid JSON response: {response.text[:500]}")
 
     # print(data, "Data from API \n\n\n\n\n")  # Debugging line
 
@@ -520,7 +531,18 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
         password = UDC_PASSWORD
 
     response = requests.get(url, auth=(username, password))
-    data = response.json()
+    # Check if API responded successfully
+    if response.status_code != 200:
+        frappe.throw(f"API Error {response.status_code}: {response.text}")
+
+    # Check if response is not empty and is JSON
+    if not response.text.strip():
+        frappe.throw("Empty response from API")
+
+    try:
+        data = response.json()
+    except Exception:
+        frappe.throw(f"Invalid JSON response: {response.text[:500]}")
 
     print(data, "\n\nData from API\n\n")
 
@@ -541,7 +563,6 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
         "item_group": item_data.get("itmgrpdsc") or "All Item Groups",
         "brand": item_data.get("branddsc"),
         "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
-        "stock_uom": "Nos",
         "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
         "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
         "custom_carton_upc": item_data.get("cart_upc"),
@@ -553,11 +574,14 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     for field, value in field_mapping.items():
         if value not in [None, "", 0, "0", "null"]:
             item_doc.set(field, value)
+            updated = True
 
-    item_doc.save(ignore_permissions=True)
-    frappe.db.commit()
+    if updated:
+        item_doc.save(ignore_permissions=True)
+        frappe.db.commit()
 
     # Update warehouse stock quantity
+    qty_avlbl = item_data.get("qty_avlbl")
     if qty_avlbl not in [None, "", "null"]:
         qty_avlbl = float(item_data.get("qty_avlbl") or 0)
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
@@ -598,7 +622,17 @@ def get_product_prices():
             username = UDC_USER
             password = UDC_PASSWORD
         response = requests.get(url, auth=(username, password))
-        data = response.json()
+        if response.status_code != 200:
+            frappe.throw(f"API Error {response.status_code}: {response.text}")
+
+        # Check if response is not empty and is JSON
+        if not response.text.strip():
+            frappe.throw("Empty response from API")
+
+        try:
+            data = response.json()
+        except Exception:
+            frappe.throw(f"Invalid JSON response: {response.text[:500]}")
 
         if not data.get("items"):
             return "No prices found"
