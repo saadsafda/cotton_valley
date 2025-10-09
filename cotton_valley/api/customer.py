@@ -125,6 +125,7 @@ def get_current_customer():
             "phone": customer.custom_phone_number,
             "profile_image_id": customer.image,
             "status": 1 if not customer.disabled else 0,
+            "mode_of_payment": customer.mode_of_payment,
             "created_at": customer.creation,
             "updated_at": customer.modified,
         }
