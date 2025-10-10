@@ -370,6 +370,15 @@ def get_product(product_id, company="Cotton Valley"):
             WHERE item_code = %s and price_list = %s
             LIMIT 1
         """, (product_id, price_list), as_dict=True)
+        default_price_data = frappe.db.sql("""
+            SELECT price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code = %s and price_list = %s
+            LIMIT 1
+        """, (product_id, "Retail"), as_dict=True)
+        if not price_data and default_price_data:
+            price_data = default_price_data
+            
         product["price"] = price_data[0]["price_list_rate"] if price_data else 0
         product["sale_price"] = product["price"]  # adjust if you have discount rules
         product["discount"] = 0  # calculate discount if needed
