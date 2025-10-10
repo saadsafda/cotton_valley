@@ -55,6 +55,7 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
             "custom_account_type": data.get("account_type"),
             "custom_bank_email": data.get("bank_email"),
             "register_company": company,
+            "default_currency": "USD",
             "disabled": 1,  # Customer will be enabled after verification
             "custom_ip_address": ip_address,
             "custom_lat__long": lat_long,

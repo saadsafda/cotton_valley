@@ -5,7 +5,7 @@ from frappe import _ # type: ignore
 from cotton_valley.api.website_theme_setting import get_file, get_categories_from_string
 import requests
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
-from cotton_valley.api.common import check_customer_token
+from cotton_valley.api.common import check_customer_token, get_customer_from_token
 
 
 @frappe.whitelist(allow_guest=True)
@@ -209,11 +209,20 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     # Prices
     price_map = {}
     if check_customer_token():
+        customer = get_customer_from_token()
+        price_list = "Retail"
+        if company == "Cotton Valley":
+            price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
+        elif company == "UDC":
+            price_list = frappe.get_value("Customer", customer, "price_list_for_udc")
+
+        if not price_list:
+            price_list = "Retail"
         price_data = frappe.db.sql("""
             SELECT item_code, price_list_rate
             FROM `tabItem Price`
-            WHERE item_code in %s
-        """, (item_ids,), as_dict=True)
+            WHERE item_code in %s and price_list = %s
+        """, (item_ids, price_list), as_dict=True)
         price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
@@ -345,12 +354,22 @@ def get_product(product_id, company="Cotton Valley"):
     # Example: handle prices (if you have Price List / Item Price doctype)
 
     if check_customer_token():
+        customer = get_customer_from_token()
+        price_list = "Retail"
+        if company == "Cotton Valley":
+            price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
+        elif company == "UDC":
+            price_list = frappe.get_value("Customer", customer, "price_list_for_udc")
+
+        if not price_list:
+            price_list = "Retail"
+
         price_data = frappe.db.sql("""
             SELECT price_list_rate
             FROM `tabItem Price`
-            WHERE item_code = %s
+            WHERE item_code = %s and price_list = %s
             LIMIT 1
-        """, (product_id,), as_dict=True)
+        """, (product_id, price_list), as_dict=True)
         product["price"] = price_data[0]["price_list_rate"] if price_data else 0
         product["sale_price"] = product["price"]  # adjust if you have discount rules
         product["discount"] = 0  # calculate discount if needed
@@ -400,22 +419,6 @@ def get_product(product_id, company="Cotton Valley"):
         category_list.append(get_category_list(cat.id, company)["data"][0] if get_category_list(cat.id, company)["data"] else {"id": cat.id, "name": cat.id, "slug": cat.id, "category_image": None, "banner_image": None, "products_count": 0, "subcategories": []})
 
     product["categories"] = category_list
-
-    # tags (via Item Tag child table if you have)
-    # tags = frappe.db.sql("""
-    #     SELECT t.tag as id, tg.title as name, tg.slug
-    #     FROM `tabItem Tag` t
-    #     INNER JOIN `tabTag` tg ON tg.name = t.tag
-    #     WHERE t.parent = %s
-    # """, (product_id,), as_dict=True)
-    # product["tags"] = tags
-
-    # reviews (if you have Product Review doctype)
-    # reviews = frappe.get_all(
-    #     "Product Review",
-    #     filters={"product": product_id},
-    #     fields=["name as id", "review_text", "rating", "owner as user"]
-    # )
     reviews = []
     product["reviews"] = reviews
     product["reviews_count"] = len(reviews)
@@ -434,16 +437,6 @@ def get_product(product_id, company="Cotton Valley"):
 
     product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
     product["cross_sell_products"] = []
-
-    # store info (if you have linked supplier/vendor)
-    # if frappe.db.exists("Supplier", {"supplier_name": frappe.db.get_value("Item", product_id, "supplier")}):
-    #     supplier = frappe.db.get_value(
-    #         "Supplier",
-    #         {"supplier_name": frappe.db.get_value("Item", product_id, "supplier")},
-    #         ["name as id", "supplier_name as store_name", "website as slug", "image as store_logo_id"],
-    #         as_dict=True
-    #     )
-    #     product["store"] = supplier
 
     return product
 
