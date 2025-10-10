@@ -1,6 +1,8 @@
 frappe.listview_settings['Item'] = {
     onload(listview) {
-        if (frappe.get_route()[2] === 'Report') {
+        console.log("item list js loaded", frappe.get_route());
+
+        if (frappe.get_route()[2] === 'Report' && !frappe.get_route()[3]) {
             frappe.set_route('item', 'view', 'report', 'Product Report');
         }
         // Hide sidebar

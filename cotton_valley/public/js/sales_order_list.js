@@ -1,6 +1,6 @@
 frappe.listview_settings['Sales Order'] = {
     onload(listview) {
-        if (frappe.get_route()[2] === 'Report') {
+        if (frappe.get_route()[2] === 'Report' && !frappe.get_route()[3]) {
             frappe.set_route('sales-order', 'view', 'report', 'Sales Order Report');
         }
         // Hide sidebar
