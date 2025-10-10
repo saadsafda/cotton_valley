@@ -218,11 +218,20 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         if not price_list:
             price_list = "Retail"
+        
         price_data = frappe.db.sql("""
             SELECT item_code, price_list_rate
             FROM `tabItem Price`
             WHERE item_code in %s and price_list = %s
         """, (item_ids, price_list), as_dict=True)
+        default_price_data = frappe.db.sql("""
+            SELECT price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code = %s and price_list = %s
+            LIMIT 1
+        """, (product_id, "Retail"), as_dict=True)
+        if not price_data and default_price_data:
+            price_data = default_price_data
         price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
@@ -400,7 +409,7 @@ def get_product(product_id, company="Cotton Valley"):
         product["stock_status"] = "out_of_stock"
 
     product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
-    product["trending_products"] = frappe.get_all("Item", filters={"custom_no_of_clicks": [">", 0]}, fields=["name"], pluck='name', order_by="custom_no_of_clicks desc", limit_page_length=4)
+    product["trending_products"] = frappe.get_all("Item", filters={"custom_no_of_clicks": [">", 0], "company": company}, fields=["name"], pluck='name', order_by="custom_no_of_clicks desc", limit_page_length=4)
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
     # galleries (attachments of Item)
