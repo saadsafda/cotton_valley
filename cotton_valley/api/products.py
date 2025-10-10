@@ -378,7 +378,7 @@ def get_product(product_id, company="Cotton Valley"):
         """, (product_id, "Retail"), as_dict=True)
         if not price_data and default_price_data:
             price_data = default_price_data
-            
+
         product["price"] = price_data[0]["price_list_rate"] if price_data else 0
         product["sale_price"] = product["price"]  # adjust if you have discount rules
         product["discount"] = 0  # calculate discount if needed
@@ -400,7 +400,7 @@ def get_product(product_id, company="Cotton Valley"):
         product["stock_status"] = "out_of_stock"
 
     product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
-    product["trending_products"] = frappe.get_all("Slides Items", filters={"parent": product_id}, fields=["product"], pluck='product')
+    product["trending_products"] = frappe.get_all("Item", filters={"custom_no_of_clicks": [">", 0]}, fields=["name"], pluck='name', order_by="custom_no_of_clicks desc", limit_page_length=4)
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
     # galleries (attachments of Item)
