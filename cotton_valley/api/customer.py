@@ -130,8 +130,8 @@ def get_current_customer():
             "updated_at": customer.modified,
         }
 
-        if customer.custom_sales_respresentive:
-            sales_rep = frappe.get_doc("Sales Person", customer.custom_sales_respresentive)
+        if customer.sales_person:
+            sales_rep = frappe.get_doc("Sales Person", customer.sales_person)
             sales_employee = {}
             if sales_rep.employee:
                 sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, ["user_id", "cell_number"], as_dict=True)
