@@ -224,8 +224,15 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             FROM `tabItem Price`
             WHERE item_code in %s and price_list = %s
         """, (item_ids, price_list), as_dict=True)
-
-        price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
+        if len(price_data) > 0:
+            price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
+        else:
+            price_data = frappe.db.sql("""
+                SELECT item_code, price_list_rate
+                FROM `tabItem Price`
+                WHERE item_code in %s and price_list = %s
+            """, (item_ids, "Retail"), as_dict=True)
+            price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
     stock_data = frappe.db.sql("""
