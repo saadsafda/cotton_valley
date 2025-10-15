@@ -229,7 +229,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             FROM `tabItem Price`
             WHERE item_code = %s and price_list = %s
             LIMIT 1
-        """, (product_id, "Retail"), as_dict=True)
+        """, (item_ids, "Retail"), as_dict=True)
         if not price_data and default_price_data:
             price_data = default_price_data
         price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
