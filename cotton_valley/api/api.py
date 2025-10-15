@@ -52,7 +52,7 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
             "custom_bank_city": data.get("bank_city"),
             "custom_bank_state": data.get("bank_state"),
             "custom_bank_zip_code": data.get("bank_zip_code"),
-            "custom_account_type": data.get("account_type"),
+            "custom_bank_account_type": data.get("account_type"),
             "custom_bank_email": data.get("bank_email"),
             "register_company": company,
             "default_currency": "USD",
