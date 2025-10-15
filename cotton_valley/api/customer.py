@@ -39,6 +39,32 @@ def customer_bank_account():
 
 
 @frappe.whitelist(allow_guest=True)
+def update_customer_bank_account(bank_name, bank_address, bank_phone, bank_fax, bank_account_number,
+                                 bank_city, bank_state, bank_zip_code, bank_account_type, bank_email):
+    try:
+        customer_id = get_customer_from_token()
+        if not customer_id:
+            return {"status": "error", "message": "Customer not found"}
+
+        customer = frappe.get_doc("Customer", customer_id)
+        customer.custom_bank_name = bank_name
+        customer.custom_bank_address = bank_address
+        customer.custom_bank_phone = bank_phone
+        customer.custom_bank_fax = bank_fax
+        customer.custom_bank_account_number = bank_account_number
+        customer.custom_bank_city = bank_city
+        customer.custom_bank_state = bank_state
+        customer.custom_bank_zip_code = bank_zip_code
+        customer.custom_bank_account_type = bank_account_type
+        customer.custom_bank_email = bank_email
+        customer.save()
+
+        return {"status": "success", "message": "Bank account updated successfully"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
 def is_email_exists(email):
     try:
         customer_id = frappe.db.get_value("Customer", {"custom_email_address": email}, "name")
