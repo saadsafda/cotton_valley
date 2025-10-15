@@ -1,6 +1,9 @@
 frappe.ui.form.on('Customer', {
     refresh: function (frm) {
         $("[data-label='View']").hide();
+        $("[data-label='Create']").hide();
+        $("[data-label='Actions']").hide();
+
         if (!frm.is_new()) {
             frm.add_custom_button(__('Login as Customer'), function () {
                 frappe.prompt([
@@ -50,9 +53,20 @@ frappe.ui.form.on('Customer', {
         }
     },
 
+    setup: function (frm) {
+        frm.set_query("customer_billing_address", function (doc) {
+            return {
+                filters: {
+                    link_doctype: "Customer",
+                    link_name: doc.name,
+                },
+            };
+        });
+    },
+
     validate: function (frm) {
         if (frm.doc.password !== frm.doc.confirm_password) {
             frappe.throw(__('Password and Confirm Password must be the same'));
         }
-    }
+    },
 });

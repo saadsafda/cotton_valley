@@ -1,4 +1,5 @@
 import frappe # type: ignore
+from cotton_valley.api.common import get_customer_from_token
 
 
 @frappe.whitelist(allow_guest=True)
@@ -8,7 +9,19 @@ def settings(company="Cotton Valley"):
     if company != "Cotton Valley":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
-    mode_of_payment = frappe.get_all("Mode of Payment", filters={"enabled": 1}, fields=["name", "enabled as status"])
+    mode_of_payment = frappe.get_all("Mode of Payment", filters={"name": "COD", "enabled": 1}, fields=["name", "enabled as status"])
+    current_customer = get_customer_from_token()
+    if current_customer:
+        customer_payment = frappe.db.get_value(
+            "Customer", current_customer, "mode_of_payment"
+        )
+        if customer_payment:
+            mode_of_payment = frappe.get_all(
+                "Mode of Payment",
+                filters={"name": customer_payment, "enabled": 1},
+                fields=["name", "enabled as status"]
+            )
+
     data = {
         "values": {
             "general": {
