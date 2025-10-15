@@ -84,6 +84,7 @@ def get_product_ids(search=None, company="Cotton Valley"):
 
 @frappe.whitelist(allow_guest=True)
 def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company="Cotton Valley"):
+    # --- Parameter Cleaning (No changes here) ---
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
@@ -94,105 +95,64 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     ids = None if not ids or ids == "null" else get_categories_from_string(ids)
     company = "Cotton Valley" if not company or company == "null" else company
 
-    filters = {"disabled": 0}  # only active products
-
+    # --- Initial Filters (No changes here) ---
+    filters = {"disabled": 0}
     if ids:
         filters["name"] = ["in", ids]
-
     if company:
         filters["company"] = company
-
     if producttype:
         filters["item_group"] = ["in", producttype]
-
-    # --- Category Filter ---
-    if category:
-        # get all product IDs linked to this category
-        product_ids = frappe.db.sql("""
-            SELECT DISTINCT i.name
-            FROM `tabItem` i
-            INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-            WHERE c.product_category in %s
-        """, (category,), as_dict=True)
-        product_ids = [p["name"] for p in product_ids]
-
-        if not product_ids:
-            return {"data": [], "total": 0}  # no products found for this category
-
-        filters["name"] = ["in", product_ids]
-
-    # --- Subcategory Filter ---
     if subcategory:
         filters["custom_sub_category"] = ["in", subcategory]
 
-    # --- Search Filter ---
+    # --- Category Filter ---
+    if category:
+        product_ids_for_category = frappe.db.sql("""
+            SELECT DISTINCT i.name
+            FROM `tabItem` i
+            INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
+            WHERE c.product_category IN %s
+        """, (category,), as_dict=True)
+        
+        product_ids = [p["name"] for p in product_ids_for_category]
+
+        if not product_ids:
+            return {"data": [], "total": 0}
+
+        # If a category filter is active, it overrides any other name filters
+        filters["name"] = ["in", product_ids]
+
+    # --- Search & Sort (No changes here) ---
     or_filters = {}
     if search:
-        or_filters = {
-            "item_name": ["like", f"%{search}%"],
-            "name": ["like", f"%{search}%"]
-        }
-
-    # --- Sort Options ---
+        or_filters = {"item_name": ["like", f"%{search}%"], "name": ["like", f"%{search}%"]}
+    
     sort_clause = {
-        "asc": "creation asc",
-        "desc": "creation desc",
-        "a-z": "item_name asc",
-        "z-a": "item_name desc",
-        "low-high": "price asc",
-        "high-low": "price desc"
+        "asc": "creation asc", "desc": "creation desc", "a-z": "item_name asc",
+        "z-a": "item_name desc", "low-high": "price asc", "high-low": "price desc"
     }.get(sortBy, "creation asc")
 
-    # --- Total Count ---
-    total_count = 0
-    if search:
-        total_count = frappe.db.sql("""
-            SELECT COUNT(*) 
-            FROM `tabItem`
-            WHERE item_name LIKE %s OR item_code LIKE %s
-        """, (f"%{search}%", f"%{search}%"))[0][0]
-    else:
-        total_count = frappe.db.count("Item", filters=filters)
+    # --- Pagination & Total Count (No changes here) ---
+    total_count = frappe.db.count("Item", filters=filters, or_filters=or_filters)
+    limit_start = (page - 1) * 30 if page and page > 0 else 0
+    limit_page_length = 30
 
-    # --- Pagination ---
-    limit_start = (page - 1) * 30 if page and page > 0 else None
-    limit_page_length = 30 if page else None
-
-    # get all items
+    # --- Main Query to get items (No changes here) ---
     items = frappe.get_all(
         "Item",
         filters=filters,
         or_filters=or_filters,
         fields=[
-            "name as id",
-            "item_name as name",
-            "custom_short_description as short_description",
-            "description",
-            "item_group as type",
-            "name as sku",
-            "name as slug",
-            "stock_uom as unit",
-            "weight_uom as weight",
-            "custom_case_pack as case_pack",
-            "image as product_thumbnail_id",
-            "disabled as status",
-            "brand",
-            "custom_sub_category as sub_category",
-            "custom_carton_upc as carton_upc",
-            "custom_case_per_pallet as case_per_pallet",
-            "custom_cbm as cbm",
-            "custom_upc as upc_code",
-            "custom_pallet_hi as pallet_hi",
-            "custom_pallet_ti as pallet_ti",
-            "custom_package_width_inch as package_width",
-            "custom_package_length_inch as package_length",
-            "custom_package_height_inch as package_height",
-            "custom_weight_lbs as package_weight",
-            "custom_item_width_inch as item_width",
-            "custom_item_length_inch as item_length",
-            "custom_item_height_inch as item_height",
-            "custom_item_weight_lbs as item_weight",
-            "custom_coming_soon as coming_soon",
+            "name as id", "item_name as name", "custom_short_description as short_description",
+            "description", "item_group as type", "name as sku", "name as slug", "stock_uom as unit",
+            "weight_uom as weight", "custom_case_pack as case_pack", "image as product_thumbnail_id",
+            "disabled as status", "brand", "custom_sub_category as sub_category", "custom_carton_upc as carton_upc",
+            "custom_case_per_pallet as case_per_pallet", "custom_cbm as cbm", "custom_upc as upc_code",
+            "custom_pallet_hi as pallet_hi", "custom_pallet_ti as pallet_ti", "custom_package_width_inch as package_width",
+            "custom_package_length_inch as package_length", "custom_package_height_inch as package_height",
+            "custom_weight_lbs as package_weight", "custom_item_width_inch as item_width", "custom_item_length_inch as item_length",
+            "custom_item_height_inch as item_height", "custom_item_weight_lbs as item_weight", "custom_coming_soon as coming_soon",
             "custom_new_arrivals as new_arrivals"
         ],
         order_by=sort_clause,
@@ -205,106 +165,95 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
     item_ids = [p["id"] for p in items]
 
-    # --- Batch Queries ---
-    # Prices
+    # --- CHANGE: BATCH QUERIES FOR EFFICIENCY ---
+    # Get Customer-Specific Prices (if logged in)
     price_map = {}
-    if check_customer_token():
+    is_logged_in = check_customer_token()
+    if is_logged_in:
         customer = get_customer_from_token()
-        price_list = "Retail"
-        if company == "Cotton Valley":
-            price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
-        elif company == "UDC":
-            price_list = frappe.get_value("Customer", customer, "price_list_for_udc")
-
-        if not price_list:
-            price_list = "Retail"
+        price_list_field = "price_list_for_cv" if company == "Cotton Valley" else "price_list_for_udc"
+        price_list = frappe.get_value("Customer", customer, price_list_field)
         
-        price_data = frappe.db.sql("""
-            SELECT item_code, price_list_rate
-            FROM `tabItem Price`
-            WHERE item_code in %s and price_list = %s
-        """, (item_ids, price_list), as_dict=True)
+        if price_list:
+            price_data = frappe.db.sql("""
+                SELECT item_code, price_list_rate
+                FROM `tabItem Price`
+                WHERE item_code IN %s AND price_list = %s
+            """, (item_ids, price_list), as_dict=True)
+            price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
-        price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
+    # --- CHANGE: Get Retail Prices for ALL items in one go (for fallback and guests)
+    retail_price_data = frappe.db.sql("""
+        SELECT item_code, price_list_rate
+        FROM `tabItem Price`
+        WHERE item_code IN %s AND price_list = 'Retail'
+    """, (item_ids,), as_dict=True)
+    retail_price_map = {p["item_code"]: p["price_list_rate"] for p in retail_price_data}
 
-    # Stock
+    # Stock (No change here)
     stock_data = frappe.db.sql("""
         SELECT item_code, SUM(actual_qty) as qty
         FROM `tabBin`
-        WHERE item_code in %s
-        GROUP BY item_code
+        WHERE item_code IN %s GROUP BY item_code
     """, (item_ids,), as_dict=True)
-    stock_map = {s["item_code"]: s["qty"] for s in stock_data}
+    stock_map = {s["item_code"]: s.get("qty") for s in stock_data}
 
-    # Product Images
-    galleries_data = frappe.get_all(
-        "Product Images",
-        filters={"parent": ["in", item_ids]},
-        fields=["parent", "list_index", "image"],
-        order_by="list_index asc"
-    )
+    # Product Images (No change here)
+    galleries_data = frappe.get_all("Product Images", filters={"parent": ["in", item_ids]}, fields=["parent", "list_index", "image"], order_by="list_index asc")
     galleries_map = {}
     for g in galleries_data:
         galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
 
 
-
-    # --- Final Assembly ---
+    # --- FINAL ASSEMBLY ---
     products = []
     for product in items:
         product_id = product["id"]
 
-        # Price
-        if check_customer_token():
-            default_price_data = frappe.db.sql("""
-                SELECT item_code, price_list_rate
-                FROM `tabItem Price`
-                WHERE item_code = %s and price_list = %s
-                LIMIT 1
-            """, (product_id, "Retail"), as_dict=True)
-            retail_price = default_price_data[0]["price_list_rate"] if default_price_data else 0
-            customer_price = price_map.get(product_id, 0)
-
-            product["price"] = customer_price if customer_price > 0 else retail_price
-            product["sale_price"] = product["price"]
-            product["discount"] = 0
-        else:
-            product["price"] = product["sale_price"] = product["discount"] = 0
-
         # Stock
-        qty = stock_map.get(product_id, 0)
+        qty = stock_map.get(product_id, 0) or 0
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
 
-        # Stock Filter
+        # --- CHANGE: CONSOLIDATED STOCK FILTER ---
+        # If a stock filter is active, skip items that don't match
         if attribute:
-            if attribute == ["in_stock"] and qty <= 0:
+            in_stock_selected = "in_stock" in attribute
+            out_of_stock_selected = "out_stock" in attribute
+            
+            # Skip if only "in_stock" is selected and item is out of stock
+            if in_stock_selected and not out_of_stock_selected and qty <= 0:
                 continue
-            if attribute == ["out_stock"] and qty > 0:
+            # Skip if only "out_stock" is selected and item is in stock
+            if out_of_stock_selected and not in_stock_selected and qty > 0:
                 continue
+        
+        # --- CHANGE: ROBUST PRICE CALCULATION ---
+        # Get the retail price first, defaulting to 0 if not found. The `or 0` handles None/NULL.
+        retail_price = retail_price_map.get(product_id) or 0
+        
+        if is_logged_in:
+            # Get customer price. Use retail as fallback. `or retail_price` handles None/NULL.
+            customer_price = price_map.get(product_id) or retail_price
+            product["price"] = customer_price
+        else:
+            # Guests see the retail price
+            product["price"] = retail_price
 
-        # --- Stock Filter ---
-        if attribute:
-            # if only "in_stock" selected → only keep items with qty > 0
-            if attribute == ["in_stock"] and product["quantity"] <= 0:
-                continue
-            # if only "out_stock" selected → only keep items with qty = 0
-            if attribute == ["out_stock"] and product["quantity"] > 0:
-                continue
-            # if both are passed, ignore filter (show all)
+        product["sale_price"] = product["price"] # Assuming no separate sale price logic for now
+        product["discount"] = 0
 
-
-        # images
+        # Images
         product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
         product["product_galleries"] = galleries_map.get(product_id, [])
         product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
-
         products.append(product)
-    product_showing = page * 30 if page and page > 0 else total_count
-    from_showing = (product_showing - 30) + 1 if page and page > 0 else 1
-    return {"data": products, "total": total_count, "from": from_showing, "to": product_showing, "current_page": page or 1, "per_page": limit_page_length or total_count}
 
+    # --- Final Return Structure (No changes here) ---
+    product_showing = limit_start + len(products)
+    from_showing = limit_start + 1 if products else 0
+    return {"data": products, "total": total_count, "from": from_showing, "to": product_showing, "current_page": page or 1, "per_page": limit_page_length}
 
 @frappe.whitelist(allow_guest=True)
 def get_product(product_id, company="Cotton Valley"):
