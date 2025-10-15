@@ -259,12 +259,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             default_price_data = frappe.db.sql("""
                 SELECT item_code, price_list_rate
                 FROM `tabItem Price`
-                WHERE item_code in %s and price_list = %s
+                WHERE item_code = %s and price_list = %s
                 LIMIT 1
             """, (product_id, "Retail"), as_dict=True)
             retail_price = default_price_data[0]["price_list_rate"] if default_price_data else 0
             customer_price = price_map.get(product_id, 0)
-            
+
             product["price"] = customer_price if customer_price > 0 else retail_price
             product["sale_price"] = product["price"]
             product["discount"] = 0
