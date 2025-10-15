@@ -59,6 +59,9 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
             "disabled": 1,  # Customer will be enabled after verification
             "custom_ip_address": ip_address,
             "custom_lat__long": lat_long,
+            "no_of_login": "0",
+            "no_of_orders": "0",
+            "orders_amount": "0.00",
         })
 
         # References
