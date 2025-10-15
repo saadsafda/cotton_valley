@@ -625,68 +625,82 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
+CHUNK_SIZE = 500  # adjust as needed
 
 @frappe.whitelist()
 def get_product_prices():
     items = frappe.get_all("Item", pluck="name")
+    total = len(items)
+    frappe.logger().info(f"Starting price update for {total} items...")
     username = ""
     password = ""
-    for item_code in items:
-        company = frappe.get_value("Item", item_code, "company")
-        if company == "Cotton Valley":
-            url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-            username = CV_USER
-            password = CV_PASSWORD
-        elif company == "UDC":
-            url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-            username = UDC_USER
-            password = UDC_PASSWORD
-        response = requests.get(url, auth=(username, password))
-        if response.status_code != 200:
-            frappe.throw(f"API Error {response.status_code}: {response.text}")
+    # Process in chunks
+    for start in range(0, total, CHUNK_SIZE):
+        batch = items[start:start + CHUNK_SIZE]
+        frappe.logger().info(f"Processing items {start + 1} to {start + len(batch)}...")
 
-        # Check if response is not empty and is JSON
-        if not response.text.strip():
-            frappe.throw("Empty response from API")
-
-        try:
-            data = response.json()
-        except Exception:
-            frappe.throw(f"Invalid JSON response: {response.text[:500]}")
-
-        if not data.get("items"):
-            return "No prices found"
-
-        for item in data["items"]:
-            region_name = item.get("rgnname")
-            rate = item.get("rate")
-
-            if not region_name or not rate or float(rate) <= 0:
-                continue
-
-            price_list = frappe.db.exists("Price List", region_name)
-            if not price_list:
-                continue
-
-
-            existing = frappe.db.exists("Item Price", {
-                "item_code": item_code,
-                "price_list": price_list
-            })
-
-            if existing:
-                ip = frappe.get_doc("Item Price", existing)
-                ip.price_list_rate = float(rate)
-                ip.save()
+        for item_code in batch:
+            company = frappe.get_value("Item", item_code, "company")
+            if company == "Cotton Valley":
+                url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+                username = CV_USER
+                password = CV_PASSWORD
+            elif company == "UDC":
+                url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+                username = UDC_USER
+                password = UDC_PASSWORD
             else:
-                frappe.get_doc({
-                    "doctype": "Item Price",
-                    "item_code": item_code,
-                    "price_list": price_list,
-                    "price_list_rate": float(rate),
-                    "currency": "USD"   # or your default currency
-                }).insert()
+                continue  # skip if company is not recognized
+            try:
+                response = requests.get(url, auth=(username, password), timeout=30)
+                if response.status_code != 200:
+                    frappe.logger().error(f"{item_code}: API Error {response.status_code}")
+                    continue
 
-        frappe.db.commit()
-    return "Prices updated"
+                # Check if response is not empty and is JSON
+                if not response.text.strip():
+                    frappe.logger().warning(f"{item_code}: Empty response")
+                    continue
+
+
+                data = response.json()
+                if not data.get("items"):
+                    continue
+
+                for item in data["items"]:
+                    region_name = item.get("rgnname")
+                    rate = item.get("rate")
+
+                    if not region_name or not rate or float(rate) <= 0:
+                        continue
+
+                    price_list = frappe.db.exists("Price List", region_name)
+                    if not price_list:
+                        continue
+
+
+                    existing = frappe.db.exists("Item Price", {
+                        "item_code": item_code,
+                        "price_list": price_list
+                    })
+
+                    if existing:
+                        ip = frappe.get_doc("Item Price", existing)
+                        ip.price_list_rate = float(rate)
+                        ip.save()
+                    else:
+                        frappe.get_doc({
+                            "doctype": "Item Price",
+                            "item_code": item_code,
+                            "price_list": price_list,
+                            "price_list_rate": float(rate),
+                            "currency": "USD"   # or your default currency
+                        }).insert()
+
+                frappe.db.commit()
+            except Exception as e:
+                frappe.logger().error(f"Error for {item_code}: {str(e)}")
+
+        frappe.logger().info(f"Batch {start // CHUNK_SIZE + 1} completed.")
+    return "All item prices updated successfully."
 
