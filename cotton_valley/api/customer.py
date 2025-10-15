@@ -184,6 +184,7 @@ def get_current_customer():
             "profile_image_id": customer.image,
             "status": 1 if not customer.disabled else 0,
             "mode_of_payment": customer.mode_of_payment,
+            "company": customer.custom_company_name,
             "created_at": customer.creation,
             "updated_at": customer.modified,
         }
