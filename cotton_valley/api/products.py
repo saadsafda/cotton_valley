@@ -219,23 +219,13 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         if not price_list:
             price_list = "Retail"
         
-        for item_code in item_ids:
-            # Try to get price from customer price list
-            price = frappe.db.get_value(
-                "Item Price",
-                {"item_code": item_code, "price_list": price_list},
-                "price_list_rate"
-            )
+        price_data = frappe.db.sql("""
+            SELECT item_code, price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code in %s and price_list = %s
+        """, (item_ids, price_list), as_dict=True)
 
-            # Fallback to Retail if not found
-            if not price:
-                price = frappe.db.get_value(
-                    "Item Price",
-                    {"item_code": item_code, "price_list": "Retail"},
-                    "price_list_rate"
-                )
-
-            price_map[item_code] = price or 0
+        price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
     stock_data = frappe.db.sql("""
@@ -266,11 +256,20 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         # Price
         if check_customer_token():
-            product["price"] = price_map.get(product_id, 0)
+            default_price_data = frappe.db.sql("""
+                SELECT item_code, price_list_rate
+                FROM `tabItem Price`
+                WHERE item_code in %s and price_list = %s
+                LIMIT 1
+            """, (product_id, "Retail"), as_dict=True)
+            retail_price = default_price_data[0]["price_list_rate"] if default_price_data else 0
+            customer_price = price_map.get(product_id, 0)
+            
+            product["price"] = customer_price if customer_price > 0 else retail_price
             product["sale_price"] = product["price"]
             product["discount"] = 0
         else:
-            product["price"] = product["sale_price"] = product["discount"] = None
+            product["price"] = product["sale_price"] = product["discount"] = 0
 
         # Stock
         qty = stock_map.get(product_id, 0)
