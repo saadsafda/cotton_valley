@@ -212,9 +212,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         customer = get_customer_from_token()
         price_list = "Retail"
         if company == "Cotton Valley":
-            price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
+            price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
         elif company == "UDC":
-            price_list = frappe.get_value("Customer", customer, "price_list_for_udc")
+            price_list = frappe.get_value("Customer", customer, "price_list_for_udc") or "Retail"
 
         if not price_list:
             price_list = "Retail"
