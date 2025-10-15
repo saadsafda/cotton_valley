@@ -6,6 +6,38 @@ from cotton_valley.api.common import get_customer_from_token
 from frappe.utils.data import add_days, now_datetime
 
 
+
+@frappe.whitelist(allow_guest=True)
+def customer_bank_account():
+    try:
+        customer_id = get_customer_from_token()
+        if not customer_id:
+            return {"status": "error", "message": "Customer not found"}
+
+        payment_account = frappe.db.get_value(
+            "Customer", {"name": customer_id},
+            ["custom_bank_name", "custom_bank_address", "custom_bank_phone", "custom_bank_fax", "custom_bank_account_number",
+             "custom_bank_city", "custom_bank_state", "custom_bank_zip_code", "custom_bank_account_type", "custom_bank_email"], as_dict=True
+        )
+        if payment_account:
+            return {"status": "success", "data": {
+                "bank_name": payment_account.custom_bank_name,
+                "bank_address": payment_account.custom_bank_address,
+                "bank_phone": payment_account.custom_bank_phone,
+                "bank_fax": payment_account.custom_bank_fax,
+                "bank_account_number": payment_account.custom_bank_account_number,
+                "bank_city": payment_account.custom_bank_city,
+                "bank_state": payment_account.custom_bank_state,
+                "bank_zip_code": payment_account.custom_bank_zip_code,
+                "bank_account_type": payment_account.custom_bank_account_type,
+                "bank_email": payment_account.custom_bank_email,
+            }}
+        else:
+            return {"status": "error", "message": "No bank account found"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 @frappe.whitelist(allow_guest=True)
 def is_email_exists(email):
     try:
