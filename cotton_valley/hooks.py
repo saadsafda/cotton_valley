@@ -178,13 +178,13 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
+scheduler_events = {
 # 	"all": [
 # 		"cotton_valley.tasks.all"
 # 	],
-# 	"daily": [
-# 		"cotton_valley.tasks.daily"
-# 	],
+	"daily": [
+		"cotton_valley.api.products.get_product_prices"
+	],
 # 	"hourly": [
 # 		"cotton_valley.tasks.hourly"
 # 	],
@@ -194,7 +194,7 @@ doc_events = {
 # 	"monthly": [
 # 		"cotton_valley.tasks.monthly"
 # 	],
-# }
+}
 
 # Testing
 # -------
