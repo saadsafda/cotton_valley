@@ -57,7 +57,7 @@ def update_customer_bank_account(bank_name, bank_address, bank_phone, bank_fax, 
         customer.custom_bank_zip_code = bank_zip_code
         customer.custom_bank_account_type = bank_account_type
         customer.custom_bank_email = bank_email
-        customer.save()
+        customer.save(ignore_permissions=True)
 
         return {"status": "success", "message": "Bank account updated successfully"}
     except Exception as e:
