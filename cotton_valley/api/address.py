@@ -6,7 +6,7 @@ from cotton_valley.api.common import get_customer_from_token
 @frappe.whitelist(allow_guest=True)
 def add_address(address):
     customer = get_customer_from_token()
-    address = frappe.get_doc({
+    addre = frappe.get_doc({
         "doctype": "Address",
         "address_title": f"{customer}-{address.get('address_type')}",
         "address_type": address.get("address_type"),
@@ -23,22 +23,22 @@ def add_address(address):
         }]
     }).insert(ignore_permissions=True)
 
-    if address.get("is_default") and address.address_type == "Shipping":
-        frappe.db.set_value("Customer", customer, "customer_primary_address", address.name)
+    if address.get("is_default") and addre.address_type == "Shipping":
+        frappe.db.set_value("Customer", customer, "customer_primary_address", addre.name)
 
-    if address.get("is_default") and address.address_type == "Billing":
-        frappe.db.set_value("Customer", customer, "customer_billing_address", address.name)
+    if address.get("is_default") and addre.address_type == "Billing":
+        frappe.db.set_value("Customer", customer, "customer_billing_address", addre.name)
 
     return {
-                "id": address.name,
-                "title": address.address_title,
-                "address_type": address.address_type,
-                "street": address.address_line1,
-                "city": address.city,
-                "pincode": address.pincode,
-                "phone": address.phone,
-                "country": {"id": address.country, "name": address.country},
-                "state": {"id": address.state, "name": address.state},
+                "id": addre.name,
+                "title": addre.address_title,
+                "address_type": addre.address_type,
+                "street": addre.address_line1,
+                "city": addre.city,
+                "pincode": addre.pincode,
+                "phone": addre.phone,
+                "country": {"id": addre.country, "name": addre.country},
+                "state": {"id": addre.state, "name": addre.state},
                 "is_default": address.get("is_default")
             }
 
