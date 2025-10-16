@@ -1,13 +1,14 @@
 import frappe
 from cotton_valley.api.customer import get_current_customer
+from cotton_valley.api.common import get_customer_from_token
 
 
 @frappe.whitelist(allow_guest=True)
 def add_address(address):
-    customer = get_current_customer()
+    customer = get_customer_from_token()
     address = frappe.get_doc({
         "doctype": "Address",
-        "address_title": address.get("address_title"),
+        "address_title": f"{customer}-{address.get('address_type')}",
         "address_type": address.get("address_type"),
         "address_line1": address.get("address_line1"),
         "address_line2": address.get("address_line2"),
@@ -18,15 +19,15 @@ def add_address(address):
         "phone": address.get("phone"),
         "links": [{
             "link_doctype": "Customer",
-            "link_name": customer.get("id")
+            "link_name": customer
         }]
     }).insert(ignore_permissions=True)
 
     if address.get("is_default") and address.address_type == "Shipping":
-        frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", address.name)
+        frappe.db.set_value("Customer", customer, "customer_primary_address", address.name)
 
     if address.get("is_default") and address.address_type == "Billing":
-        frappe.db.set_value("Customer", customer.get("id"), "customer_billing_address", address.name)
+        frappe.db.set_value("Customer", customer, "customer_billing_address", address.name)
 
     return {
                 "id": address.name,
@@ -38,13 +39,13 @@ def add_address(address):
                 "phone": address.phone,
                 "country": {"id": address.country, "name": address.country},
                 "state": {"id": address.state, "name": address.state},
+                "is_default": address.get("is_default")
             }
 
 @frappe.whitelist(allow_guest=True)
 def update_address(address):
-    customer = get_current_customer()
+    customer = get_customer_from_token()
     addr = frappe.get_doc("Address", address.get("id"))
-    addr.address_title = address.get("address_title")
     addr.address_type = address.get("address_type")
     addr.address_line1 = address.get("address_line1")
     addr.address_line2 = address.get("address_line2")
@@ -56,10 +57,10 @@ def update_address(address):
     addr.save(ignore_permissions=True)
 
     if address.get("is_default") and addr.address_type == "Shipping":
-        frappe.db.set_value("Customer", customer.get("id"), "customer_primary_address", addr.name)
+        frappe.db.set_value("Customer", customer, "customer_primary_address", addr.name)
 
     if address.get("is_default") and addr.address_type == "Billing":
-        frappe.db.set_value("Customer", customer.get("id"), "customer_billing_address", addr.name)
+        frappe.db.set_value("Customer", customer, "customer_billing_address", addr.name)
 
     return {
                 "id": addr.name,
@@ -71,6 +72,7 @@ def update_address(address):
                 "phone": addr.phone,
                 "country": {"id": addr.country, "name": addr.country},
                 "state": {"id": addr.state, "name": addr.state},
+                "is_default": address.get("is_default")
             }
 
 
