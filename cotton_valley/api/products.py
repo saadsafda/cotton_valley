@@ -564,8 +564,6 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     except Exception:
         frappe.throw(f"Invalid JSON response: {response.text[:500]}")
 
-    print(data, "\n\nData from API\n\n")
-
     if not data.get("items"):
         return "No item found"
 
@@ -581,7 +579,6 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     field_mapping = {
         "item_name": item_data.get("itmdsc"),
         "item_group": item_data.get("itmgrpdsc") or "All Item Groups",
-        "brand": item_data.get("branddsc"),
         "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
         "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
         "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
