@@ -84,6 +84,7 @@ def get_all_products_with_price_levels():
         for product in items:
             product_id = product["id"]
 
+            # on creating I missed "e" in table name
             products_categories = frappe.get_all("Product Categoris", fields=["product_category"], filters={"parent": product_id}, pluck="product_category")
             product["categories"] = products_categories
             # Add ALL price levels for this product
