@@ -2,39 +2,39 @@ import frappe
 from cotton_valley.api.website_theme_setting import get_file
 
 
+
 @frappe.whitelist(allow_guest=True)
 def get_all_products_with_price_levels():
     """
     Fetch all products with ALL price levels for mobile app.
-    Returns all products with all available prices from different price lists.
-    Mobile app will filter by customer's price level on client side.
+    Optimized version with batch processing and minimal queries.
     """
     try:
-        filters = {"disabled": 0}  # only active products
+        # Single optimized query to get all data at once
+        products_data = frappe.db.sql("""
+            SELECT 
+                i.name as id,
+                i.item_name as name,
+                i.custom_short_description as short_description,
+                i.description,
+                i.item_group as type,
+                i.name as sku,
+                i.stock_uom as unit,
+                i.custom_case_pack as case_pack,
+                i.image as product_thumbnail_id,
+                i.brand,
+                i.custom_sub_category as sub_category,
+                i.custom_coming_soon as coming_soon,
+                i.custom_new_arrivals as new_arrivals,
+                COALESCE(SUM(b.actual_qty), 0) as quantity
+            FROM `tabItem` i
+            LEFT JOIN `tabBin` b ON b.item_code = i.name
+            WHERE i.disabled = 0
+            GROUP BY i.name
+            ORDER BY i.item_name ASC
+        """, as_dict=True)
 
-        # Get all items (no pagination, no filters)
-        items = frappe.get_all(
-            "Item",
-            filters=filters,
-            fields=[
-                "name as id",
-                "item_name as name",
-                "custom_short_description as short_description",
-                "description",
-                "item_group as type",
-                "name as sku",
-                "stock_uom as unit",
-                "custom_case_pack as case_pack",
-                "image as product_thumbnail_id",
-                "brand",
-                "custom_sub_category as sub_category",
-                "custom_coming_soon as coming_soon",
-                "custom_new_arrivals as new_arrivals"
-            ],
-            order_by="item_name asc"
-        )
-
-        if not items:
+        if not products_data:
             return {
                 "status": "success",
                 "message": "No products found",
@@ -42,14 +42,13 @@ def get_all_products_with_price_levels():
                 "total": 0
             }
 
-        item_ids = [p["id"] for p in items]
+        item_ids = [p["id"] for p in products_data]
 
-        # Get ALL prices for ALL price lists
+        # Get ALL prices in one query
         all_prices_data = frappe.db.sql("""
-            SELECT ip.item_code, ip.price_list, ip.price_list_rate, pl.name as price_list_name
-            FROM `tabItem Price` ip
-            INNER JOIN `tabPrice List` pl ON pl.name = ip.price_list
-            WHERE ip.item_code IN %s
+            SELECT item_code, price_list, price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code IN %s
         """, (item_ids,), as_dict=True)
         
         # Organize prices by item_code
@@ -59,45 +58,47 @@ def get_all_products_with_price_levels():
                 prices_by_item[price["item_code"]] = {}
             prices_by_item[price["item_code"]][price["price_list"]] = price["price_list_rate"]
 
-        # Batch query for stock
-        stock_data = frappe.db.sql("""
-            SELECT item_code, SUM(actual_qty) as qty
-            FROM `tabBin`
-            WHERE item_code in %s
-            GROUP BY item_code
+        # Get categories in one query
+        categories_data = frappe.db.sql("""
+            SELECT parent, product_category
+            FROM `tabProduct Categoris`
+            WHERE parent IN %s
         """, (item_ids,), as_dict=True)
-        stock_map = {s["item_code"]: s["qty"] for s in stock_data}
+        
+        categories_by_item = {}
+        for cat in categories_data:
+            categories_by_item.setdefault(cat["parent"], []).append(cat["product_category"])
 
-        # Batch query for images
-        galleries_data = frappe.get_all(
-            "Product Images",
-            filters={"parent": ["in", item_ids]},
-            fields=["parent", "list_index", "image"],
-            order_by="list_index asc"
-        )
-        galleries_map = {}
+        # Get images in one query
+        galleries_data = frappe.db.sql("""
+            SELECT parent, image
+            FROM `tabProduct Images`
+            WHERE parent IN %s
+            ORDER BY list_index ASC
+        """, (item_ids,), as_dict=True)
+        
+        galleries_by_item = {}
         for g in galleries_data:
-            galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
+            if g["image"]:
+                galleries_by_item.setdefault(g["parent"], []).append(get_file(g["image"]))
 
-        # Final assembly
+        # Assemble final data
         products = []
-        for product in items:
+        for product in products_data:
             product_id = product["id"]
 
-            # on creating I missed "e" in table name
-            products_categories = frappe.get_all("Product Categoris", fields=["product_category"], filters={"parent": product_id}, pluck="product_category")
-            product["categories"] = products_categories
-            # Add ALL price levels for this product
+            # Add price levels
             product["price_levels"] = prices_by_item.get(product_id, {})
 
-            # Stock
-            qty = stock_map.get(product_id, 0)
-            product["quantity"] = qty
-            product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
+            # Add categories
+            product["categories"] = categories_by_item.get(product_id, [])
+
+            # Stock status
+            product["stock_status"] = "in_stock" if product["quantity"] > 0 else "out_of_stock"
 
             # Images
-            product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
-            product["product_galleries"] = galleries_map.get(product_id, [])
+            product["product_thumbnail"] = get_file(product["product_thumbnail_id"]) if product["product_thumbnail_id"] else None
+            product["product_galleries"] = galleries_by_item.get(product_id, [])
 
             products.append(product)
 
@@ -112,7 +113,7 @@ def get_all_products_with_price_levels():
         frappe.local.response["http_status_code"] = 404
         return {
             "status": "error",
-            "message": "Customer or related data not found"
+            "message": "Data not found"
         }
     except frappe.PermissionError:
         frappe.local.response["http_status_code"] = 403
@@ -128,3 +129,4 @@ def get_all_products_with_price_levels():
             "message": "An error occurred while fetching products",
             "error": str(e)
         }
+    
