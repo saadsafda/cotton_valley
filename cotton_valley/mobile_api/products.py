@@ -26,7 +26,7 @@ def get_all_products_with_price_levels():
                 i.custom_sub_category as sub_category,
                 i.custom_coming_soon as coming_soon,
                 i.custom_new_arrivals as new_arrivals,
-                COALESCE(SUM(b.actual_qty), 0) as quantity
+                COALESCE(SUM(b.actual_qty), 0) as stock
             FROM `tabItem` i
             LEFT JOIN `tabBin` b ON b.item_code = i.name
             WHERE i.disabled = 0
@@ -80,7 +80,7 @@ def get_all_products_with_price_levels():
         galleries_by_item = {}
         for g in galleries_data:
             if g["image"]:
-                galleries_by_item.setdefault(g["parent"], []).append(get_file(g["image"]))
+                galleries_by_item.setdefault(g["parent"], []).append(frappe.utils.get_url(g["image"]))
 
         # Assemble final data
         products = []
@@ -97,23 +97,23 @@ def get_all_products_with_price_levels():
             product["stock_status"] = "in_stock" if product["quantity"] > 0 else "out_of_stock"
 
             # Images
-            product["product_thumbnail"] = get_file(product["product_thumbnail_id"]) if product["product_thumbnail_id"] else None
-            product["product_galleries"] = galleries_by_item.get(product_id, [])
+            product["image_url"] = frappe.utils.get_url(product["product_thumbnail_id"]) if product["product_thumbnail_id"] else None
+            product["images"] = galleries_by_item.get(product_id, [])
 
             products.append(product)
 
         return {
             "status": "success",
             "message": "Products fetched successfully",
-            "data": products,
-            "total": len(products)
+            "total": len(products),
+            "data": products
         }
 
     except frappe.DoesNotExistError:
         frappe.local.response["http_status_code"] = 404
         return {
             "status": "error",
-            "message": "Data not found"
+            "message": "Product or related data not found"
         }
     except frappe.PermissionError:
         frappe.local.response["http_status_code"] = 403
