@@ -84,6 +84,8 @@ def get_all_products_with_price_levels():
         for product in items:
             product_id = product["id"]
 
+            products_categories = frappe.get_all("Product Categoris", fields=["product_category"], filters={"parent": product_id}, pluck="product_category")
+            product["categories"] = products_categories
             # Add ALL price levels for this product
             product["price_levels"] = prices_by_item.get(product_id, {})
 
