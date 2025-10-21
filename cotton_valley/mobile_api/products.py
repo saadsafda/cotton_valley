@@ -94,7 +94,7 @@ def get_all_products_with_price_levels():
             product["categories"] = categories_by_item.get(product_id, [])
 
             # Stock status
-            product["stock_status"] = "in_stock" if product["quantity"] > 0 else "out_of_stock"
+            product["stock_status"] = "in_stock" if product["stock"] > 0 else "out_of_stock"
 
             # Images
             product["image_url"] = frappe.utils.get_url(product["product_thumbnail_id"]) if product["product_thumbnail_id"] else None
