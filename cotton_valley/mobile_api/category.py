@@ -43,9 +43,8 @@ def get_all_categories():
             # Encode category image to base64
             if category.get("category_image"):
                 # Keep original URL as fallback
-                category["category_image_url"] = category["category_image"]
+                category["category_image_url"] = frappe.utils.get_url(category["category_image"])
             else:
-                category["category_image_encoded"] = None
                 category["category_image_url"] = None
 
         return {

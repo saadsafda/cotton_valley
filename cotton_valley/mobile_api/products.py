@@ -100,7 +100,6 @@ def get_all_products_with_price_levels():
                 product["image_url"] = frappe.utils.get_url(product["product_thumbnail_id"])
             else:
                 product["image_url"] = None
-                product["image_encoded"] = None
                 
             product["images"] = galleries_by_item.get(product_id, [])
 
