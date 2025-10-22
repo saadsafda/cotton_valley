@@ -1,42 +1,4 @@
 import frappe
-import base64
-import os
-import mimetypes
-
-
-def encode_image_to_base64(image_path):
-    """
-    Encode image file to base64 string with MIME type prefix for Flutter.
-    Supports JPEG, JPG, PNG, WebP, GIF, etc.
-    Returns base64 encoded string with data URI format or None if image doesn't exist.
-    """
-    try:
-        if not image_path:
-            return None
-        
-        # Get full file path from Frappe
-        file_path = frappe.get_site_path('public', 'files', image_path.lstrip('/files'))
-        print(file_path, image_path, "checking file path \n\n\n\n\n")
-
-        if not os.path.exists(file_path):
-            return None
-        
-        # Detect MIME type from file extension
-        mime_type, _ = mimetypes.guess_type(file_path)
-        if not mime_type:
-            # Default to image/jpeg if cannot detect
-            mime_type = 'image/jpeg'
-        
-        # Read and encode image
-        with open(file_path, 'rb') as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            # Return with data URI format for Flutter
-            return f"data:{mime_type};base64,{encoded_string}"
-            
-    except Exception as e:
-        frappe.log_error(f"Error encoding image: {str(e)}", "Image Encoding Error")
-        return None
-
 
 @frappe.whitelist()
 def get_all_categories():
@@ -80,7 +42,6 @@ def get_all_categories():
             
             # Encode category image to base64
             if category.get("category_image"):
-                category["category_image_encoded"] = encode_image_to_base64(category["category_image"])
                 # Keep original URL as fallback
                 category["category_image_url"] = category["category_image"]
             else:
