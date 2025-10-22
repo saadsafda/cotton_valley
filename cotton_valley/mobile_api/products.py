@@ -2,14 +2,23 @@ import frappe
 import base64
 import os
 import mimetypes
+from PIL import Image
+from io import BytesIO
 from cotton_valley.api.website_theme_setting import get_file
 
 
-def encode_image_to_base64(image_path):
+def encode_image_to_base64(image_path, max_width=800, quality=85):
     """
-    Encode image file to base64 string with MIME type prefix for Flutter.
-    Supports JPEG, JPG, PNG, WebP, GIF, etc.
-    Returns base64 encoded string with data URI format or None if image doesn't exist.
+    Encode image file to base64 string with compression and resizing.
+    This dramatically reduces payload size while maintaining quality.
+    
+    Args:
+        image_path: Path to the image file
+        max_width: Maximum width in pixels (default: 800px for mobile)
+        quality: JPEG quality 1-100 (default: 85, good balance)
+    
+    Returns:
+        Base64 encoded string with data URI format or None if image doesn't exist.
     """
     try:
         if not image_path:
@@ -17,21 +26,34 @@ def encode_image_to_base64(image_path):
         
         # Get full file path from Frappe
         file_path = frappe.get_site_path('public', 'files', image_path.lstrip('/files/'))
-        print(file_path, image_path, "checking file path \n\n\n\n\n")
+        
         if not os.path.exists(file_path):
             return None
         
-        # Detect MIME type from file extension
-        mime_type, _ = mimetypes.guess_type(file_path)
-        if not mime_type:
-            # Default to image/jpeg if cannot detect
-            mime_type = 'image/jpeg'
-        
-        # Read and encode image
-        with open(file_path, 'rb') as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-            # Return with data URI format for Flutter
-            return f"data:{mime_type};base64,{encoded_string}"
+        # Open and resize image
+        with Image.open(file_path) as img:
+            # Convert RGBA to RGB if necessary (for JPEG)
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'P':
+                    img = img.convert('RGBA')
+                background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                img = background
+            
+            # Resize if width exceeds max_width
+            if img.width > max_width:
+                ratio = max_width / img.width
+                new_height = int(img.height * ratio)
+                img = img.resize((max_width, new_height), Image.LANCZOS)
+            
+            # Save to BytesIO with compression
+            buffer = BytesIO()
+            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            buffer.seek(0)
+            
+            # Encode to base64
+            encoded_string = base64.b64encode(buffer.read()).decode('utf-8')
+            return f"data:image/jpeg;base64,{encoded_string}"
             
     except Exception as e:
         frappe.log_error(f"Error encoding image: {str(e)}", "Image Encoding Error")
