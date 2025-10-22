@@ -40,13 +40,21 @@ def encode_image_to_base64(image_path):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products_with_price_levels():
+def get_all_products_with_price_levels(limit_start=0, limit_page_length=500):
     """
     Fetch all products with ALL price levels for mobile app.
     Optimized version with batch processing and minimal queries.
+    
+    Args:
+        limit_start: Starting index for pagination (default: 0)
+        limit_page_length: Number of records per page (default: 500)
     """
     try:
-        # Single optimized query to get all data at once
+        # Convert parameters to integers
+        limit_start = int(limit_start)
+        limit_page_length = int(limit_page_length)
+        
+        # Single optimized query to get all data at once with pagination
         products_data = frappe.db.sql("""
             SELECT 
                 i.name as id,
@@ -68,7 +76,8 @@ def get_all_products_with_price_levels():
             WHERE i.disabled = 0
             GROUP BY i.name
             ORDER BY i.item_name ASC
-        """, as_dict=True)
+            LIMIT %s OFFSET %s
+        """, (limit_page_length, limit_start), as_dict=True)
 
         if not products_data:
             return {
