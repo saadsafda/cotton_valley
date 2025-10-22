@@ -1,5 +1,41 @@
 import frappe
+import base64
+import os
+import mimetypes
 from cotton_valley.api.website_theme_setting import get_file
+
+
+def encode_image_to_base64(image_path):
+    """
+    Encode image file to base64 string with MIME type prefix for Flutter.
+    Supports JPEG, JPG, PNG, WebP, GIF, etc.
+    Returns base64 encoded string with data URI format or None if image doesn't exist.
+    """
+    try:
+        if not image_path:
+            return None
+        
+        # Get full file path from Frappe
+        file_path = frappe.get_site_path('public', 'files', image_path.lstrip('/files/'))
+        print(file_path, image_path, "checking file path \n\n\n\n\n")
+        if not os.path.exists(file_path):
+            return None
+        
+        # Detect MIME type from file extension
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if not mime_type:
+            # Default to image/jpeg if cannot detect
+            mime_type = 'image/jpeg'
+        
+        # Read and encode image
+        with open(file_path, 'rb') as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+            # Return with data URI format for Flutter
+            return f"data:{mime_type};base64,{encoded_string}"
+            
+    except Exception as e:
+        frappe.log_error(f"Error encoding image: {str(e)}", "Image Encoding Error")
+        return None
 
 
 
@@ -80,7 +116,12 @@ def get_all_products_with_price_levels():
         galleries_by_item = {}
         for g in galleries_data:
             if g["image"]:
-                galleries_by_item.setdefault(g["parent"], []).append(frappe.utils.get_url(g["image"]))
+                image_url = frappe.utils.get_url(g["image"])
+                image_encoded = encode_image_to_base64(g["image"])
+                galleries_by_item.setdefault(g["parent"], []).append({
+                    "url": image_url,
+                    "encoded": image_encoded
+                })
 
         # Assemble final data
         products = []
@@ -96,8 +137,14 @@ def get_all_products_with_price_levels():
             # Stock status
             product["stock_status"] = "in_stock" if product["stock"] > 0 else "out_of_stock"
 
-            # Images
-            product["image_url"] = frappe.utils.get_url(product["product_thumbnail_id"]) if product["product_thumbnail_id"] else None
+            # Images with base64 encoding
+            if product["product_thumbnail_id"]:
+                product["image_url"] = frappe.utils.get_url(product["product_thumbnail_id"])
+                product["image_encoded"] = encode_image_to_base64(product["product_thumbnail_id"])
+            else:
+                product["image_url"] = None
+                product["image_encoded"] = None
+                
             product["images"] = galleries_by_item.get(product_id, [])
 
             products.append(product)
