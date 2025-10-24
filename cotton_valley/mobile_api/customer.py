@@ -1,5 +1,6 @@
 import frappe
 from cotton_valley.api.website_theme_setting import get_file
+from datetime import datetime, timedelta
 
 @frappe.whitelist()
 def get_all_customers():
@@ -8,8 +9,27 @@ def get_all_customers():
         customers = frappe.get_list("Customer",
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "custom_company_name", "creation", "modified",
-                    "customer_primary_address", "customer_billing_address", "price_list_for_cv", "price_list_for_udc"]
+                    "customer_primary_address", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
+                    "no_of_orders", "orders_amount"]
         )
+        
+        # Calculate date 90 days ago
+        ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+        
+        # Get all customer IDs for batch query
+        customer_ids = [c.name for c in customers]
+        
+        # Batch query to check last order date for all customers
+        last_orders = frappe.db.sql("""
+            SELECT customer, MAX(transaction_date) as last_order_date
+            FROM `tabSales Order`
+            WHERE customer IN %s
+            AND docstatus = 1
+            GROUP BY customer
+        """, (customer_ids,), as_dict=True)
+        
+        # Create a dictionary for quick lookup
+        last_order_map = {order.customer: order.last_order_date for order in last_orders}
         
         if not customers:
             return {
@@ -19,6 +39,12 @@ def get_all_customers():
             }
         customer_list = []
         for customer in customers:
+            # Check if customer has ordered in last 90 days
+            last_order_date = last_order_map.get(customer.name)
+            active_customer = False
+            if last_order_date:
+                active_customer = last_order_date.strftime('%Y-%m-%d') >= ninety_days_ago
+            
             # --- Base Customer Info ---
             customer_data = {
                 "id": customer.name,
@@ -28,10 +54,13 @@ def get_all_customers():
                 "phone": customer.custom_phone_number,
                 "profile_image_id": customer.image,
                 "status": 1 if not customer.disabled else 0,
+                "active_customer": active_customer,
                 "mode_of_payment": customer.mode_of_payment,
                 "company": customer.custom_company_name,
                 "price_list_for_cv": customer.price_list_for_cv,
                 "price_list_for_udc": customer.price_list_for_udc,
+                "no_of_orders": customer.no_of_orders,
+                "orders_amount": customer.orders_amount,
                 "created_at": customer.creation,
                 "updated_at": customer.modified,
             }
