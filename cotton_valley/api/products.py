@@ -578,7 +578,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     # Map and update relevant fields
     field_mapping = {
         "item_name": item_data.get("itmdsc"),
-        "item_group": item_data.get("itmgrpdsc") or "All Item Groups",
+        # "item_group": item_data.get("itmgrpdsc") or "COD",
         "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
         "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
         "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
