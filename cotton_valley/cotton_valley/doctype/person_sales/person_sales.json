@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-10-27 01:07:21.556496",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "fiscal_year",
+  "column_break_oxbq",
+  "monthly_sales"
+ ],
+ "fields": [
+  {
+   "fieldname": "fiscal_year",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fiscal Year",
+   "options": "Fiscal Year",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_oxbq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "monthly_sales",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Monthly Sales",
+   "options": "Monthly Sales",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-10-27 02:01:45.284245",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Person Sales",
+ "owner": "saad@gmail.com",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
