@@ -355,7 +355,7 @@ def push_to_erp(sales_orders):
                     "error": "Already pushed to ERP"
                 })
                 continue
-            b
+            
             # Prepare payload for each item in the Sales Order
             for item in so_doc.items:
                 customer_erp_id = ""
