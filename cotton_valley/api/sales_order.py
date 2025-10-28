@@ -3,6 +3,7 @@ from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_product, get_all_products
 from cotton_valley.api.website_theme_setting import get_file
+from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD
 
 @frappe.whitelist(allow_guest=True)
 def get_submited_orders(company="Cotton Valley", page=None):
@@ -334,8 +335,8 @@ def push_to_erp(sales_orders):
     
     # ERP API configuration
     ERP_URL = "https://sc15.indus-erp.com/ords/unvdst/order/ord"
-    ERP_USERNAME = "unvdst"
-    ERP_PASSWORD = "unvdst23"
+    username = ERP_USERNAME
+    password = ERP_PASSWORD
     
     results = {
         "success": [],
@@ -377,7 +378,7 @@ def push_to_erp(sales_orders):
                 response = requests.post(
                     ERP_URL,
                     json=payload,
-                    auth=HTTPBasicAuth(ERP_USERNAME, ERP_PASSWORD),
+                    auth=HTTPBasicAuth(username, password),
                     headers={"Content-Type": "application/json"},
                     timeout=30
                 )
