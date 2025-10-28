@@ -1,4 +1,5 @@
 import frappe
+from datetime import datetime, timedelta
 
 
 @frappe.whitelist()
@@ -78,20 +79,50 @@ def get_monthly_sales_data():
                 for sale in sales_orders:
                     actual_sales_by_month[sale.month] = float(sale.total_sales or 0)
                 
+                # Get total customers for this sales person
+                total_customers = frappe.db.count("Customer", {
+                    "sales_person": sales_person_name,
+                    "disabled": 0
+                })
+                
+                # Get active customers (ordered in last 90 days)
+                ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
+                active_customers_result = frappe.db.sql("""
+                    SELECT COUNT(DISTINCT so.customer) as active_count
+                    FROM `tabSales Order` so
+                    WHERE so.custom_customer_sales_representative = %s
+                        AND so.docstatus = 1
+                        AND so.transaction_date >= %s
+                """, (sales_person_name, ninety_days_ago), as_dict=True)
+                
+                active_customers = active_customers_result[0].active_count if active_customers_result else 0
+                
                 # Prepare data arrays
                 actual_data = []
                 target_data = []
                 months = []
+                
+                # Get current month name
+                current_month_name = datetime.now().strftime("%B")  # e.g., "October"
+                current_month_goal = 0
+                current_month_value = 0
                 
                 for target in sales_target:
                     # Add month abbreviation
                     months.append(month_abbr.get(target.month, target.month[:3]))
                     
                     # Add target amount
-                    target_data.append(float(target.target_amount or 0))
+                    target_amount = float(target.target_amount or 0)
+                    target_data.append(target_amount)
                     
                     # Add actual sales amount from Sales Orders
-                    actual_data.append(actual_sales_by_month.get(target.month, 0))
+                    actual_amount = actual_sales_by_month.get(target.month, 0)
+                    actual_data.append(actual_amount)
+                    
+                    # Check if this is the current month
+                    if target.month == current_month_name:
+                        current_month_goal = target_amount
+                        current_month_value = actual_amount
                 
                 return {
                     "status": "success",
@@ -99,7 +130,11 @@ def get_monthly_sales_data():
                     "data": {
                         "actualData": actual_data,
                         "targetData": target_data,
-                        "months": months
+                        "months": months,
+                        "current_month_goal": current_month_goal,
+                        "current_month_value": current_month_value,
+                        "total_customers": total_customers,
+                        "active_customers": active_customers
                     }
                 }
         

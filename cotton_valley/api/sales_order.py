@@ -318,3 +318,109 @@ def apply_coupon(code, company="Cotton Valley"):
 
     return {"success": True, "message": f"Coupon applied successfully. You saved {so_doc.discount_amount}!", "discount_amount": so_doc.discount_amount, "new_total": so_doc.grand_total}
 
+
+@frappe.whitelist()
+def push_to_erp(sales_orders):
+    """
+    Push Sales Orders to external ERP system.
+    Updates push_to_erp field to 1 after successful push.
+    """
+    import requests
+    from requests.auth import HTTPBasicAuth
+    import json
+    
+    if isinstance(sales_orders, str):
+        sales_orders = json.loads(sales_orders)
+    
+    # ERP API configuration
+    ERP_URL = "https://sc15.indus-erp.com/ords/unvdst/order/ord"
+    ERP_USERNAME = "unvdst"
+    ERP_PASSWORD = "unvdst23"
+    
+    results = {
+        "success": [],
+        "failed": []
+    }
+    
+    for so_name in sales_orders:
+        try:
+            # Get Sales Order document
+            so_doc = frappe.get_doc("Sales Order", so_name)
+            
+            # Check if already pushed
+            if so_doc.get("push_to_erp") == 1:
+                results["failed"].append({
+                    "order": so_name,
+                    "error": "Already pushed to ERP"
+                })
+                continue
+            b
+            # Prepare payload for each item in the Sales Order
+            for item in so_doc.items:
+                customer_erp_id = ""
+                if so_doc.company == "Cotton Valley":
+                    customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "cv_customer_id") or ""
+                else:
+                    customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""
+                payload = {
+                    "order_date": so_doc.transaction_date.strftime("%d-%b-%y").lower(),
+                    "customer_id": customer_erp_id,
+                    "trnrefno": so_doc.name,
+                    "customer_note": so_doc.get("custom_customer_note") or "",
+                    "everst_so_no": so_doc.name,
+                    "item_id": item.item_code,
+                    "qty": str(int(item.qty)),
+                    "rate": str(float(item.rate))
+                }
+                
+                # Make API call to ERP
+                response = requests.post(
+                    ERP_URL,
+                    json=payload,
+                    auth=HTTPBasicAuth(ERP_USERNAME, ERP_PASSWORD),
+                    headers={"Content-Type": "application/json"},
+                    timeout=30
+                )
+                
+                # Check if request was successful
+                if response.status_code not in [200, 201]:
+                    raise Exception(f"ERP API returned status {response.status_code}: {response.text}")
+            
+            # Update Sales Order to mark as pushed
+            so_doc.db_set("push_to_erp", 1, update_modified=True)
+            frappe.db.commit()
+            
+            results["success"].append({
+                "order": so_name,
+                "message": "Successfully pushed to ERP"
+            })
+            
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error pushing Sales Order {so_name} to ERP: {str(e)}",
+                title="ERP Push Error"
+            )
+            results["failed"].append({
+                "order": so_name,
+                "error": str(e)
+            })
+    
+    # Prepare response message
+    success_count = len(results["success"])
+    failed_count = len(results["failed"])
+    
+    if failed_count == 0:
+        message = f"Successfully pushed {success_count} order(s) to ERP"
+        status = "success"
+    elif success_count == 0:
+        message = f"Failed to push all {failed_count} order(s) to ERP"
+        status = "error"
+    else:
+        message = f"Pushed {success_count} order(s) successfully, {failed_count} failed"
+        status = "partial"
+    
+    return {
+        "status": status,
+        "message": message,
+        "results": results
+    }
