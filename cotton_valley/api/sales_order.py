@@ -323,18 +323,18 @@ def apply_coupon(code, company="Cotton Valley"):
 @frappe.whitelist()
 def push_to_erp(sales_orders):
     """
-    Push Sales Orders to external ERP system.
+    Push Sales Orders to external ERP system using curl.
     Updates push_to_erp field to 1 after successful push.
     """
-    import requests
-    from requests.auth import HTTPBasicAuth
     import json
+    import subprocess
+    import time
     
     if isinstance(sales_orders, str):
         sales_orders = json.loads(sales_orders)
     
     # ERP API configuration
-    ERP_URL = "https://sc15.indus-erp.com/ords/unvdst/order/ord"
+    ERP_URL = "https://erp.cottonvalley.us/ords/unvdst/order/ord"
     username = ERP_USERNAME
     password = ERP_PASSWORD
     
@@ -356,6 +356,9 @@ def push_to_erp(sales_orders):
                 })
                 continue
             
+            # Track successful item pushes
+            pushed_items = []
+            
             # Prepare payload for each item in the Sales Order
             for item in so_doc.items:
                 customer_erp_id = ""
@@ -363,6 +366,7 @@ def push_to_erp(sales_orders):
                     customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "cv_customer_id") or ""
                 else:
                     customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""
+                    
                 payload = {
                     "order_date": so_doc.transaction_date.strftime("%d-%b-%y").lower(),
                     "customer_id": customer_erp_id,
@@ -374,27 +378,86 @@ def push_to_erp(sales_orders):
                     "rate": str(float(item.rate))
                 }
                 
-                # Make API call to ERP
-                response = requests.post(
-                    ERP_URL,
-                    json=payload,
-                    auth=HTTPBasicAuth(username, password),
-                    headers={"Content-Type": "application/json"},
-                    timeout=30
-                )
+                # Make API call using curl (more reliable for problematic connections)
+                max_attempts = 3
+                last_error = None
                 
-                # Check if request was successful
-                if response.status_code not in [200, 201]:
-                    raise Exception(f"ERP API returned status {response.status_code}: {response.text}")
+                for attempt in range(max_attempts):
+                    try:
+                        # Prepare curl command with TLS settings for Oracle ORDS
+                        curl_command = [
+                            'curl',
+                            '-X', 'POST',
+                            '-H', 'Content-Type: application/json',
+                            '-H', 'Accept: application/json',
+                            '-u', f'{username}:{password}',
+                            '--data', json.dumps(payload),
+                            '--insecure',  # Skip SSL verification
+                            '--tlsv1.2',  # Force TLS 1.2 (Oracle ORDS common requirement)
+                            '--max-time', '60',
+                            '--connect-timeout', '30',
+                            '--compressed',  # Enable compression
+                            '-v',  # Verbose output for debugging
+                            ERP_URL
+                        ]
+                        
+                        # Execute curl command
+                        result = subprocess.run(
+                            curl_command,
+                            capture_output=True,
+                            text=True,
+                            timeout=90
+                        )
+                        
+                        # Check if curl succeeded
+                        if result.returncode == 0:
+                            # Parse response if needed
+                            response_text = result.stdout.strip()
+                            pushed_items.append(item.item_code)
+                            frappe.log_error(
+                                message=f"Successfully pushed item {item.item_code} for order {so_name}.\nResponse: {response_text}\nDebug: {result.stderr}",
+                                title="ERP Push Success"
+                            )
+                            break  # Success, exit retry loop
+                        else:
+                            error_msg = f"Curl failed with code {result.returncode}.\nStderr: {result.stderr}\nStdout: {result.stdout}"
+                            last_error = error_msg
+                            
+                            # Check for specific SSL/TLS errors
+                            if "Connection reset by peer" in result.stderr or result.returncode == 35:
+                                error_msg = "SSL/TLS Connection Error: The ERP server is rejecting the connection. This typically means:\n1. Your server IP needs to be whitelisted on their firewall\n2. Contact the ERP administrator to add your IP to their allowlist\n3. Or there may be SSL/TLS certificate issues on their end"
+                            
+                            if attempt < max_attempts - 1:  # Not last attempt
+                                frappe.log_error(
+                                    message=f"Attempt {attempt + 1} failed for {item.item_code}: {error_msg}. Retrying...",
+                                    title="ERP Push Retry"
+                                )
+                                time.sleep(5)  # Longer wait before retry
+                            else:
+                                raise Exception(error_msg)
+                            
+                    except Exception as e:
+                        last_error = str(e)
+                        if attempt < max_attempts - 1:  # Not last attempt
+                            frappe.log_error(
+                                message=f"Attempt {attempt + 1} failed for {item.item_code}: {str(e)}. Retrying...",
+                                title="ERP Push Error"
+                            )
+                            time.sleep(3)  # Wait before retry
+                        else:
+                            raise Exception(f"All {max_attempts} attempts failed. Last error: {last_error}")
             
-            # Update Sales Order to mark as pushed
-            so_doc.db_set("push_to_erp", 1, update_modified=True)
-            frappe.db.commit()
-            
-            results["success"].append({
-                "order": so_name,
-                "message": "Successfully pushed to ERP"
-            })
+            # Only mark as pushed if all items were successfully pushed
+            if len(pushed_items) == len(so_doc.items):
+                so_doc.db_set("push_to_erp", 1, update_modified=True)
+                frappe.db.commit()
+                
+                results["success"].append({
+                    "order": so_name,
+                    "message": f"Successfully pushed {len(pushed_items)} item(s) to ERP"
+                })
+            else:
+                raise Exception(f"Only {len(pushed_items)} of {len(so_doc.items)} items were pushed successfully")
             
         except Exception as e:
             frappe.log_error(
