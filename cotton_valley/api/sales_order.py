@@ -368,7 +368,7 @@ def push_to_erp(sales_orders):
                     "order_date": so_doc.transaction_date.strftime("%d-%b-%y").lower(),
                     "customer_id": customer_erp_id,
                     "trnrefno": so_doc.name,
-                    "customer_note": so_doc.get("custom_note") or "",
+                    "customer_note": so_doc.get("custom_notes") or "",
                     "everst_so_no": "",
                     "item_id": item.item_code,
                     "qty": str(int(item.qty)),
