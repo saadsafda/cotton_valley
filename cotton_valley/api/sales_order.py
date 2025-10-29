@@ -364,6 +364,9 @@ def push_to_erp(sales_orders):
                 else:
                     customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""
                     
+                if customer_erp_id in ["", None]:
+                    frappe.throw("Please add erp customer id")
+
                 payload = {
                     "order_date": so_doc.transaction_date.strftime("%d-%b-%y").lower(),
                     "customer_id": customer_erp_id,
