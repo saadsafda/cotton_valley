@@ -350,11 +350,7 @@ def push_to_erp(sales_orders):
             
             # Check if already pushed
             if so_doc.get("push_to_erp") == 1:
-                results["failed"].append({
-                    "order": so_name,
-                    "error": "Already pushed to ERP"
-                })
-                continue
+                frappe.throw(f"{so_name} Already pushed to ERP")
             
             # Track successful item pushes
             pushed_items = []
