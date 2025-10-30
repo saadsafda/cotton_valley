@@ -131,7 +131,7 @@ def get_cart(company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -142,6 +142,7 @@ def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cott
     """
     items = frappe.parse_json(items)
     company = "Cotton Valley" if not company or company == "null" else company
+    notes = "" if not notes or notes == "null" else notes
     billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
@@ -184,6 +185,7 @@ def create_or_update_sales_order(items, submit_datetime=nowdate(), company="Cott
             so_doc.submit_datetime = submit_datetime
             so_doc.company = company
             so_doc.product_type = so_type
+            so_doc.custom_notes = notes
             if client_ip:
                 so_doc.customer_ip = client_ip
             if client_latitude and client_longitude:

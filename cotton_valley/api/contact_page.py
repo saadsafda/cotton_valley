@@ -28,8 +28,9 @@ def get_contact_page(company="Cotton Valley"):
         return {"status": "error", "message": str(e)}
     
 @frappe.whitelist(allow_guest=True)
-def submit_contact_form(name, email, phone, subject, message):
+def submit_contact_form(name, email, phone, subject, message, company="Cotton Valley"):
     try:
+        company = "Cotton Valley" if not company or company == "null" else company
         contact_form = frappe.get_doc({
             "doctype": "Contact",
             "first_name": name,
@@ -37,7 +38,8 @@ def submit_contact_form(name, email, phone, subject, message):
             "status": "Open",
             "phone": phone,
             "custom_subject": subject,
-            "custom_message": message
+            "custom_message": message,
+            "company": company
         })
         contact_form.append("email_ids", {"email_id": email, "is_primary": 1})
         contact_form.insert(ignore_permissions=True)

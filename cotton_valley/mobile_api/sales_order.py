@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes, submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     """
     Create or update a Sales Order from cart.
     items = [
