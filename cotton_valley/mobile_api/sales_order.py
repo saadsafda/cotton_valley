@@ -58,7 +58,7 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
             so_doc.company = company
             so_doc.custom_notes = notes
             so_doc.product_type = so_type
-            so_doc.from_app = 1
+            so_doc.from_app = True
             if client_ip:
                 so_doc.customer_ip = client_ip
             if client_latitude and client_longitude:
@@ -111,7 +111,9 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
         so_doc.order_type = "Shopping Cart"
-
+    
+    so_doc.custom_notes = notes
+    so_doc.from_app = True
     so_doc.delivery_date = nowdate()
     so_doc.submit_datetime = submit_datetime
     so_doc.company = company
