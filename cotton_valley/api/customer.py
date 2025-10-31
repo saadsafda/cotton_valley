@@ -209,7 +209,8 @@ def forgot_password(email, company="Cotton Valley"):
                 
                 # Render template with Jinja
                 subject = frappe.render_template(email_template.subject, template_args)
-                message = frappe.render_template(email_template.response, template_args)
+                response = email_template.response_html if email_template.use_html else email_template.response
+                message = frappe.render_template(response, template_args)
                 
             except frappe.DoesNotExistError:
                 # Fallback to default message if template doesn't exist
@@ -230,7 +231,10 @@ def forgot_password(email, company="Cotton Valley"):
                     <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply to this email.</p>
                 </div>
                 """
-            
+
+            print(subject, "subject \n\n\n\n\n")
+            print(message, "message \n\n\n\n\n")
+
             frappe.sendmail(
                 recipients=[email],
                 subject=subject,
