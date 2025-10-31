@@ -182,16 +182,41 @@ def forgot_password(email, company="Cotton Valley"):
         customer.custom_reset_token_expiry = reset_token_expiry
         customer.save(ignore_permissions=True)
         frappe.db.commit()
+        template_name = ""
+        if company == "Cotton Valley":
+            template_name = "Password Reset - CVL"
+        else:
+            template_name = "Password Reset - UDC"
         
-        # Send email with reset token/link
+        # Send email with reset token/link using Email Template
         try:
-            # You can create a reset link here if you have a frontend URL
+            # Generate reset link
             reset_link = f"http://localhost:3000/en/auth/update-password?token={reset_token}"
             
-            frappe.sendmail(
-                recipients=[email],
-                subject=f"Password Reset Request - {company}",
-                message=f"""
+            # Try to get Email Template from ERPNext
+            try:
+                email_template = frappe.get_doc("Email Template", template_name)
+                
+                # Prepare template arguments
+                template_args = {
+                    "doc": customer,
+                    "customer_name": customer.customer_name,
+                    "company": company,
+                    "reset_token": reset_token,
+                    "reset_link": reset_link,
+                    "expiry_minutes": 30
+                }
+                
+                # Render template with Jinja
+                subject = frappe.render_template(email_template.subject, template_args)
+                message = frappe.render_template(email_template.response, template_args)
+                
+            except frappe.DoesNotExistError:
+                # Fallback to default message if template doesn't exist
+                frappe.log_error("Email Template 'Password Reset Request' not found. Using default message.", "Forgot Password Email Template Missing")
+                
+                subject = f"Password Reset Request - {company}"
+                message = f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #333;">Password Reset Request</h2>
                     <p>Hello {customer.customer_name},</p>
@@ -200,14 +225,19 @@ def forgot_password(email, company="Cotton Valley"):
                         <a href="{reset_link}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px;">Reset Password</a>
                     </div>
                     <p><strong>This token will expire in 30 minutes.</strong></p>
-                    <p>Use this token in the app to reset your password.</p>
-                    <p>If you did not request this password reset, please ignore this email or contact support if you have concerns.</p>
+                    <p>If you did not request this password reset, please ignore this email or contact support.</p>
                     <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
                     <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply to this email.</p>
                 </div>
-                """,
+                """
+            
+            frappe.sendmail(
+                recipients=[email],
+                subject=subject,
+                message=message,
                 now=True
             )
+            
         except Exception as email_error:
             frappe.log_error(frappe.get_traceback(), "Forgot Password Email Error")
             return {

@@ -17,7 +17,7 @@ def update_customer_order_summary(doc, method):
     # doc.total_orders = total_orders
     # doc.total_order_amount = total_amount
     doc.custom_last_order_date = max((so.transaction_date for so in sales_orders), default=None)
-
+    
     # Update Customer fields
     frappe.db.set_value("Customer", doc.customer, {
         "no_of_orders": total_orders,
