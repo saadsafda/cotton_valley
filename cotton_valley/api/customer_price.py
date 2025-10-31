@@ -28,11 +28,11 @@ def get_price_filters(company="Cotton Valley"):
 
             if not price_list:
                 price_list = "Retail"
-        else:
-            return {
-                "status": "success",
-                "data": {}
-            }
+        # else:
+        #     return {
+        #         "status": "success",
+        #         "data": {}
+        #     }
         
         # Get min and max prices from actual Item Price data
         # Filter by price list and company
