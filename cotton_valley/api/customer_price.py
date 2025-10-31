@@ -16,9 +16,10 @@ def get_price_filters(company="Cotton Valley"):
     try:
         # Determine price list based on customer and company
         price_list = "Retail"
+        company = "Cotton Valley" if not company or company == "null" else company
+        
         if check_customer_token():
             customer = get_customer_from_token()
-            company = "Cotton Valley" if not company or company == "null" else company
             
             if company == "Cotton Valley":
                 price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
@@ -27,25 +28,25 @@ def get_price_filters(company="Cotton Valley"):
 
             if not price_list:
                 price_list = "Retail"
+        else:
+            return {
+                "status": "success",
+                "data": {}
+            }
         
         # Get min and max prices from actual Item Price data
-        # Filter by price list if available
-        if price_list:
-            price_data = frappe.db.sql("""
-                SELECT 
-                    MIN(price_list_rate) as min_price,
-                    MAX(price_list_rate) as max_price
-                FROM `tabItem Price`
-                WHERE price_list_rate > 0 AND price_list = %s
-            """, (price_list,), as_dict=True)
-        else:
-            price_data = frappe.db.sql("""
-                SELECT 
-                    MIN(price_list_rate) as min_price,
-                    MAX(price_list_rate) as max_price
-                FROM `tabItem Price`
-                WHERE price_list_rate > 0 AND price_list = %s
-            """, ("Retail",), as_dict=True)
+        # Filter by price list and company
+        price_data = frappe.db.sql("""
+            SELECT 
+                MIN(ip.price_list_rate) as min_price,
+                MAX(ip.price_list_rate) as max_price
+            FROM `tabItem Price` ip
+            INNER JOIN `tabItem` i ON i.name = ip.item_code
+            WHERE ip.price_list_rate > 0 
+                AND ip.price_list = %s
+                AND i.company = %s
+                AND i.disabled = 0
+        """, (price_list, company), as_dict=True)
         
         min_price = price_data[0].get('min_price', 0) if price_data else 0
         max_price = price_data[0].get('max_price', 100) if price_data else 100
@@ -102,22 +103,18 @@ def get_price_filters(company="Cotton Valley"):
         
         # For PCS (piece) prices - typically lower prices
         # Check if there are items with very low prices (< 20)
-        if price_list:
-            pcs_price_data = frappe.db.sql("""
-                SELECT 
-                    MIN(price_list_rate) as min_price,
-                    MAX(price_list_rate) as max_price
-                FROM `tabItem Price`
-                WHERE price_list_rate > 0 AND price_list_rate < 20 AND price_list = %s
-            """, (price_list,), as_dict=True)
-        else:
-            pcs_price_data = frappe.db.sql("""
-                SELECT 
-                    MIN(price_list_rate) as min_price,
-                    MAX(price_list_rate) as max_price
-                FROM `tabItem Price`
-                WHERE price_list_rate > 0 AND price_list_rate < 20 AND price_list = %s
-            """, ("Retail",), as_dict=True)
+        pcs_price_data = frappe.db.sql("""
+            SELECT 
+                MIN(ip.price_list_rate) as min_price,
+                MAX(ip.price_list_rate) as max_price
+            FROM `tabItem Price` ip
+            INNER JOIN `tabItem` i ON i.name = ip.item_code
+            WHERE ip.price_list_rate > 0 
+                AND ip.price_list_rate < 20 
+                AND ip.price_list = %s
+                AND i.company = %s
+                AND i.disabled = 0
+        """, (price_list, company), as_dict=True)
         
         pcs_min = pcs_price_data[0].get('min_price', 0.5) if pcs_price_data and pcs_price_data[0].get('min_price') else 0.5
         pcs_max = pcs_price_data[0].get('max_price', 10) if pcs_price_data and pcs_price_data[0].get('max_price') else 10

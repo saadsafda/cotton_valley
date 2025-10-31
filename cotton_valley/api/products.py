@@ -83,7 +83,7 @@ def get_product_ids(search=None, company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company="Cotton Valley"):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company="Cotton Valley", price=None, pcs_price=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
@@ -93,6 +93,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     page = None if not page or page == "null" else int(page)
     ids = None if not ids or ids == "null" else get_categories_from_string(ids)
     company = "Cotton Valley" if not company or company == "null" else company
+    price = None if not price or price == "null" else get_categories_from_string(price)
+    pcs_price = None if not pcs_price or pcs_price == "null" else get_categories_from_string(pcs_price)
 
     filters = {"disabled": 0}  # only active products
 
@@ -299,6 +301,63 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             if attribute == ["out_stock"] and product["quantity"] > 0:
                 continue
             # if both are passed, ignore filter (show all)
+
+        # --- Price Filter (List Support) ---
+        if price:
+            product_price = product["price"]
+            price_match = False
+            
+            for price_filter in price:
+                # Parse price filter format: "10" (below), "10-20" (range), "100" (above)
+                if "-" in str(price_filter):
+                    # Range filter: "10-20"
+                    min_price, max_price = map(float, str(price_filter).split("-"))
+                    if min_price <= product_price <= max_price:
+                        price_match = True
+                        break
+                else:
+                    # Single value - treat as "Below X"
+                    price_value = float(price_filter)
+                    if product_price <= price_value:
+                        price_match = True
+                        break
+            
+            if not price_match:
+                continue
+
+        # --- PCS Price Filter (List Support) ---
+        if pcs_price:
+            case_pack = product.get("case_pack", 1)
+            # Convert case_pack to float/int if it's a string
+            try:
+                case_pack = float(case_pack) if case_pack else 1
+            except (ValueError, TypeError):
+                case_pack = 1
+            
+            if case_pack and case_pack > 0:
+                pcs_product_price = product["price"] / case_pack
+            else:
+                pcs_product_price = 0
+            
+            pcs_price_match = False
+            
+            for pcs_filter in pcs_price:
+                # Parse PCS price filter format
+                if "-" in str(pcs_filter):
+                    # Range filter: "1-2"
+                    min_pcs_price, max_pcs_price = map(float, str(pcs_filter).split("-"))
+                    if min_pcs_price <= pcs_product_price <= max_pcs_price:
+                        pcs_price_match = True
+                        break
+                else:
+                    # Single value - treat as "Below X"
+                    pcs_price_value = float(pcs_filter)
+                    if pcs_product_price <= pcs_price_value:
+                        pcs_price_match = True
+                        break
+            
+            if not pcs_price_match:
+                continue
 
 
         # images
