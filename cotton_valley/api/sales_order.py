@@ -349,6 +349,9 @@ def push_to_erp(sales_orders):
         try:
             # Get Sales Order document
             so_doc = frappe.get_doc("Sales Order", so_name)
+
+            if so_doc.docstatus != 1:
+                frappe.throw(f"{so_name} is not submitted. Only submitted orders can be pushed to ERP.")
             
             # Check if already pushed
             if so_doc.get("push_to_erp") == 1:

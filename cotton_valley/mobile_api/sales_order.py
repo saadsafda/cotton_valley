@@ -58,6 +58,7 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
             so_doc.company = company
             so_doc.custom_notes = notes
             so_doc.product_type = so_type
+            so_doc.from_app = 1
             if client_ip:
                 so_doc.customer_ip = client_ip
             if client_latitude and client_longitude:
