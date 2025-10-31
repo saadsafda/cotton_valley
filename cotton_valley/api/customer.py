@@ -127,6 +127,7 @@ def change_password(current_password, new_password):
         
         # Update password
         customer.custom_password = new_password
+        customer.custom_confirm_password = new_password
         customer.save(ignore_permissions=True)
         frappe.db.commit()
         
@@ -137,6 +138,151 @@ def change_password(current_password, new_password):
         
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Change Password Error")
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
+def forgot_password(email, company="Cotton Valley"):
+    """
+    Send password reset token to customer email.
+    
+    Args:
+        email: Customer email address
+        company: Company name (default: "Cotton Valley")
+        
+    Returns:
+        dict: Status and message
+    """
+    try:
+        # Validate input
+        if not email:
+            return {"status": "error", "message": "Email is required"}
+        
+        company = "Cotton Valley" if not company or company == "null" else company
+        
+        # Find customer by email
+        filters = {
+            "custom_email_address": email,
+            "disabled": 0
+        }
+        
+        customer_id = frappe.db.get_value("Customer", filters, "name")
+        
+        if not customer_id:
+            return {"status": "error", "message": "No account found with this email address"}
+        
+        customer = frappe.get_doc("Customer", customer_id)
+        
+        # Generate reset token (valid for 30 minutes)
+        reset_token = secrets.token_urlsafe(32)
+        reset_token_expiry = add_days(now_datetime(), 0.020833333)  # 30 minutes
+        
+        # Store reset token in customer document
+        customer.custom_reset_token = reset_token
+        customer.custom_reset_token_expiry = reset_token_expiry
+        customer.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        # Send email with reset token/link
+        try:
+            # You can create a reset link here if you have a frontend URL
+            reset_link = f"http://localhost:3000/en/auth/update-password?token={reset_token}"
+            
+            frappe.sendmail(
+                recipients=[email],
+                subject=f"Password Reset Request - {company}",
+                message=f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #333;">Password Reset Request</h2>
+                    <p>Hello {customer.customer_name},</p>
+                    <p>You have requested to reset your password for your {company} account.</p>
+                    <div style="background-color: #f5f5f5; padding: 20px; margin: 20px 0;">
+                        <a href="{reset_link}" style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                    </div>
+                    <p><strong>This token will expire in 30 minutes.</strong></p>
+                    <p>Use this token in the app to reset your password.</p>
+                    <p>If you did not request this password reset, please ignore this email or contact support if you have concerns.</p>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                    <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply to this email.</p>
+                </div>
+                """,
+                now=True
+            )
+        except Exception as email_error:
+            frappe.log_error(frappe.get_traceback(), "Forgot Password Email Error")
+            return {
+                "status": "error", 
+                "message": "Failed to send reset token. Please try again later."
+            }
+        
+        return {
+            "status": "success",
+            "message": "Password reset token has been sent to your email",
+            "data": {
+                "email": email,
+                "token_expires_in_minutes": 30
+            }
+        }
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Forgot Password Error")
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
+def reset_password(reset_token, new_password):
+    """
+    Reset password using reset token.
+    
+    Args:
+        reset_token: Token received via email
+        new_password: New password
+        
+    Returns:
+        dict: Status and message
+    """
+    try:
+        if not reset_token or not new_password:
+            return {"status": "error", "message": "Reset token and new password are required"}
+        
+        # Validate new password
+        if len(new_password) < 8:
+            return {"status": "error", "message": "Password must be at least 8 characters long"}
+        
+        # Find customer with this reset token
+        customer_id = frappe.db.get_value(
+            "Customer", 
+            {"custom_reset_token": reset_token, "disabled": 0}, 
+            "name"
+        )
+        
+        if not customer_id:
+            return {"status": "error", "message": "Invalid or expired reset token"}
+        
+        customer = frappe.get_doc("Customer", customer_id)
+        
+        # Check if token is expired
+        if customer.custom_reset_token_expiry and now_datetime() > customer.custom_reset_token_expiry:
+            return {"status": "error", "message": "Reset token has expired. Please request a new one."}
+        
+        # Update password
+        customer.custom_password = new_password
+        customer.custom_confirm_password = new_password
+        
+        # Clear reset token
+        customer.custom_reset_token = None
+        customer.custom_reset_token_expiry = None
+        
+        customer.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        return {
+            "status": "success",
+            "message": "Password has been reset successfully. You can now login with your new password."
+        }
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Reset Password Error")
         return {"status": "error", "message": str(e)}
     
 
