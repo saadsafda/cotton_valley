@@ -90,6 +90,54 @@ def sale_rep_as_customer(customer_id):
             return {"status": "error", "message": "Customer not found"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=True)
+def change_password(current_password, new_password):
+    """
+    Change customer password.
+    
+    Args:
+        current_password: Current password
+        new_password: New password
+        
+    Returns:
+        dict: Status and message
+    """
+    try:
+        # Get customer from token
+        customer_id = get_customer_from_token()
+        if not customer_id:
+            return {"status": "error", "message": "Customer not found. Please login again."}
+
+        # Get customer document
+        customer = frappe.get_doc("Customer", customer_id)
+        
+        # Verify current password
+        stored_password = customer.get_password("custom_password")
+        if stored_password != current_password:
+            return {"status": "error", "message": "Current password is incorrect"}
+        
+        # Validate new password
+        if not new_password or len(new_password) < 8:
+            return {"status": "error", "message": "New password must be at least 8 characters long"}
+
+        if new_password == current_password:
+            return {"status": "error", "message": "New password must be different from current password"}
+        
+        # Update password
+        customer.custom_password = new_password
+        customer.save(ignore_permissions=True)
+        frappe.db.commit()
+        
+        return {
+            "status": "success", 
+            "message": "Password changed successfully"
+        }
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Change Password Error")
+        return {"status": "error", "message": str(e)}
     
 
 @frappe.whitelist(allow_guest=True)
@@ -297,5 +345,8 @@ def get_current_customer():
         frappe.log_error(frappe.get_traceback(), "Get Current Customer Failed")
         frappe.local.response["http_status_code"] = 500
         return {"status": "error", "message": str(e)}
+
+
+
 
 
