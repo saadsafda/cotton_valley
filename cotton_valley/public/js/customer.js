@@ -54,23 +54,36 @@ frappe.ui.form.on('Customer', {
 
         if (!frm.doc.disabled) {
             frm.add_custom_button(__('Send Email'), function () {
-                frappe.call({
-                    method: 'cotton_valley.api.api.send_customer_email',
-                    args: {
-                        customer: frm.doc,
-                        company: frm.doc.register_company
+                frappe.confirm(
+                    __('Are you sure you want to send email to this customer?'),
+                    function () {
+                        // User confirmed, proceed with sending email
+                        frappe.call({
+                            method: 'cotton_valley.api.api.send_customer_email',
+                            args: {
+                                customer: frm.doc,
+                                company: frm.doc.register_company
+                            },
+                            callback: function (r) {
+                                if (r.message && r.message.status === "success") {
+                                    frappe.msgprint(__('Email sent successfully!'));
+                                } else {
+                                    frappe.msgprint(__('Failed to send email: ' + (r.message?.message || 'Unknown error')));
+                                }
+                            },
+                            error: function (r) {
+                                frappe.msgprint(__('Error sending email: ' + r.responseText));
+                            }
+                        });
                     },
-                    callback: function (r) {
-                        if (r.message && r.message.status === "success") {
-                            frappe.msgprint(__('Email sent successfully!'));
-                        } else {
-                            frappe.msgprint(__('Failed to send email: ' + (r.message?.message || 'Unknown error')));
-                        }
-                    },
-                    error: function (r) {
-                        frappe.msgprint(__('Error sending email: ' + r.responseText));
+                    function () {
+                        // User cancelled
+                        frappe.show_alert({
+                            message: __('Email sending cancelled'),
+                            indicator: 'orange'
+                        });
                     }
-                });
+                );
             });
         }
 
