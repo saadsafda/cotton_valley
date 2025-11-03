@@ -78,7 +78,53 @@ def update_address(address):
 
 @frappe.whitelist(allow_guest=True)
 def delete_address(address_id):
-    customer = get_current_customer()
-    addr = frappe.get_doc("Address", address_id)
-    addr.delete(ignore_permissions=True)
-    return {"status": "success", "message": "Address deleted successfully"}
+    try:
+        # Authenticate and get customer id
+        customer_id = get_customer_from_token()
+        if not customer_id:
+            return {"status": "error", "message": "Authentication required"}
+
+        # Validate address exists
+        if not frappe.db.exists("Address", address_id):
+            return {"status": "error", "message": "Address not found"}
+
+        addr = frappe.get_doc("Address", address_id)
+
+        # Check if already disabled
+        if addr.disabled == 1:
+            return {"status": "error", "message": "Address already deleted"}
+
+        # Verify address belongs to current customer
+        link = frappe.get_value("Dynamic Link", {
+            "parent": address_id,
+            "link_doctype": "Customer",
+            "link_name": customer_id
+        })
+        if not link:
+            return {"status": "error", "message": "Address does not belong to the authenticated customer"}
+
+        # If this address is set as customer's primary or billing address, clear those references
+        try:
+            cust = frappe.get_doc("Customer", customer_id)
+            changed = False
+            if cust.customer_primary_address == address_id:
+                frappe.db.set_value("Customer", customer_id, "customer_primary_address", None)
+                changed = True
+            if cust.customer_billing_address == address_id:
+                frappe.db.set_value("Customer", customer_id, "customer_billing_address", None)
+                changed = True
+            if changed:
+                frappe.db.commit()
+        except Exception:
+            # non-fatal, continue to disable address
+            frappe.log_error(frappe.get_traceback(), "Clear Customer Address Reference Failed")
+
+        # Soft-delete the address by marking disabled flag
+        frappe.db.set_value("Address", address_id, "disabled", 1)
+        frappe.db.commit()
+
+        return {"status": "success", "message": "Address deleted successfully"}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Delete Address Failed")
+        return {"status": "error", "message": str(e)}

@@ -455,12 +455,14 @@ def get_current_customer():
 
         # --- Addresses ---
         links = frappe.get_all("Dynamic Link",
-            filters={"link_doctype": "Customer", "link_name": customer_id},
+            filters={"link_doctype": "Customer", "link_name": customer_id, "parenttype": "Address"},
             fields=["parent"]
         )
         addresses = []
         for link in links:
             addr_doc = frappe.get_doc("Address", link.parent)
+            if addr_doc.disabled:
+                continue
             is_default = 0
             if addr_doc.address_type == "Shipping" and addr_doc.name == customer.customer_primary_address:
                 is_default = 1
