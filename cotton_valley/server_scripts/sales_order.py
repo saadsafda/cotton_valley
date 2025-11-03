@@ -28,6 +28,98 @@ def update_customer_order_summary(doc, method):
     frappe.db.commit()
 
     make_delivery_note_on_submit(doc, method)
+    send_sales_order_confirmation_email(doc, method)
+
+
+def send_sales_order_confirmation_email(doc, method):
+    """
+    Send email notification to customer and sales person when sales order is submitted.
+    Uses Email Template for easy updates from ERPNext UI.
+    """
+    try:
+        # Get customer email
+        customer_email = frappe.db.get_value("Customer", doc.customer, "custom_email_address")
+        
+        # Get sales person email
+        sales_person_email = None
+        if doc.custom_sales_person:
+            sales_person = frappe.get_doc("Sales Person", doc.custom_sales_person)
+            if sales_person.employee:
+                sales_person_email = frappe.db.get_value("Employee", sales_person.employee, "user_id")
+        
+        recipients = []
+        if customer_email:
+            recipients.append(customer_email)
+        if sales_person_email:
+            recipients.append(sales_person_email)
+        
+        if not recipients:
+            frappe.log_error("No recipients found for Sales Order confirmation email", "Sales Order Email")
+            return
+        
+        # Try to get Email Template
+        try:
+            email_template = frappe.get_doc("Email Template", "Sales Order Confirmation")
+            
+            # Prepare template arguments
+            template_args = {
+                "doc": doc,
+                "customer_name": frappe.db.get_value("Customer", doc.customer, "customer_name"),
+                "sales_order_name": doc.name,
+                "transaction_date": doc.transaction_date,
+                "grand_total": doc.grand_total,
+                "currency": doc.currency,
+                "delivery_date": doc.delivery_date,
+                "items": doc.items,
+                "company": doc.company
+            }
+            
+            # Render template
+            subject = frappe.render_template(email_template.subject, template_args)
+            message = frappe.render_template(email_template.response, template_args)
+            
+        except frappe.DoesNotExistError:
+            # Fallback to default message if template doesn't exist
+            frappe.log_error("Email Template 'Sales Order Confirmation' not found. Using default message.", "Sales Order Email Template Missing")
+            
+            subject = f"Order Confirmation - {doc.name}"
+            message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #333;">Order Confirmation</h2>
+                <p>Dear Customer,</p>
+                <p>Your order <strong>{doc.name}</strong> has been confirmed.</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Order Number:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{doc.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Order Date:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{doc.transaction_date}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong>Total Amount:</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{doc.currency} {doc.grand_total}</td>
+                    </tr>
+                </table>
+                <p>Thank you for your business!</p>
+                <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply to this email.</p>
+            </div>
+            """
+        
+        # Send email
+        frappe.sendmail(
+            recipients=recipients,
+            subject=subject,
+            message=message,
+            reference_doctype="Sales Order",
+            reference_name=doc.name,
+            now=True
+        )
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Sales Order Confirmation Email Error")
 
 
 def make_delivery_note_on_submit(doc, method):

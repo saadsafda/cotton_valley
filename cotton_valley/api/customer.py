@@ -232,9 +232,6 @@ def forgot_password(email, company="Cotton Valley"):
                 </div>
                 """
 
-            print(subject, "subject \n\n\n\n\n")
-            print(message, "message \n\n\n\n\n")
-
             frappe.sendmail(
                 recipients=[email],
                 subject=subject,
