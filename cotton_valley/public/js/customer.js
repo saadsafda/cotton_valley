@@ -61,15 +61,13 @@ frappe.ui.form.on('Customer', {
                         frappe.call({
                             method: 'cotton_valley.api.api.send_registration_email',
                             args: {
-                                customer: frm.doc,
+                                customer_email: frm.doc.custom_email_address,
+                                firstname: frm.doc.customer_name,
+                                lastname: frm.doc.custom_last_name || "",
                                 company: frm.doc.register_company
                             },
                             callback: function (r) {
-                                if (r.message && r.message.status === "success") {
-                                    frappe.msgprint(__('Email sent successfully!'));
-                                } else {
-                                    frappe.msgprint(__('Failed to send email: ' + (r.message?.message || 'Unknown error')));
-                                }
+                                frappe.msgprint(__('Email sent successfully!'));
                             },
                             error: function (r) {
                                 frappe.msgprint(__('Error sending email: ' + r.responseText));

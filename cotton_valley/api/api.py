@@ -140,14 +140,12 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
 
 # Register Email For Customer
 @frappe.whitelist(allow_guest=True)
-def send_registration_email(customer, company):
+def send_registration_email(customer_email, firstname, lastname, company):
     """
     Send welcome email to newly registered customer
     Uses Email Template from ERPNext for easy content management
     """
     try:
-        customer = json.loads(customer) if isinstance(customer, str) else customer
-        customer_email = customer.custom_email_address
         if not customer_email:
             frappe.log_error("No email address found for customer", "Registration Email Failed")
             return
@@ -172,9 +170,9 @@ def send_registration_email(customer, company):
             
             # Render template with customer data
             context = {
-                "firstname": customer.customer_name,
-                "lastname": customer.custom_last_name or "",
-                "email": customer.custom_email_address
+                "firstname": firstname,
+                "lastname": lastname,
+                "email": customer_email
             }
             response = email_template.response_html if email_template.use_html else email_template.response
             email_message = frappe.render_template(response, context)
@@ -183,14 +181,14 @@ def send_registration_email(customer, company):
             email_message = f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #333;">Welcome to {company}!</h2>
-                    <p>Dear {customer.customer_name} {customer.custom_last_name or ''},</p>
+                    <p>Dear {firstname} {lastname},</p>
                     
                     <p>Thank you for registering with us! We're excited to have you as part of our community.</p>
                     
                     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
                         <h3 style="margin-top: 0; color: #555;">Your Registration Details:</h3>
-                        <p><strong>Customer ID:</strong> {customer.name}</p>
-                        <p><strong>Email:</strong> {customer.custom_email_address}</p>
+                        <p><strong>Customer ID:</strong> {firstname}</p>
+                        <p><strong>Email:</strong> {customer_email}</p>
                     </div>
                     
                     <p><strong>Note:</strong> Your account is currently pending approval. Our team will review your registration and activate your account shortly. You will receive another email once your account is activated.</p>
