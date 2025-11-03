@@ -103,8 +103,9 @@ def send_sales_order_confirmation_email(doc, method):
             
             # Render template
             subject = frappe.render_template(email_template.subject, template_args)
-            message = frappe.render_template(email_template.response, template_args)
-            
+            response = email_template.response_html if email_template.use_html else email_template.response
+            message = frappe.render_template(response, template_args)
+
         except frappe.DoesNotExistError:
             # Fallback to default message if template doesn't exist
             frappe.log_error("Email Template 'Sales Order Confirmation' not found. Using default message.", "Sales Order Email Template Missing")
@@ -144,10 +145,10 @@ def send_sales_order_confirmation_email(doc, method):
             now=True
         )
 
-        frappe.log_error(f"Sales Order confirmation email sent to: {', '.join(recipients)}", "Sales Order Email Sent")
+        frappe.log_error("Sales Order Email Sent", f"Sales Order confirmation email sent to: {', '.join(recipients)}")
         
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Sales Order Confirmation Email Error")
+        frappe.log_error("Sales Order Confirmation Email Error", frappe.get_traceback())
 
 
 def make_delivery_note_on_submit(doc, method):
