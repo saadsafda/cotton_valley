@@ -96,7 +96,7 @@ def send_sales_order_confirmation_email(doc, method):
                 "shipCountry": doc.shipping_country or "",
                 "shipPhone": doc.shipping_phone or "",
                 "ordersubtotal": doc.total or 0,
-                "grand_total": doc.grand_total,
+                "grandtotal": doc.grand_total,
                 "currency": doc.currency,
                 "items": doc.items,
             }
