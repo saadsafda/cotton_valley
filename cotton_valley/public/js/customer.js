@@ -59,7 +59,7 @@ frappe.ui.form.on('Customer', {
                     function () {
                         // User confirmed, proceed with sending email
                         frappe.call({
-                            method: 'cotton_valley.api.api.send_customer_email',
+                            method: 'cotton_valley.api.api.send_registration_email',
                             args: {
                                 customer: frm.doc,
                                 company: frm.doc.register_company
