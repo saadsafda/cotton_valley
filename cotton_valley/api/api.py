@@ -170,8 +170,8 @@ def send_registration_email(customer, company):
             
             # Render template with customer data
             context = {
-                "first_name": customer.customer_name,
-                "last_name": customer.custom_last_name or "",
+                "firstname": customer.customer_name,
+                "lastname": customer.custom_last_name or "",
                 "email": customer.custom_email_address
             }
             response = email_template.response_html if email_template.use_html else email_template.response
