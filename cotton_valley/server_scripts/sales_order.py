@@ -66,12 +66,15 @@ def send_sales_order_confirmation_email(doc, method):
             else:
                 template_name = "New Orders Message -UDC"
 
+            if not frappe.db.exists("Email Template", template_name):
+                raise frappe.DoesNotExistError
+
             email_template = frappe.get_doc("Email Template", template_name)
 
             # Collect CC emails from template child table `custom_cc_email` (if any)
             cc_emails = []
-            if getattr(email_template, 'custom_cc_email', None):
-                cc_emails = [row.email for row in email_template.custom_cc_email if getattr(row, 'email', None)]
+            if email_template.custom_cc_email:
+                cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
 
             # Prepare template arguments
             template_args = {
@@ -135,13 +138,13 @@ def send_sales_order_confirmation_email(doc, method):
         # Send email (include CC if present)
         frappe.sendmail(
             recipients=recipients,
-            cc=cc_emails if 'cc_emails' in locals() and cc_emails else None,
+            cc=cc_emails if cc_emails else None,
             subject=subject,
             message=message,
-            reference_doctype="Sales Order",
-            reference_name=doc.name,
             now=True
         )
+
+        frappe.log_error(f"Sales Order confirmation email sent to: {', '.join(recipients)}", "Sales Order Email Sent")
         
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Sales Order Confirmation Email Error")
