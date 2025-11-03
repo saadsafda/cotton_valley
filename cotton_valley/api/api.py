@@ -1,3 +1,4 @@
+import json
 import frappe # type: ignore
 from frappe import _ # type: ignore
 
@@ -13,7 +14,6 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
         ip_address = ip_address if ip_address and ip_address != "null" else None
         # Ensure incoming data is a dict (from JSON string)
         if isinstance(data, str):
-            import json
             data = json.loads(data)
 
         if frappe.db.exists("Customer", {"custom_email_address": data.get("email")}):
@@ -83,7 +83,7 @@ def register_customer(data, ip_address=None, lat_long=None, company="Cotton Vall
         frappe.db.commit()
         
         # Send welcome email to the registered customer
-        send_registration_email(customer, company)
+        # send_registration_email(customer, company)
         
         # Addresses
         make_customer_address(customer.name, data.get("shipping_address"), address_type="Shipping")
@@ -145,6 +145,7 @@ def send_registration_email(customer, company):
     Uses Email Template from ERPNext for easy content management
     """
     try:
+        customer = json.loads(customer) if isinstance(customer, str) else customer
         customer_email = customer.custom_email_address
         if not customer_email:
             frappe.log_error("No email address found for customer", "Registration Email Failed")
