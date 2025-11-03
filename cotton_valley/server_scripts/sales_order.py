@@ -42,8 +42,9 @@ def send_sales_order_confirmation_email(doc, method):
         
         # Get sales person email
         sales_person_email = None
-        if doc.custom_sales_person:
-            sales_person = frappe.get_doc("Sales Person", doc.custom_sales_person)
+        sales_person = None
+        if doc.custom_customer_sales_representative:
+            sales_person = frappe.get_doc("Sales Person", doc.custom_customer_sales_representative)
             if sales_person.employee:
                 sales_person_email = frappe.db.get_value("Employee", sales_person.employee, "user_id")
         
@@ -59,19 +60,44 @@ def send_sales_order_confirmation_email(doc, method):
         
         # Try to get Email Template
         try:
-            email_template = frappe.get_doc("Email Template", "Sales Order Confirmation")
-            
+            template_name = ""
+            if doc.company == "Cotton Valley":
+                template_name = "New Orders Message -CVL"
+            else:
+                template_name = "New Orders Message -UDC"
+
+            email_template = frappe.get_doc("Email Template", template_name)
+
+            # Collect CC emails from template child table `custom_cc_email` (if any)
+            cc_emails = []
+            if getattr(email_template, 'custom_cc_email', None):
+                cc_emails = [row.email for row in email_template.custom_cc_email if getattr(row, 'email', None)]
+
             # Prepare template arguments
             template_args = {
-                "doc": doc,
-                "customer_name": frappe.db.get_value("Customer", doc.customer, "customer_name"),
-                "sales_order_name": doc.name,
-                "transaction_date": doc.transaction_date,
+                "firstname": frappe.db.get_value("Customer", doc.customer, "customer_name"),
+                "lastname": frappe.db.get_value("Customer", doc.customer, "custom_last_name"),
+                "order": doc.name,
+                "salesRepName": doc.custom_customer_sales_representative,
+                "salesRepPhone": frappe.db.get_value("Employee", sales_person.employee, "cell_number") if doc.custom_customer_sales_representative else None,
+                "salesRepEmail": sales_person_email,
+                "paymentmethod": doc.custom_mode_of_payment,
+                "company": doc.company,
+                "address1": doc.billing_address_details,
+                "city": doc.billing_city or "",
+                "state": doc.state or "",
+                "zip": doc.zip_code or "",
+                "country": doc.country or "",
+                "shipAddress1": doc.shipping_address_details or "",
+                "shipCity": doc.shipping_city or "",
+                "shipState": doc.shipping_state or "",
+                "shipZip": doc.shipping_zip_code or "",
+                "shipCountry": doc.shipping_country or "",
+                "shipPhone": doc.shipping_phone or "",
+                "ordersubtotal": doc.total or 0,
                 "grand_total": doc.grand_total,
                 "currency": doc.currency,
-                "delivery_date": doc.delivery_date,
                 "items": doc.items,
-                "company": doc.company
             }
             
             # Render template
@@ -108,9 +134,10 @@ def send_sales_order_confirmation_email(doc, method):
             </div>
             """
         
-        # Send email
+        # Send email (include CC if present)
         frappe.sendmail(
             recipients=recipients,
+            cc=cc_emails if 'cc_emails' in locals() and cc_emails else None,
             subject=subject,
             message=message,
             reference_doctype="Sales Order",
