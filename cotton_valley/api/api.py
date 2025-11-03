@@ -139,6 +139,7 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
         return {"status": "error", "message": str(e)}
 
 # Register Email For Customer
+@frappe.whitelist(allow_guest=True)
 def send_registration_email(customer, company):
     """
     Send welcome email to newly registered customer
