@@ -187,7 +187,8 @@ scheduler_events = {
 # 		"cotton_valley.tasks.all"
 # 	],
 	"daily": [
-		"cotton_valley.api.products.get_product_prices"
+		"cotton_valley.api.products.get_product_prices",
+		"cotton_valley.server_scripts.sales_order.send_abandoned_cart_emails"
 	],
 # 	"hourly": [
 # 		"cotton_valley.tasks.hourly"

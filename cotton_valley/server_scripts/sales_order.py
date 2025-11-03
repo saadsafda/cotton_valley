@@ -174,3 +174,96 @@ def make_delivery_note_on_submit(doc, method):
         frappe.db.commit()
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Auto Delivery Note Creation Failed")
+
+
+@frappe.whitelist()
+def send_abandoned_cart_emails():
+    """
+    Scheduled task to email customers who have Sales Orders in Draft (docstatus=0).
+    Sends emails for orders created between 48 and 24 hours ago (one-time window per order)
+    using the Email Template 'Abandoned Cart -CVL' (or company-specific variant).
+    """
+    try:
+        from datetime import timedelta
+        from frappe.utils import now_datetime
+
+        now = now_datetime()
+        # start = (now - timedelta(hours=48)).strftime("%Y-%m-%d %H:%M:%S")
+        creation = (now - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+
+        sales_orders = frappe.get_all(
+            "Sales Order",
+            filters=[
+                ["Sales Order", "docstatus", "=", 0],
+                ["Sales Order", "creation", ">=", creation],
+            ],
+            fields=["name", "customer", "company", "items", "grand_total", "currency", "creation"]
+        )
+
+        if not sales_orders:
+            return
+
+        for so in sales_orders:
+            try:
+                if not so.customer:
+                    continue
+
+                customer_email = frappe.db.get_value("Customer", so.customer, "custom_email_address")
+                if not customer_email:
+                    continue
+
+                # choose template based on company
+                template_name = "Abandoned Cart -CVL" if so.company == "Cotton Valley" else "Abandoned Cart -UDC"
+
+                if not frappe.db.exists("Email Template", template_name):
+                    # skip if template missing
+                    frappe.log_error(f"Email Template {template_name} not found", "Abandoned Cart Email")
+                    continue
+
+                email_template = frappe.get_doc("Email Template", template_name)
+
+                # Collect CC emails from template child table `custom_cc_email` (if any)
+                cc_emails = []
+                if getattr(email_template, 'custom_cc_email', None):
+                    cc_emails = [row.email for row in email_template.custom_cc_email if getattr(row, 'email', None)]
+
+                items = frappe.get_all(
+                    "Sales Order Item",
+                    filters=[
+                        ["Sales Order Item", "parent", "=", so.name],
+                    ],
+                    fields=["name", "item_name", "item_code", "description", "image"]
+                )
+
+                # prepare template args
+                template_args = {
+                    "firstname": frappe.db.get_value("Customer", so.customer, "customer_name"),
+                    "lastname": frappe.db.get_value("Customer", so.customer, "custom_last_name"),
+                    "order": so.name,
+                    "company": so.company,
+                    "ordersubtotal": so.get('grand_total') or 0,
+                    "grand_total": so.get('grand_total'),
+                    "currency": so.get('currency'),
+                    "items": items or [],
+                    "creation": so.creation,
+                }
+
+                subject = frappe.render_template(email_template.subject, template_args)
+                response = email_template.response_html if email_template.use_html else email_template.response
+                message = frappe.render_template(response, template_args)
+
+                frappe.sendmail(
+                    recipients=[customer_email],
+                    cc=cc_emails if cc_emails else None,
+                    subject=subject,
+                    message=message,
+                    now=True
+                )
+
+                frappe.log_error(f"Abandoned cart email sent for {so.name} to {customer_email}", "Abandoned Cart Email Sent")
+
+            except Exception:
+                frappe.log_error(frappe.get_traceback(), "Abandoned Cart Email Error")
+
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Abandoned Cart Scheduler Failed")
