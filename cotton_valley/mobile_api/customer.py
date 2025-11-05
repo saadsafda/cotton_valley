@@ -57,6 +57,7 @@ def get_all_customers():
                 "active_customer": active_customer,
                 "mode_of_payment": customer.mode_of_payment,
                 "company": customer.custom_company_name,
+                "account_number": customer.account_number,
                 "price_list_for_cv": customer.price_list_for_cv,
                 "price_list_for_udc": customer.price_list_for_udc,
                 "no_of_orders": customer.no_of_orders,
