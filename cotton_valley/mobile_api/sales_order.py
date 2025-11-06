@@ -16,6 +16,8 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
         dict: Sales orders with customer details and statistics
     """
     try:
+        limit_page_length = int(limit_page_length)
+        limit_start = int(limit_start)
         # Get current user
         current_user = frappe.session.user
         
