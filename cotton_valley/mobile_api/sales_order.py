@@ -3,6 +3,173 @@ from frappe.utils import nowdate # type: ignore
 
 
 @frappe.whitelist()
+def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
+    """
+    Get all sales orders for the current logged-in sales person.
+    
+    Args:
+        filters: Optional JSON string with filters like {"docstatus": 1, "company": "Cotton Valley"}
+        limit_page_length: Number of records per page (default: 20)
+        limit_start: Starting record offset (default: 0)
+        
+    Returns:
+        dict: Sales orders with customer details and statistics
+    """
+    try:
+        limit_page_length = int(limit_page_length)
+        limit_start = int(limit_start)
+        # Get current user
+        current_user = frappe.session.user
+        
+        if not current_user or current_user == "Guest":
+            return {
+                "status": "error",
+                "message": "Authentication required"
+            }
+        
+        # Get employee for current user
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": current_user, "status": "Active"},
+            "name"
+        )
+        
+        if not employee:
+            return {
+                "status": "error",
+                "message": "Current user is not an active employee"
+            }
+        
+        # Get sales person linked to this employee
+        sales_person = frappe.db.get_value(
+            "Sales Person",
+            {"employee": employee, "enabled": 1},
+            "name"
+        )
+        
+        if not sales_person:
+            return {
+                "status": "error",
+                "message": "Employee is not a sales person"
+            }
+        
+        # Parse filters if provided
+        additional_filters = {}
+        if filters:
+            additional_filters = frappe.parse_json(filters) if isinstance(filters, str) else filters
+        
+        # Build filters for sales orders
+        base_filters = {
+            "custom_customer_sales_representative": sales_person
+        }
+        base_filters.update(additional_filters)
+        
+        # Get sales orders
+        sales_orders = frappe.get_all(
+            "Sales Order",
+            filters=base_filters,
+            fields=[
+                "name", "customer", "customer_name", "transaction_date", 
+                "delivery_date", "status", "docstatus", "grand_total", "currency",
+                "company", "custom_mode_of_payment", "custom_notes",
+                "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
+                "creation", "modified", "owner"
+            ],
+            order_by="creation desc",
+            limit_page_length=limit_page_length,
+            limit_start=limit_start
+        )
+        
+        # Enrich with customer details
+        for order in sales_orders:
+            # Get customer details
+            customer_details = frappe.db.get_value(
+                "Customer",
+                order.customer,
+                ["custom_email_address", "custom_phone_number", "custom_company_name", "image"],
+                as_dict=True
+            )
+            
+            if customer_details:
+                order["customer_email"] = customer_details.get("custom_email_address")
+                order["customer_phone"] = customer_details.get("custom_phone_number")
+                order["customer_company"] = customer_details.get("custom_company_name")
+                order["customer_image"] = customer_details.get("image")
+            
+            # Get items for this sales order
+            items = frappe.get_all(
+                "Sales Order Item",
+                filters={"parent": order.name},
+                fields=[
+                    "name", "item_code", "item_name", "description",
+                    "qty", "rate", "amount", "uom", "warehouse",
+                    "delivery_date", "idx"
+                ],
+                order_by="idx asc"
+            )
+            
+            # Enrich items with product details
+            for item in items:
+                # Get item image and additional details
+                item_details = frappe.db.get_value(
+                    "Item",
+                    item.item_code,
+                    ["image", "stock_uom", "item_group", "brand"],
+                    as_dict=True
+                )
+                if item_details:
+                    item["image"] = item_details.get("image")
+                    item["item_group"] = item_details.get("item_group")
+                    item["brand"] = item_details.get("brand")
+            
+            order["items"] = items
+            order["item_count"] = len(items)
+            
+            # Format status
+            if order.docstatus == 0:
+                order["status_label"] = "Draft"
+            elif order.docstatus == 1:
+                order["status_label"] = order.status
+            elif order.docstatus == 2:
+                order["status_label"] = "Cancelled"
+        
+        # Get total count for pagination
+        total_count = frappe.db.count("Sales Order", base_filters)
+        
+        # Get summary statistics
+        stats = frappe.db.sql("""
+            SELECT 
+                COUNT(*) as total_orders,
+                SUM(CASE WHEN docstatus = 0 THEN 1 ELSE 0 END) as draft_orders,
+                SUM(CASE WHEN docstatus = 1 THEN 1 ELSE 0 END) as submitted_orders,
+                SUM(CASE WHEN docstatus = 2 THEN 1 ELSE 0 END) as cancelled_orders,
+                SUM(CASE WHEN docstatus = 1 THEN grand_total ELSE 0 END) as total_value
+            FROM `tabSales Order`
+            WHERE custom_customer_sales_representative = %s
+        """, (sales_person,), as_dict=True)
+        
+        return {
+            "status": "success",
+            "sales_person": sales_person,
+            "data": sales_orders,
+            "pagination": {
+                "total_count": total_count,
+                "limit_start": limit_start,
+                "limit_page_length": limit_page_length,
+                "has_more": (limit_start + limit_page_length) < total_count
+            },
+            "statistics": stats[0] if stats else {}
+        }
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Get Sales Person Orders Failed")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+@frappe.whitelist()
 def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     """
     Create or update a Sales Order from cart.
@@ -149,3 +316,5 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
         so_doc.submit()
     frappe.db.commit()
     return so_doc.name
+
+
