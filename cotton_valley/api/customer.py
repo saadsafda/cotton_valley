@@ -527,5 +527,81 @@ def get_current_customer():
 
 
 
+# # Register Email For Customer
+# @frappe.whitelist(allow_guest=True)
+# def send_registration_email(customer_email, firstname, lastname, company, template_name):
+#     """
+#     Send welcome email to newly registered customer
+#     Uses Email Template from ERPNext for easy content management
+#     """
+#     try:
+#         if not customer_email:
+#             frappe.log_error("No email address found for customer", "Registration Email Failed")
+#             return
+        
+#         # Try to get Email Template from ERPNext
+#         template_name = template_name
+#         print(template_name, "template name running")
+#         # if company == "Cotton Valley":
+#         #     template_name = "New Registration Message_CVL"
+#         # else:
+#         #     template_name = "New Registration Message_UDC"
+#         email_subject = f"Welcome to {company}!"
+#         email_message = ""
+        
+#         cc_emails = []
+#         if frappe.db.exists("Email Template", template_name):
+#             email_template = frappe.get_doc("Email Template", template_name)
+#             email_subject = email_template.subject
+            
+#             # Get CC emails from child table
+#             if email_template.custom_cc_email:
+#                 cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
+            
+#             # Render template with customer data
+#             context = {
+#                 "firstname": firstname,
+#                 "lastname": lastname,
+#                 "email": customer_email
+#             }
+#             response = email_template.response_html if email_template.use_html else email_template.response
+#             email_message = frappe.render_template(response, context)
+#         else:
+#             # Fallback message if template doesn't exist
+#             email_message = f"""
+#                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+#                     <h2 style="color: #333;">Welcome to {company}!</h2>
+#                     <p>Dear {firstname} {lastname},</p>
+                    
+#                     <p>Thank you for registering with us! We're excited to have you as part of our community.</p>
+                    
+#                     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+#                         <h3 style="margin-top: 0; color: #555;">Your Registration Details:</h3>
+#                         <p><strong>Customer ID:</strong> {firstname}</p>
+#                         <p><strong>Email:</strong> {customer_email}</p>
+#                     </div>
+                    
+#                     <p><strong>Note:</strong> Your account is currently pending approval. Our team will review your registration and activate your account shortly. You will receive another email once your account is activated.</p>
+                    
+#                     <p>If you have any questions, please don't hesitate to contact us.</p>
+                    
+#                 </div>
+#             """
+        
+#         # Send the email with CC
+#         frappe.sendmail(
+#             recipients=[customer_email],
+#             cc=cc_emails if cc_emails else None,
+#             subject=email_subject,
+#             message=email_message,
+#             now=True  # Send immediately
+#         )
+        
+#         frappe.log_error(f"Registration email sent to {customer_email}", "Customer Registration Email")
+        
+#     except Exception as e:
+#         # Don't fail registration if email fails
+#         frappe.log_error(f"Failed to send registration email: {str(e)}\n{frappe.get_traceback()}", "Registration Email Failed")
+
 
 

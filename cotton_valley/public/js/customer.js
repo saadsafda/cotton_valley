@@ -85,6 +85,61 @@ frappe.ui.form.on('Customer', {
             });
         }
 
+
+
+        // ===== EMAIL WITH TEMPLATE BUTTON =====
+    //     if (!frm.is_new()) {
+    //         frm.add_custom_button(__('Send Email with Template'), function () {
+    //             frappe.db.get_list('Email Template', {
+    //                 fields: ['name', 'subject'],
+    //                 limit: 100
+    //             }).then(templates => {
+    //                 if (!templates || templates.length === 0) {
+    //                     frappe.msgprint(__('No Email Templates found.'));
+    //                     return;
+    //                 }
+
+    //                 let options = templates.map(t => t.name);
+
+    //                 frappe.prompt([
+    //                     {
+    //                         label: 'Select Email Template',
+    //                         fieldname: 'template',
+    //                         fieldtype: 'Select',
+    //                         options: options,
+    //                         reqd: 1
+    //                     }
+    //                 ], function (values) {
+    //                     let template_name = values.template;
+    //                     let recipient = frm.doc.custom_email_address;
+
+    //                     if (!recipient) {
+    //                         frappe.msgprint(__('Customer Email not found.'));
+    //                         return;
+    //                     }
+
+    //                     frappe.call({
+    //                         method: 'cotton_valley.api.customer.send_registration_email',
+    //                         args: {
+    //                             customer_email: frm.doc.custom_email_address,
+    //                             firstname: frm.doc.customer_name,
+    //                             lastname: frm.doc.custom_last_name || "",
+    //                             company: frm.doc.register_company,
+    //                             template_name:template_name 
+    //                         },
+    //                         callback: function (r) {
+    //                             frappe.msgprint(__('Email sent successfully to ') + frm.doc.custom_email_address);
+    //                         },
+    //                         error: function (r) {
+    //                             frappe.msgprint(__('Error sending email: ' + r.responseText));
+    //                         }
+    //                     });
+
+    //                 }, __('Select Email Template'), __('Send'));
+    //             });
+    //         });
+    //     }
+
     },
 
     setup: function (frm) {

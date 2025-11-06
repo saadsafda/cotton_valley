@@ -24,7 +24,33 @@ frappe.ui.form.on('Sales Order', {
         if (frm.doc.push_to_erp === 1) {
             frm.dashboard.add_indicator(__('Pushed to ERP'), 'green');
         }
+
+        // ===== New Button: Send Email =====
+    if (frm.doc.docstatus === 1) { // Only allow for submitted orders
+        frm.add_custom_button(__('Send Email'), function() {
+            frappe.confirm(
+                __('Are you sure you want to send Sales Order confirmation email?'),
+                function() {
+                    // Call backend function
+                    frappe.call({
+                        method: 'cotton_valley.server_scripts.sales_order.send_sales_order_confirmation_email',
+                        args: {
+                            doc: frm.doc.name,
+                            method: 'manual_trigger'
+                        },
+                        callback: function(r) {
+                            frappe.msgprint(__('Sales Order confirmation email sent successfully!'));
+                        },
+                        error: function(r) {
+                            frappe.msgprint(__('Failed to send email: ' + r.responseText));
+                        }
+                    });
+                }
+            );
+        }).addClass('btn-primary');
     }
+}
+    
 });
 
 function push_single_order_to_erp(frm) {

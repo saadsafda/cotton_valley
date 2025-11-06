@@ -30,7 +30,7 @@ def update_customer_order_summary(doc, method):
     make_delivery_note_on_submit(doc, method)
     send_sales_order_confirmation_email(doc, method)
 
-
+@frappe.whitelist()
 def send_sales_order_confirmation_email(doc, method):
     """
     Send email notification to customer and sales person when sales order is submitted.
