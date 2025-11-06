@@ -105,30 +105,47 @@ def check_device_registration(deviceId):
     if employee:
         devices = get_employee_devices(employee.name)
 
-        if (len(devices) > 0):
-            for idx, x in enumerate(devices['devices']):
-                if (deviceId == x['device_id']):
-                    success = True
+        if devices and len(devices.get('devices', [])) > 0:
+            device_found = False
+            for device in devices['devices']:
+                if deviceId == device['device_id']:
+                    device_found = True
+                    if device['approved'] == 1:
+                        success = True
+                        message = "Device is approved and registered."
+                    else:
+                        success = False
+                        message = "Device is not approved yet. Please contact admin.\n\nDevice Id: " + deviceId
                     break
-                else:
-                    success = False
-                    message = "Device is not registered, Attendance cannot be marked\n\nDevice Id: "+deviceId
-
+            
+            if not device_found:
+                success = False
+                message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
         else:
-            if not frappe.db.exists("Employee Device Registration", [["Employee Devices", "device_id", "=", deviceId]]):
-                new_device_registeration = frappe.new_doc(
-                    "Employee Device Registration")
-                new_device_registeration.user = frappe.session.user,
-                new_device_registeration.employee = employee
+            # No devices registered for this employee yet
+            if not frappe.db.exists("Employee Device Registration", {"employee": employee.name}):
+                # Create new registration
+                new_device_registeration = frappe.new_doc("Employee Device Registration")
+                new_device_registeration.user = frappe.session.user
+                new_device_registeration.employee = employee.name
                 new_device_registeration.append("employee_devices", {
                     "device_id": deviceId
                 })
                 new_device_registeration.insert(ignore_permissions=True)
+                frappe.db.commit()
                 success = False
                 message = "Device registered successfully. Please contact admin to approve the device."
             else:
+                # Registration exists but this device not in child table
+                # Add device to existing registration
+                registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
+                registration.append("employee_devices", {
+                    "device_id": deviceId
+                })
+                registration.save(ignore_permissions=True)
+                frappe.db.commit()
                 success = False
-                message = "Device ID already exists. Please choose a different one."
+                message = "Device registered successfully. Please contact admin to approve the device."
     else:
         success = False
         message = "No active employee found for the current user."
@@ -143,17 +160,16 @@ def check_device_registration(deviceId):
 
 def get_employee_devices(employee):
     devices = frappe.db.get_value("Employee Device Registration", {"employee": employee}, "name")
-    data = ""
+    data = {"devices": []}  # Initialize with empty list instead of empty string
     if devices:
-        data = {}
         data["devices"] = frappe.db.sql("""
-        select 
-            device_id
-            from 
+        SELECT 
+            device_id, approved
+        FROM 
             `tabEmployee Devices` 
-            where approved=1 and
+        WHERE 
             parent = %(name)s
 
-        """, values=devices, as_dict=1)
+        """, values={"name": devices}, as_dict=1)
     return data
 
