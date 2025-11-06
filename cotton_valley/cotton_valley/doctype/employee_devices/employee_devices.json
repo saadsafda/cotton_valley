@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "device_id",
-  "aprroved"
+  "approved"
  ],
  "fields": [
   {
@@ -19,17 +19,17 @@
   },
   {
    "default": "0",
-   "fieldname": "aprroved",
+   "fieldname": "approved",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Aprroved"
+   "label": "Approved"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-06 01:51:30.270143",
+ "modified": "2025-11-06 06:07:28.886880",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Employee Devices",

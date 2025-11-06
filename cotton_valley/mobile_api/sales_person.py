@@ -92,3 +92,66 @@ def check_current_user_is_sales_person():
             "is_employee": False,
             "is_sales_person": False
         }
+
+
+
+@frappe.whitelist()
+def check_device_registration(deviceId):
+    current_user = frappe.session.user
+    success = True
+    message = ''
+
+    employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
+    if employee:
+        devices = get_employee_devices(employee.name)
+
+        if (len(devices) > 0):
+            for idx, x in enumerate(devices['devices']):
+                if (deviceId == x['device_id']):
+                    success = True
+                    break
+                else:
+                    success = False
+                    message = "Device is not registered, Attendance cannot be marked\n\nDevice Id: "+deviceId
+
+        else:
+            if not frappe.db.exists("Employee Device Registration", [["Employee Devices", "device_id", "=", deviceId]]):
+                new_device_registeration = frappe.new_doc(
+                    "Employee Device Registration")
+                new_device_registeration.user = frappe.session.user,
+                new_device_registeration.employee = employee
+                new_device_registeration.append("employee_devices", {
+                    "device_id": deviceId
+                })
+                new_device_registeration.insert(ignore_permissions=True)
+            else:
+                success = False
+                message = "Device ID already exists. Please choose a different one."
+    else:
+        success = False
+        message = "No active employee found for the current user."
+
+    return {
+        "success": success,
+        "message": message
+    }
+
+
+
+
+def get_employee_devices(employee):
+    devices = frappe.db.get_value("Employee Device Registration", {"employee": employee}, "name")
+    data = ""
+    if devices:
+        data = {}
+        data["devices"] = frappe.db.sql("""
+        select 
+            device_id
+            from 
+            `tabEmployee Devices` 
+            where approved=1 and
+            parent = %(name)s
+
+        """, values=devices, as_dict=1)
+    return data
+
