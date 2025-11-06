@@ -98,7 +98,7 @@ def check_current_user_is_sales_person():
 @frappe.whitelist()
 def check_device_registration(deviceId):
     current_user = frappe.session.user
-    success = True
+    success = False
     message = ''
 
     employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
@@ -124,6 +124,8 @@ def check_device_registration(deviceId):
                     "device_id": deviceId
                 })
                 new_device_registeration.insert(ignore_permissions=True)
+                success = False
+                message = "Device registered successfully. Please contact admin to approve the device."
             else:
                 success = False
                 message = "Device ID already exists. Please choose a different one."
