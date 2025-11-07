@@ -318,3 +318,23 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
     return so_doc.name
 
 
+
+@frappe.whitelist()
+def get_panding_payments():
+    try:
+        panding_customer_amount = frappe.get_list(
+            "Sales Order",
+            filters={
+                "docstatus": 1,
+                "custom_clear": 0
+            },
+            fields=["customer", "customer_name", "grand_total", "submit_datetime as date"],
+            order_by="submit_datetime desc"
+        )
+
+        return {"status": "success", "data": panding_customer_amount}
+
+    except Exception as e:
+        frappe.log_error("Get Pending Payments Failed", frappe.get_traceback())
+        frappe.local.response["http_status_code"] = 500
+        return {"status": "error", "message": str(e)}
