@@ -209,8 +209,6 @@ def create_user_login_log(data):
         app_version = data.get('app_version')
         latitude = data.get('latitude')
         longitude = data.get('longitude')
-        country = data.get('country')
-        city = data.get('city')
         extra = data.get('extra')
 
         log_doc = frappe.get_doc({
@@ -224,8 +222,6 @@ def create_user_login_log(data):
             "app_version": app_version,
             "latitude": latitude,
             "longitude": longitude,
-            "country": country,
-            "city": city,
         })
 
         # If there's extra JSON data and the doctype has an 'extra' field, store it
