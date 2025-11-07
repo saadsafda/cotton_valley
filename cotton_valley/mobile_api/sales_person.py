@@ -173,3 +173,75 @@ def get_employee_devices(employee):
         """, values={"name": devices}, as_dict=1)
     return data
 
+
+
+@frappe.whitelist()
+def create_user_login_log(data):
+    """
+    Create a User Login Log record.
+
+    Accepts `data` as dict or JSON string with possible keys:
+    user, login_time, timezone, ip_address, device_model, device_os,
+    app_version, latitude, longitude, country, city, extra
+
+    Returns: {status, name/message}
+    """
+    try:
+        if isinstance(data, str):
+            data = frappe.parse_json(data)
+
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Invalid payload"}
+
+        # Prefer session user if available, otherwise accept provided user
+        current_user = frappe.session.user
+        user = current_user if current_user and current_user != 'Guest' else data.get('user')
+
+        if not user:
+            return {"status": "error", "message": "User is required"}
+
+        # Build doc fields
+        login_time = data.get('login_time') or data.get('login')
+        timezone = data.get('timezone')
+        ip_address = data.get('ip_address') or data.get('ip')
+        device_model = data.get('device_model')
+        device_os = data.get('device_os')
+        app_version = data.get('app_version')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        country = data.get('country')
+        city = data.get('city')
+        extra = data.get('extra')
+
+        log_doc = frappe.get_doc({
+            "doctype": "User Login Log",
+            "user": user,
+            "login_time": login_time,
+            "timezone": timezone,
+            "ip_address": ip_address,
+            "device_model": device_model,
+            "device_os": device_os,
+            "app_version": app_version,
+            "latitude": latitude,
+            "longitude": longitude,
+            "country": country,
+            "city": city,
+        })
+
+        # If there's extra JSON data and the doctype has an 'extra' field, store it
+        try:
+            meta = frappe.get_meta('User Login Log')
+            if extra is not None and any(f.fieldname == 'extra' for f in meta.fields):
+                log_doc.extra = extra if isinstance(extra, str) else frappe.as_json(extra)
+        except Exception:
+            # ignore metadata errors
+            pass
+
+        log_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {"status": "success", "name": log_doc.name}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Create User Login Log Failed")
+        return {"status": "error", "message": str(e)}
