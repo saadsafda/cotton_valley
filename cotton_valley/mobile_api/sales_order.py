@@ -103,7 +103,7 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
                 fields=[
                     "name", "item_code", "item_name", "description",
                     "qty", "rate", "amount", "uom", "warehouse",
-                    "delivery_date", "idx"
+                    "delivery_date", "idx", "custom_case_pack as case_pack"
                 ],
                 order_by="idx asc"
             )
