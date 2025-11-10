@@ -500,43 +500,84 @@ def unstock_items(order_id, items, total):
     """
     Unstock items from a submitted Sales Order.
     items = [
-      {"item_code": "ITEM-001", "qty": 2},
-      {"item_code": "ITEM-002", "qty": 1},
+      {"item_code": "ITEM-001", "qty": 2, "amount": 100.00},
+      {"item_code": "ITEM-002", "qty": 1, "amount": 50.00},
     ]
     """
-    items = frappe.parse_json(items)
-    
     try:
+        # Validate inputs
+        if not order_id:
+            return {"status": "error", "message": "Order ID is required"}
+        
+        if not items:
+            return {"status": "error", "message": "Items list is required"}
+        
+        # Parse items if it's a JSON string
+        if isinstance(items, str):
+            items = frappe.parse_json(items)
+        
+        # Check if Sales Order exists
+        if not frappe.db.exists("Sales Order", order_id):
+            return {"status": "error", "message": f"Sales Order {order_id} not found"}
+        
+        # Get Sales Order document
         so_doc = frappe.get_doc("Sales Order", order_id)
+        
+        # Validate docstatus
         if so_doc.docstatus != 1:
-            return {"status": "error", "message": "Only submitted Sales Orders can be unstocked."}
-        so_doc.not_delivered_item = []  # reset not delivered items
+            return {"status": "error", "message": "Only submitted Sales Orders can be unstocked"}
+        
+        # Reset not delivered items
+        so_doc.not_delivered_item = []
+        
+        # Add unstocked items
         for row in items:
-            item_code = row["item_code"]
-            qty_to_unstock = row["qty"]
-            item_total = row.get("amount", 0.0)
+            if not row.get("item_code"):
+                return {"status": "error", "message": "item_code is required for each item"}
             
-            # Find the item in the Sales Order
+            if not row.get("qty"):
+                return {"status": "error", "message": f"qty is required for item {row.get('item_code')}"}
+            
+            item_code = row["item_code"]
+            qty_to_unstock = float(row["qty"])
+            item_total = float(row.get("amount", 0.0))
+            
             so_doc.append("not_delivered_item", {
                 "item_code": item_code,
                 "qty": qty_to_unstock,
                 "amount": item_total
             })
         
-        so_doc.not_delivered_total = total
+        # Set total
+        so_doc.not_delivered_total = float(total) if total else 0.0
+        
+        # Save and commit
         so_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
         return {
             "status": "success",
-            "message": "Unstocking process completed."
+            "message": "Unstocking process completed successfully",
+            "order_id": order_id,
+            "unstocked_items_count": len(items)
         }
 
+    except frappe.DoesNotExistError:
+        frappe.log_error("Unstock Items - Order Not Found", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"Sales Order {order_id} does not exist"
+        }
+    except ValueError as e:
+        frappe.log_error("Unstock Items - Invalid Data", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"Invalid data format: {str(e)}"
+        }
     except Exception as e:
         frappe.log_error("Unstock Items Error", frappe.get_traceback())
         return {
             "status": "error",
-            "message": f"An error occurred: {str(e)}",
-            "data": {}
+            "message": f"An error occurred: {str(e)}"
         }
 
