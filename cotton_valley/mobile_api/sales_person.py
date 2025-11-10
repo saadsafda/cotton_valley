@@ -120,6 +120,12 @@ def check_device_registration(deviceId):
             
             if not device_found:
                 success = False
+                registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
+                registration.append("employee_devices", {
+                    "device_id": deviceId
+                })
+                registration.save(ignore_permissions=True)
+                frappe.db.commit()
                 message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
         else:
             # No devices registered for this employee yet

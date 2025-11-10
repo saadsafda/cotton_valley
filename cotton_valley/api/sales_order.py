@@ -493,3 +493,50 @@ def push_to_erp(sales_orders):
         "message": message,
         "results": results
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def unstock_items(order_id, items, total):
+    """
+    Unstock items from a submitted Sales Order.
+    items = [
+      {"item_code": "ITEM-001", "qty": 2},
+      {"item_code": "ITEM-002", "qty": 1},
+    ]
+    """
+    items = frappe.parse_json(items)
+    
+    try:
+        so_doc = frappe.get_doc("Sales Order", order_id)
+        if so_doc.docstatus != 1:
+            return {"status": "error", "message": "Only submitted Sales Orders can be unstocked."}
+        so_doc.not_delivered_item = []  # reset not delivered items
+        for row in items:
+            item_code = row["item_code"]
+            qty_to_unstock = row["qty"]
+            item_total = row.get("amount", 0.0)
+            
+            # Find the item in the Sales Order
+            so_doc.append("not_delivered_item", {
+                "item_code": item_code,
+                "qty": qty_to_unstock,
+                "amount": item_total
+            })
+        
+        so_doc.not_delivered_total = total
+        so_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Unstocking process completed."
+        }
+
+    except Exception as e:
+        frappe.log_error("Unstock Items Error", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"An error occurred: {str(e)}",
+            "data": {}
+        }
+
