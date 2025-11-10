@@ -94,6 +94,44 @@ def check_current_user_is_sales_person():
         }
 
 
+@frappe.whitelist()
+def check_device_active(deviceId):
+    current_user = frappe.session.user
+    success = False
+    message = ''
+
+    employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
+    if employee:
+        devices = get_employee_devices(employee.name)
+
+        if devices and len(devices.get('devices', [])) > 0:
+            device_found = False
+            for device in devices['devices']:
+                if deviceId == device['device_id']:
+                    device_found = True
+                    if device['approved'] == 1:
+                        success = True
+                        message = "Device is approved and registered."
+                    else:
+                        success = False
+                        message = "Device is not approved yet. Please contact admin.\n\nDevice Id: " + deviceId
+                    break
+            
+            if not device_found:
+                success = False
+                message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+        else:
+            success = False
+            message = "No devices registered for this employee. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+    else:
+        success = False
+        message = "No active employee found for the current user."
+
+    return {
+        "success": success,
+        "message": message
+    }
+
 
 @frappe.whitelist()
 def check_device_registration(deviceId, device_model, device_os):
