@@ -7,6 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "device_id",
+  "device_os",
+  "column_break_rinq",
+  "device_model",
   "approved"
  ],
  "fields": [
@@ -23,13 +26,29 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Approved"
+  },
+  {
+   "fieldname": "column_break_rinq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "Device Model"
+  },
+  {
+   "fieldname": "device_os",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "Device OS"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-11-06 06:07:28.886880",
+ "modified": "2025-11-10 05:32:52.711632",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Employee Devices",

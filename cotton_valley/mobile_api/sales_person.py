@@ -96,7 +96,7 @@ def check_current_user_is_sales_person():
 
 
 @frappe.whitelist()
-def check_device_registration(deviceId):
+def check_device_registration(deviceId, device_model, device_os):
     current_user = frappe.session.user
     success = False
     message = ''
@@ -122,7 +122,9 @@ def check_device_registration(deviceId):
                 success = False
                 registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
                 registration.append("employee_devices", {
-                    "device_id": deviceId
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
                 })
                 registration.save(ignore_permissions=True)
                 frappe.db.commit()
@@ -135,7 +137,9 @@ def check_device_registration(deviceId):
                 new_device_registeration.user = frappe.session.user
                 new_device_registeration.employee = employee.name
                 new_device_registeration.append("employee_devices", {
-                    "device_id": deviceId
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
                 })
                 new_device_registeration.insert(ignore_permissions=True)
                 frappe.db.commit()
@@ -146,7 +150,9 @@ def check_device_registration(deviceId):
                 # Add device to existing registration
                 registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
                 registration.append("employee_devices", {
-                    "device_id": deviceId
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
                 })
                 registration.save(ignore_permissions=True)
                 frappe.db.commit()
