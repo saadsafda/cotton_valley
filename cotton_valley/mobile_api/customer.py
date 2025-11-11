@@ -12,13 +12,20 @@ def get_all_customers():
                     "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
                     "no_of_orders", "orders_amount"]
         )
+
+        if not customers:
+            return {
+                "status": "success",
+                "message": "No customers found",
+                "data": []
+            }
         
         # Calculate date 90 days ago
         ninety_days_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
         
         # Get all customer IDs for batch query
         customer_ids = [c.name for c in customers]
-        
+    
         # Batch query to check last order date for all customers
         last_orders = frappe.db.sql("""
             SELECT customer, MAX(transaction_date) as last_order_date
@@ -31,12 +38,7 @@ def get_all_customers():
         # Create a dictionary for quick lookup
         last_order_map = {order.customer: order.last_order_date for order in last_orders}
         
-        if not customers:
-            return {
-                "status": "success",
-                "message": "No customers found",
-                "data": []
-            }
+        
         customer_list = []
         for customer in customers:
             # Check if customer has ordered in last 90 days
