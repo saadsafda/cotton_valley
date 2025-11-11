@@ -17,7 +17,8 @@ def get_all_customers():
             return {
                 "status": "success",
                 "message": "No customers found",
-                "data": []
+                "data": [],
+                "count": 0
             }
         
         # Calculate date 90 days ago
