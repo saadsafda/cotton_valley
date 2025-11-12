@@ -68,7 +68,7 @@ def get_order_details(order_number):
     # Get Sales Invoice linked to this Sales Order
     si_invoice_list = frappe.get_all(
         "Sales Invoice",
-        filters=[["Sales Invoice Item", "sales_order", "=", so_doc.name]],
+        filters=[["Sales Invoice Item", "sales_order", "=", so_doc.name], ["docstatus", "!=", 2]],
         fields=["name", "total", "grand_total", "discount_amount"],
         limit=1,
     )
