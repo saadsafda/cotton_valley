@@ -65,18 +65,25 @@ def get_order_details(order_number):
             "price": item.rate,
         })
 
-    si_invoice = frappe.get_all(
+    # Get Sales Invoice linked to this Sales Order
+    si_invoice_list = frappe.get_all(
         "Sales Invoice",
         filters=[["Sales Invoice Item", "sales_order", "=", so_doc.name]],
         fields=["name", "total", "grand_total", "discount_amount"],
         limit=1,
     )
-    si_invoice_items = []
-    if len(si_invoice) > 0:
-        si_invoice_items = frappe.get_all("Sales Invoice Item", filters={"parent": si_invoice[0].name}, fields=["item_code", "image", "item_name", "qty", "case_pack", "rate", "amount"])
-
-    for item in si_invoice_items:
-        si_invoice.append("items", item)
+    
+    si_invoice = None
+    if len(si_invoice_list) > 0:
+        si_invoice = si_invoice_list[0]
+        # Get invoice items
+        si_invoice_items = frappe.get_all(
+            "Sales Invoice Item", 
+            filters={"parent": si_invoice["name"]}, 
+            fields=["item_code", "image", "item_name", "qty", "case_pack", "rate", "amount"]
+        )
+        # Add items to the invoice dict
+        si_invoice["items"] = si_invoice_items
 
     return {
         "order_number": so_doc.name,
