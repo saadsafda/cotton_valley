@@ -64,6 +64,18 @@ def get_order_details(order_number):
             "sub_total": item.amount,
             "price": item.rate,
         })
+
+    si_invoice = frappe.get_all(
+        "Sales Invoice",
+        filters=[["Sales Invoice Item", "sales_order", "=", so_doc.name]],
+        fields=["name"],
+        limit=1,
+        pluck="name"
+    )
+    si_invoice_items = []
+    if len(si_invoice) > 0:
+        si_invoice_items = frappe.get_all("Sales Invoice Item", filters={"parent": si_invoice[0]}, fields=["item_code", "image", "item_name", "qty", "case_pack", "rate", "amount"])
+
     return {
         "order_number": so_doc.name,
         "amount": so_doc.total,
@@ -85,9 +97,10 @@ def get_order_details(order_number):
         "shipping_phone": so_doc.shipping_phone,
         "delivery_description": so_doc.custom_shipping_method,
         "products": items,
+        "invoice": si_invoice_items,
         "order_status": {
             "status": so_doc.order_status,
-            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.order_status == "Processing" else 3 if so_doc.order_status == "Shipped" else 1,
+            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.push_to_erp else 3 if so_doc.order_status == "Shipped" else 1,
         }
     }
 
