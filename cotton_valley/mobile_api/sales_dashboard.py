@@ -1,6 +1,273 @@
 import frappe
 from datetime import datetime, timedelta
 
+@frappe.whitelist(allow_guest=False)
+def get_sales_achievement(fiscal_year=None, item_group=None, product_category=None):
+    """
+    Retrieves the total *achieved* sales, grouped by MONTH and PRODUCT CATEGORY,
+    for the logged-in user's Sales Person.
+
+    This version joins the Item's child table for categories.
+    """
+
+    # ---
+    # !! ACTION REQUIRED: SET THESE PLACEHOLDERS !!
+    # ---
+    # 1. The DocType name of the child table in `Item` (e.g., "Item Category")
+    ITEM_CATEGORY_DOCTYPE = "Product Categoris"
+    
+    # 2. The field name in that child table that links to `Product Category` (e.g., "category")
+    CATEGORY_FIELDNAME = "product_category"
+    # ---
+    
+    # 1. Get the Sales Person for the current user
+    user = frappe.session.user
+    employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
+    if not employee:
+        return {"status": "error", "message": "No Employee found for the current user."}
+    
+    employee_name = employee[0]
+    sales_person = frappe.get_all("Sales Person", filters={"employee": employee_name}, fields=["name"], pluck="name")
+    if not sales_person:
+        return {"status": "error", "message": "No Sales Person found for the current employee."}
+    
+    sales_person_name = sales_person[0]
+
+    # 2. Get Fiscal Year start and end dates
+    if not fiscal_year:
+        fiscal_year = frappe.db.get_value("Fiscal Year", {"disabled": 0}, "name")
+        if not fiscal_year:
+            frappe.throw("No active Fiscal Year found.")
+            
+    fy_doc = frappe.get_doc("Fiscal Year", fiscal_year)
+    start_date = fy_doc.year_start_date
+    end_date = fy_doc.year_end_date
+    
+    # 3. Get Target Categories for Scaffolding (from your get_monthly_targets logic)
+    target_filter_dict = {
+        "parenttype": "Sales Person",
+        "parent": sales_person_name,
+        "fiscal_year": fiscal_year,
+    }
+    if item_group:
+        target_filter_dict["item_group"] = item_group
+    if product_category:
+        target_filter_dict["product_category"] = product_category
+
+    target_categories_list = frappe.get_all(
+        "Target Detail", # This is the DocType for your sales targets
+        filters=target_filter_dict,
+        fields=["product_category"],
+        distinct=True,
+        pluck="product_category"
+    )
+    all_categories = set(c for c in target_categories_list if c)
+
+    # 4. Build the SQL Query
+    # This query joins the item's category child table
+    query = f"""
+        SELECT
+            MONTHNAME(si.posting_date) as month,
+            ic.{CATEGORY_FIELDNAME} as product_category,
+            SUM(sii.base_amount) as achieved_amount
+        FROM
+            `tabSales Invoice` as si,
+            `tabSales Invoice Item` as sii,
+            `tab{ITEM_CATEGORY_DOCTYPE}` as ic
+        WHERE
+            si.name = sii.parent
+            AND sii.item_code = ic.parent  -- Join invoice item to item category table
+            AND si.docstatus = 1
+            AND si.posting_date BETWEEN %(start_date)s AND %(end_date)s
+            
+            -- Subquery to filter by Sales Person
+            AND si.name IN (
+                SELECT st.parent
+                FROM `tabSales Team` as st
+                WHERE st.sales_person = %(sales_person)s
+            )
+    """
+    
+    filters = {
+        "sales_person": sales_person_name,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+    
+    if item_group:
+        query += " AND sii.item_group = %(item_group)s"
+        filters["item_group"] = item_group
+        
+    if product_category:
+        # Filter on the joined child table's category field
+        query += f" AND ic.{CATEGORY_FIELDNAME} = %(product_category)s"
+        filters["product_category"] = product_category
+
+    query += f"""
+        GROUP BY
+            MONTH(si.posting_date), MONTHNAME(si.posting_date),
+            ic.{CATEGORY_FIELDNAME}
+        ORDER BY
+            ic.{CATEGORY_FIELDNAME}, MONTH(si.posting_date)
+    """
+    
+    achieved_data = frappe.db.sql(query, filters, as_dict=True)
+    
+    # 5. Format the data (This logic is the same as before)
+    MONTHS = ["January", "February", "March", "April", "May", "June", 
+              "July", "August", "September", "October", "November", "December"]
+    
+    achieved_map = {}
+    for d in achieved_data:
+        cat = d.product_category or "Uncategorized"
+        achieved_map[(d.month, cat)] = d.achieved_amount
+        if cat not in all_categories:
+            all_categories.add(cat)
+
+    final_achievements = []
+    for category in sorted(list(all_categories)):
+        for month in MONTHS:
+            key = (month, category)
+            amount = achieved_map.get(key, 0.0)
+            
+            final_achievements.append({
+                "month": month,
+                "product_category": category,
+                "achieved_amount": amount
+            })
+
+    if not final_achievements and not product_category and not item_group:
+        for month in MONTHS:
+            final_achievements.append({
+                "month": month,
+                "product_category": None,
+                "achieved_amount": 0.0
+            })
+
+    return {"achievements": final_achievements}
+
+@frappe.whitelist(allow_guest=False)
+def get_monthly_targets(item_group=None, product_category=None):
+    """
+    Retrieves monthly *planned* target distribution for a given Sales Person and Fiscal Year.
+    """
+    user = frappe.session.user
+    employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
+    if not employee:
+        return {
+            "status": "error",
+            "message": "No Employee found for the current user.",
+            "data": []
+        }
+    employee_name = employee[0]
+    sales_person = frappe.get_all("Sales Person", filters={"employee": employee_name}, fields=["name"], pluck="name")
+    if not sales_person:
+        return {
+            "status": "error",
+            "message": "No Sales Person found for the current employee.",
+            "data": []
+        }
+    sales_person_name = sales_person[0]
+    sales_person_doc = frappe.get_doc("Sales Person", sales_person_name) # <-- CHANGED: Need the doc
+
+    fiscal_year = frappe.db.get_value("Fiscal Year", {"disabled": 0}, "name")
+
+    if not sales_person_doc or not fiscal_year:
+        frappe.throw("Sales Person and Fiscal Year are mandatory.")
+
+    # 1. Build the main query filters
+    filters = {
+        "parenttype": "Sales Person",
+        "parent": sales_person_doc.name, 
+        "fiscal_year": fiscal_year,
+    }
+
+    if item_group:
+        filters["item_group"] = item_group
+    if product_category:
+        filters["product_category"] = product_category
+
+    group_key_field = ""
+    if item_group:
+        group_key_field = "item_group"
+    elif product_category:
+        group_key_field = "product_category"
+
+    # 2. Fetch all matching target records
+    # ASSUMPTION: Your child table DocType is named Target Detail"
+    # based on the screenshot and convention.
+    target_items = frappe.get_all(
+        "Target Detail",
+        filters=filters,
+        fields=["name", "item_group", "product_category", "target_amount", "distribution_id"],
+        order_by="idx asc"
+    )
+
+    print(target_items, filters, "=================target_items")
+
+    if not target_items:
+        return {"targets": []}
+
+    aggregated_targets = {}
+    MONTHS = ["January", "February", "March", "April", "May", "June", 
+              "July", "August", "September", "October", "November", "December"]
+
+    # 3. Iterate through each matching target and retrieve its distribution
+    for target_item in target_items:
+        
+        # This is the total target amount for this specific row (e.g., $100,000)
+        base_target_amount = target_item.target_amount or 0.0
+        
+        # Check if a distribution ID is set
+        if not target_item.distribution_id:
+            continue
+
+        distribution_details = frappe.get_all(
+            "Monthly Distribution Percentage", 
+            # <-- CHANGED: Link field is 'distribution_id' from screenshot
+            filters={"parent": target_item.distribution_id}, 
+            fields=["month", "percentage_allocation"] 
+        )
+
+        for detail in distribution_details:
+            month = detail.month
+            percentage = detail.percentage_allocation or 0.0
+            
+            # <-- CHANGED: Calculate the *actual amount* for the month
+            monthly_target_amount = base_target_amount * (percentage / 100.0)
+
+            group_value = "All Targets"
+            if group_key_field:
+                group_value = target_item.get(group_key_field)
+
+            key = (month, group_value)
+            
+            # <-- CHANGED: Aggregate the calculated monetary amount
+            aggregated_targets[key] = aggregated_targets.get(key, 0.0) + monthly_target_amount
+
+    # 4. Format the final output structure (This part was correct)
+    final_targets = []
+    unique_groups = sorted(list(set([k[1] for k in aggregated_targets.keys()])))
+
+    for group in unique_groups:
+        group_data = {
+            "group_type": group_key_field or "All",
+            "group_value": group,
+            "monthly_targets": []
+        }
+        
+        for month in MONTHS:
+            key = (month, group)
+            amount = aggregated_targets.get(key, 0.0)
+            
+            group_data["monthly_targets"].append({
+                "month": month,
+                "target_amount": amount
+            })
+            
+        final_targets.append(group_data)
+
+    return {"targets": final_targets}
 
 @frappe.whitelist()
 def get_monthly_sales_data():
