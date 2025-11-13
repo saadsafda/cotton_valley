@@ -25,6 +25,12 @@ def update_customer_order_summary(doc, method):
         "last_order_date": doc.custom_last_order_date
     })
 
+    if doc.custom_customer_sales_representative:
+        doc.append("sales_team", {
+            "sales_person": doc.custom_customer_sales_representative,
+            "allocated_percentage": 100
+        })
+
     frappe.db.commit()
 
     make_delivery_note_on_submit(doc, method)

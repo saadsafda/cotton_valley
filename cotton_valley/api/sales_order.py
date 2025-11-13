@@ -64,6 +64,27 @@ def get_order_details(order_number):
             "sub_total": item.amount,
             "price": item.rate,
         })
+
+    # Get Sales Invoice linked to this Sales Order
+    si_invoice_list = frappe.get_all(
+        "Sales Invoice",
+        filters=[["Sales Invoice Item", "sales_order", "=", so_doc.name], ["docstatus", "!=", 2]],
+        fields=["name", "total", "grand_total", "discount_amount"],
+        limit=1,
+    )
+    
+    si_invoice = None
+    if len(si_invoice_list) > 0:
+        si_invoice = si_invoice_list[0]
+        # Get invoice items
+        si_invoice_items = frappe.get_all(
+            "Sales Invoice Item", 
+            filters={"parent": si_invoice["name"]}, 
+            fields=["item_code", "image", "item_name", "qty", "case_pack", "rate", "amount"]
+        )
+        # Add items to the invoice dict
+        si_invoice["items"] = si_invoice_items
+
     return {
         "order_number": so_doc.name,
         "amount": so_doc.total,
@@ -85,9 +106,10 @@ def get_order_details(order_number):
         "shipping_phone": so_doc.shipping_phone,
         "delivery_description": so_doc.custom_shipping_method,
         "products": items,
+        "invoice": si_invoice,
         "order_status": {
             "status": so_doc.order_status,
-            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.order_status == "Processing" else 3 if so_doc.order_status == "Shipped" else 1,
+            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.push_to_erp else 3 if so_doc.order_status == "Shipped" else 1,
         }
     }
 
@@ -493,3 +515,91 @@ def push_to_erp(sales_orders):
         "message": message,
         "results": results
     }
+
+
+@frappe.whitelist(allow_guest=True)
+def unstock_items(order_id, items, total):
+    """
+    Unstock items from a submitted Sales Order.
+    items = [
+      {"item_code": "ITEM-001", "qty": 2, "amount": 100.00},
+      {"item_code": "ITEM-002", "qty": 1, "amount": 50.00},
+    ]
+    """
+    try:
+        # Validate inputs
+        if not order_id:
+            return {"status": "error", "message": "Order ID is required"}
+        
+        if not items:
+            return {"status": "error", "message": "Items list is required"}
+        
+        # Parse items if it's a JSON string
+        if isinstance(items, str):
+            items = frappe.parse_json(items)
+        
+        # Check if Sales Order exists
+        if not frappe.db.exists("Sales Order", order_id):
+            return {"status": "error", "message": f"Sales Order {order_id} not found"}
+        
+        # Get Sales Order document
+        so_doc = frappe.get_doc("Sales Order", order_id)
+        
+        # Validate docstatus
+        if so_doc.docstatus != 1:
+            return {"status": "error", "message": "Only submitted Sales Orders can be unstocked"}
+        
+        # Reset not delivered items
+        so_doc.not_delivered_item = []
+        
+        # Add unstocked items
+        for row in items:
+            if not row.get("item_code"):
+                return {"status": "error", "message": "item_code is required for each item"}
+            
+            if not row.get("qty"):
+                return {"status": "error", "message": f"qty is required for item {row.get('item_code')}"}
+            
+            item_code = row["item_code"]
+            qty_to_unstock = float(row["qty"])
+            item_total = float(row.get("amount", 0.0))
+            
+            so_doc.append("not_delivered_item", {
+                "item_code": item_code,
+                "qty": qty_to_unstock,
+                "amount": item_total
+            })
+        
+        # Set total
+        so_doc.not_delivered_total = float(total) if total else 0.0
+        
+        # Save and commit
+        so_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Unstocking process completed successfully",
+            "order_id": order_id,
+            "unstocked_items_count": len(items)
+        }
+
+    except frappe.DoesNotExistError:
+        frappe.log_error("Unstock Items - Order Not Found", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"Sales Order {order_id} does not exist"
+        }
+    except ValueError as e:
+        frappe.log_error("Unstock Items - Invalid Data", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"Invalid data format: {str(e)}"
+        }
+    except Exception as e:
+        frappe.log_error("Unstock Items Error", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        }
+

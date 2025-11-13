@@ -3,6 +3,23 @@ frappe.ui.form.on('Sales Order', {
         fetch_customer_details(frm);
     },
     refresh(frm) {
+        if (frm.doc.docstatus === 1 && !frm.doc.custom_clear) {
+            frm.add_custom_button('Mark Clear', function() {
+                frappe.confirm(
+                    'Are you sure you want to mark this as Clear?',
+                    function() {
+                        // If user confirms
+                        frm.set_value('custom_clear', 1);
+                        frappe.show_alert({message: 'Marked as Clear ✅', indicator: 'green'});
+                    },
+                    function() {
+                        // If user cancels
+                        frappe.show_alert({message: 'Action cancelled ❌', indicator: 'red'});
+                    }
+                );
+            });
+        }
+
         // populate on load if customer already set
         if (frm.doc.customer) {
             fetch_customer_details(frm);

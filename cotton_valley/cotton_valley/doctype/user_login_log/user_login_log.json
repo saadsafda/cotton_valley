@@ -14,8 +14,6 @@
   "column_break_augw",
   "latitude",
   "longitude",
-  "country",
-  "city",
   "device_os",
   "app_version"
  ],
@@ -29,22 +27,26 @@
   {
    "fieldname": "login_time",
    "fieldtype": "Datetime",
-   "label": "Login Time"
+   "label": "Login Time",
+   "read_only": 1
   },
   {
    "fieldname": "ip_address",
    "fieldtype": "Data",
-   "label": "IP Address"
+   "label": "IP Address",
+   "read_only": 1
   },
   {
    "fieldname": "timezone",
    "fieldtype": "Data",
-   "label": "Timezone"
+   "label": "Timezone",
+   "read_only": 1
   },
   {
    "fieldname": "device_model",
    "fieldtype": "Data",
-   "label": "Device Model"
+   "label": "Device Model",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_augw",
@@ -53,38 +55,32 @@
   {
    "fieldname": "latitude",
    "fieldtype": "Data",
-   "label": "Latitude"
+   "label": "Latitude",
+   "read_only": 1
   },
   {
    "fieldname": "longitude",
    "fieldtype": "Data",
-   "label": "Longitude"
-  },
-  {
-   "fieldname": "country",
-   "fieldtype": "Data",
-   "label": "Country"
-  },
-  {
-   "fieldname": "city",
-   "fieldtype": "Data",
-   "label": "City"
+   "label": "Longitude",
+   "read_only": 1
   },
   {
    "fieldname": "device_os",
    "fieldtype": "Data",
-   "label": "Device os"
+   "label": "Device os",
+   "read_only": 1
   },
   {
    "fieldname": "app_version",
    "fieldtype": "Data",
-   "label": "App Version"
+   "label": "App Version",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-11-06 02:53:40.074855",
+ "modified": "2025-11-07 02:57:07.658442",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "User Login Log",

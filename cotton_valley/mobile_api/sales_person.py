@@ -94,9 +94,8 @@ def check_current_user_is_sales_person():
         }
 
 
-
 @frappe.whitelist()
-def check_device_registration(deviceId):
+def check_device_active(deviceId):
     current_user = frappe.session.user
     success = False
     message = ''
@@ -122,6 +121,53 @@ def check_device_registration(deviceId):
                 success = False
                 message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
         else:
+            success = False
+            message = "No devices registered for this employee. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+    else:
+        success = False
+        message = "No active employee found for the current user."
+
+    return {
+        "success": success,
+        "message": message
+    }
+
+
+@frappe.whitelist()
+def check_device_registration(deviceId, device_model, device_os):
+    current_user = frappe.session.user
+    success = False
+    message = ''
+
+    employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
+    if employee:
+        devices = get_employee_devices(employee.name)
+
+        if devices and len(devices.get('devices', [])) > 0:
+            device_found = False
+            for device in devices['devices']:
+                if deviceId == device['device_id']:
+                    device_found = True
+                    if device['approved'] == 1:
+                        success = True
+                        message = "Device is approved and registered."
+                    else:
+                        success = False
+                        message = "Device is not approved yet. Please contact admin.\n\nDevice Id: " + deviceId
+                    break
+            
+            if not device_found:
+                success = False
+                registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
+                registration.append("employee_devices", {
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
+                })
+                registration.save(ignore_permissions=True)
+                frappe.db.commit()
+                message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+        else:
             # No devices registered for this employee yet
             if not frappe.db.exists("Employee Device Registration", {"employee": employee.name}):
                 # Create new registration
@@ -129,7 +175,9 @@ def check_device_registration(deviceId):
                 new_device_registeration.user = frappe.session.user
                 new_device_registeration.employee = employee.name
                 new_device_registeration.append("employee_devices", {
-                    "device_id": deviceId
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
                 })
                 new_device_registeration.insert(ignore_permissions=True)
                 frappe.db.commit()
@@ -140,7 +188,9 @@ def check_device_registration(deviceId):
                 # Add device to existing registration
                 registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
                 registration.append("employee_devices", {
-                    "device_id": deviceId
+                    "device_id": deviceId,
+                    "device_model": device_model,
+                    "device_os": device_os
                 })
                 registration.save(ignore_permissions=True)
                 frappe.db.commit()
@@ -173,3 +223,71 @@ def get_employee_devices(employee):
         """, values={"name": devices}, as_dict=1)
     return data
 
+
+
+@frappe.whitelist()
+def create_user_login_log(data):
+    """
+    Create a User Login Log record.
+
+    Accepts `data` as dict or JSON string with possible keys:
+    user, login_time, timezone, ip_address, device_model, device_os,
+    app_version, latitude, longitude, country, city, extra
+
+    Returns: {status, name/message}
+    """
+    try:
+        if isinstance(data, str):
+            data = frappe.parse_json(data)
+
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Invalid payload"}
+
+        # Prefer session user if available, otherwise accept provided user
+        current_user = frappe.session.user
+        user = current_user if current_user and current_user != 'Guest' else data.get('user')
+
+        if not user:
+            return {"status": "error", "message": "User is required"}
+
+        # Build doc fields
+        login_time = data.get('login_time') or data.get('login')
+        timezone = data.get('timezone')
+        ip_address = data.get('ip_address') or data.get('ip')
+        device_model = data.get('device_model')
+        device_os = data.get('device_os')
+        app_version = data.get('app_version')
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        extra = data.get('extra')
+
+        log_doc = frappe.get_doc({
+            "doctype": "User Login Log",
+            "user": user,
+            "login_time": login_time,
+            "timezone": timezone,
+            "ip_address": ip_address,
+            "device_model": device_model,
+            "device_os": device_os,
+            "app_version": app_version,
+            "latitude": latitude,
+            "longitude": longitude,
+        })
+
+        # If there's extra JSON data and the doctype has an 'extra' field, store it
+        try:
+            meta = frappe.get_meta('User Login Log')
+            if extra is not None and any(f.fieldname == 'extra' for f in meta.fields):
+                log_doc.extra = extra if isinstance(extra, str) else frappe.as_json(extra)
+        except Exception:
+            # ignore metadata errors
+            pass
+
+        log_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {"status": "success", "name": log_doc.name}
+
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Create User Login Log Failed")
+        return {"status": "error", "message": str(e)}
