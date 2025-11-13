@@ -176,7 +176,7 @@ doc_events = {
 	},
     "Sales Order": {
 		"on_submit": "cotton_valley.server_scripts.sales_order.update_customer_order_summary",
-        "on_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
+        "before_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
 	}
 }
 

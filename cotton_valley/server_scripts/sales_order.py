@@ -1,10 +1,10 @@
 import frappe
-
+from frappe import _
 
 
 def order_cancel(doc, method):
     if not doc.cancellation_reason:
-        frappe.throw("Please enter a value in the *Cancellation Reason* field before cancelling this Sales Order.")
+        frappe.throw(_("Please enter a value in the *Cancellation Reason* field before cancelling this Sales Order."))
 
 
 def update_customer_order_summary(doc, method):
