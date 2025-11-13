@@ -73,7 +73,8 @@ fixtures = [
 doctype_js = {
     "Item" : "public/js/item.js", 
     "Customer" : "public/js/customer.js",
-    "Sales Order" : "public/js/sales_order.js"
+    "Sales Order" : "public/js/sales_order.js",
+	"Activity Log": "public/js/activity_log.js"
 }
 doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/js/item_list.js", "Sales Order" : "public/js/sales_order_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
