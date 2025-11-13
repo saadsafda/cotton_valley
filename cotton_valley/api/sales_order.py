@@ -477,6 +477,7 @@ def push_to_erp(sales_orders):
             # Only mark as pushed if all items were successfully pushed
             if len(pushed_items) == len(so_doc.items):
                 so_doc.db_set("push_to_erp", 1, update_modified=True)
+                so_doc.db_set("order_status", "Processing", update_modified=True)
                 frappe.db.commit()
                 
                 results["success"].append({
