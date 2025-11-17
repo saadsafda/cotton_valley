@@ -682,6 +682,7 @@ def get_category_wise_monthly_data():
                 dist_pct.month,
                 sp_target.fiscal_year,
                 sp_target.product_category,
+                sp_target.category_name,
                 (sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
             FROM
                 `tabTarget Detail` AS sp_target
@@ -699,6 +700,7 @@ def get_category_wise_monthly_data():
                 MONTHNAME(si.posting_date) AS month,
                 YEAR(si.posting_date) AS fiscal_year_num,
                 ipc.product_category,
+                ipc.category_name,
                 SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
             FROM
                 `tabSales Invoice` AS si
@@ -726,12 +728,13 @@ def get_category_wise_monthly_data():
             CombinedData.month AS "Month",
             CombinedData.fiscal_year AS "Fiscal Year",
             CombinedData.product_category AS "Product Category",
+            CombinedData.category_name AS "Category Name",
             SUM(CombinedData.monthly_target) AS "Target Amount",
             SUM(CombinedData.achieved_amount) AS "Achieved Amount",
             (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
         FROM (
             SELECT
-                sales_person, month, fiscal_year, product_category,
+                sales_person, month, fiscal_year, product_category, category_name,
                 monthly_target, 0 AS achieved_amount
             FROM
                 MonthlyTargets
@@ -741,6 +744,7 @@ def get_category_wise_monthly_data():
                 month, 
                 %(fiscal_year)s AS fiscal_year,
                 product_category,
+                category_name,
                 0 AS monthly_target, 
                 achieved_amount
             FROM
