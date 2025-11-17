@@ -523,37 +523,29 @@ def get_monthly_sales_data():
 
 
 @frappe.whitelist()
-def get_monthly_data(): # You might want to rename this function, e.g., get_monthly_sales_data()
-    
-    # Get the currently logged-in user
+def get_monthly_data():
+    # --- 1. Get Sales Person (Same as your code) ---
     user = frappe.session.user
     employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
     if not employee:
-        return {
-            "status": "error",
-            "message": "No Employee found for the current user.",
-            "data": []
-        }
+        # FİX: Return the requested format, but empty
+        return { 'actualData': [], 'targetData': [], 'months': [] }
+        
     employee_name = employee[0]
     sales_person = frappe.get_all("Sales Person", filters={"employee": employee_name}, fields=["name"], pluck="name")
     if not sales_person:
-        return {
-            "status": "error",
-            "message": "No Sales Person found for the current employee.",
-            "data": []
-        }
+        # FİX: Return the requested format, but empty
+        return { 'actualData': [], 'targetData': [], 'months': [] }
+
     sales_person_name = sales_person[0]
     
-    # Get the current active fiscal year name
+    # --- 2. Get Fiscal Year Dates (Same as your code) ---
     current_fiscal_year = get_fiscal_year(nowdate())[0]
-    
-    # Get the start and end dates for that fiscal year
     fy_dates = frappe.db.get_value("Fiscal Year", current_fiscal_year, ["year_start_date", "year_end_date"], as_dict=True)
     
     if not fy_dates:
         frappe.throw(f"Fiscal Year {current_fiscal_year} not found.")
 
-    # Create a dictionary of parameters to pass to the query
     query_params = {
         "user": sales_person_name,
         "fiscal_year": current_fiscal_year,
@@ -561,14 +553,13 @@ def get_monthly_data(): # You might want to rename this function, e.g., get_mont
         "fy_end_date": fy_dates.year_end_date
     }
 
-    # The SQL query is updated to remove category breakdown
-    return frappe.db.sql("""
+    # --- 3. Run the SQL Query (Slightly optimized) ---
+    # I've simplified the final SELECT to get only what's needed.
+    query_results = frappe.db.sql("""
         WITH MonthlyTargets AS (
             SELECT
-                sp_target.parent AS sales_person,
                 dist_pct.month,
                 sp_target.fiscal_year,
-                -- SUM all category targets for the month
                 SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
             FROM
                 `tabTarget Detail` AS sp_target
@@ -577,19 +568,13 @@ def get_monthly_data(): # You might want to rename this function, e.g., get_mont
             WHERE
                 sp_target.parent = %(user)s 
                 AND sp_target.fiscal_year = %(fiscal_year)s
-            -- Group by month, not by category
             GROUP BY
-                sp_target.parent,
-                dist_pct.month,
-                sp_target.fiscal_year
+                dist_pct.month, sp_target.fiscal_year
         ),
         
         MonthlyAchieved AS (
             SELECT
-                st.sales_person,
                 MONTHNAME(si.posting_date) AS month,
-                YEAR(si.posting_date) AS fiscal_year_num,
-                -- SUM all achieved amounts for the month
                 SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
             FROM
                 `tabSales Invoice` AS si
@@ -597,36 +582,27 @@ def get_monthly_data(): # You might want to rename this function, e.g., get_mont
                 `tabSales Invoice Item` AS sii ON si.name = sii.parent
             JOIN
                 `tabSales Team` AS st ON si.name = st.parent
-            -- No longer need the join to `tabProduct Categoris`
             WHERE
                 si.docstatus = 1
                 AND st.sales_person = %(user)s
                 AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
-            -- Group by month, not by category
             GROUP BY
-                st.sales_person,
-                MONTHNAME(si.posting_date),
-                YEAR(si.posting_date)
+                MONTHNAME(si.posting_date)
         )
 
-        -- Final step: Combine Targets and Achieved data
+        -- Final step: Combine and select only the 3 columns we need
         SELECT
-            CombinedData.sales_person AS "Sales Person",
             CombinedData.month AS "Month",
-            CombinedData.fiscal_year AS "Fiscal Year",
-            -- Removed Product Category
             SUM(CombinedData.monthly_target) AS "Target Amount",
-            SUM(CombinedData.achieved_amount) AS "Achieved Amount",
-            (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
+            SUM(CombinedData.achieved_amount) AS "Achieved Amount"
         FROM (
             SELECT
-                sales_person, month, fiscal_year,
+                month, fiscal_year,
                 monthly_target, 0 AS achieved_amount
             FROM
                 MonthlyTargets
             UNION ALL
             SELECT
-                sales_person, 
                 month, 
                 %(fiscal_year)s AS fiscal_year,
                 0 AS monthly_target, 
@@ -634,16 +610,28 @@ def get_monthly_data(): # You might want to rename this function, e.g., get_mont
             FROM
                 MonthlyAchieved
         ) AS CombinedData
-        -- Group by month, not by category
         GROUP BY
-            CombinedData.sales_person,
-            CombinedData.month,
-            CombinedData.fiscal_year
+            CombinedData.month, CombinedData.fiscal_year
         ORDER BY
             CombinedData.fiscal_year,
-            CombinedData.sales_person,
             FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
     """, query_params, as_dict=True)
+
+    # --- 4. Transform the Data (NEW SECTION) ---
+    if not query_results:
+        return { 'actualData': [], 'targetData': [], 'months': [] }
+
+    # Use list comprehensions to create the arrays
+    months = [row["Month"] for row in query_results]
+    actualData = [row["Achieved Amount"] for row in query_results]
+    targetData = [row["Target Amount"] for row in query_results]
+
+    # Return the final dictionary in your requested format
+    return {
+        'actualData': actualData,
+        'targetData': targetData,
+        'months': months,
+    }
 
 
 
