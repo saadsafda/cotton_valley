@@ -5,57 +5,35 @@ from io import StringIO
 from frappe import _
 from typing import List
 
-# --- START OF HELPER FUNCTION (Modified to handle separate fields and aliases) ---
-def _generate_csv_file(data, actual_fields, header_aliases, filename, forSO=True):
-    """Helper function to create a frappe.File document from data, fields, and aliases."""
+# --- START OF HELPER FUNCTION ---
+def _generate_csv_file(data, header_map, filename, forSO=True):
+    """
+    Helper function to create a frappe.File document from data.
+    It builds the CSV row directly from the header_map.
+    """
     try:
         csv_buffer = StringIO()
         writer = csv.writer(csv_buffer)
 
-        # 1. Write the explicit header row using the aliases
+        # 1. Get header aliases from the map
+        header_aliases = [item[1] for item in header_map]
         writer.writerow(header_aliases)
 
-        # Get indices for empty columns (only if they exist in header_aliases)
-        if forSO:
-            empty_columns = {
-                "Shipping Phone": None,
-                "Billing Phone": None,
-                "Referring Page": None,
-                "Entry Point": None,
-                "Shipping": None,
-                "Card Number": None,
-                "Card Expiry": None,
-                "Comments": None,
-                "Link From": None,
-                "Warning": None,
-                "Auth Code": None,
-                "AVS Code": None,
-                "Gift Message": None
-            }
-            
-            # Build a list of (index, None) tuples for columns that exist
-            inserts_to_make = []
-            for col_name in empty_columns.keys():
-                try:
-                    idx = header_aliases.index(col_name)
-                    inserts_to_make.append(idx)
-                except ValueError:
-                    # Column doesn't exist in header_aliases, skip it
-                    pass
-            
-            # Sort indices in descending order to insert from right to left
-            inserts_to_make.sort(reverse=True)
-
-        # 2. Write data rows using the actual field names to fetch values
+        # 2. Write data rows
         for row in data:
-            fetched_values = [row.get(f) for f in actual_fields]
+            # Build the full output row, including blanks
+            output_row = []
             
-            # Insert None values at the appropriate positions
-            if forSO:
-                for idx in inserts_to_make:
-                    fetched_values.insert(idx, None)
+            # Iterate through the map, which defines the correct order
+            for field_name, alias in header_map:
+                if field_name is None:
+                    # This is a defined blank column
+                    output_row.append(None) 
+                else:
+                    # This is a data column, get the value
+                    output_row.append(row.get(field_name))
             
-            writer.writerow(fetched_values)
+            writer.writerow(output_row)
 
         csv_content = csv_buffer.getvalue().encode('utf-8')
 
@@ -85,7 +63,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         try:
             selected_so_names = json.loads(selected_so_names)
         except json.JSONDecodeError:
-            selected_so_names = [] # Handle case where JSON is malformed
+            selected_so_names = []
 
     # --- 0. Define Dynamic Filters ---
     so_filters = {"docstatus": 1} 
@@ -104,42 +82,69 @@ def export_dual_company_sales_orders(selected_so_names=None):
         ],
     }
 
-    # 2. Define the fields to be exported (FIXED: Separate actual fields and aliases)
+    # 2. Define the fields to be exported (FIXED: Using unified header map)
     
-    # 2a. Header Fields
-    actual_header_fields = ["name", "transaction_date", 
-                            "submit_datetime", "customer_account_number",
-                            "shipping_address_details", "shipping_city",
-                            "shipping_state", "shipping_country",
-                            "shipping_zip_code", "customer_name",
-                            "billing_address_details", "billing_city", 
-                            "state", "country", "zip_code", 
-                            "custom_customer_email", "custom_mode_of_payment",
-                            "grand_total", "custom_notes", "company", "product_type"] # Added company & order_type for filtering
+    # 2a. UNIFIED HEADER MAP: (DocType Field Name, CSV Column Header)
+    # Use None for fields that should be blank columns
+    header_map = [
+        ("name", "Order ID"),
+        ("transaction_date", "Date"),
+        ("submit_datetime", "Numeric Time"),
+        ("customer_account_number", "Account"),
+        ("shipping_address_details", "Shipping Address 1"),
+        (None, "Shipping Address 2"), # Blank Column
+        ("shipping_city", "Ship City"),
+        ("shipping_state", "Ship State"),
+        ("shipping_country", "Ship Country"),
+        ("shipping_zip_code", "Ship Zip"),
+        (None, "Shipping Phone"),     # Blank Column
+        ("customer_name", "Bill Name"),
+        ("billing_address_details", "Billing Address 1"),
+        (None, "Billing Address 2"),  # Blank Column
+        ("billing_city", "Bill City"),
+        ("state", "Bill State"), # Verify this field name
+        ("country", "Bill Country"), # Verify this field name
+        ("zip_code", "Bill Zip"), # Verify this field name
+        (None, "Billing Phone"),      # Blank Column
+        ("custom_customer_email", "Email"),
+        ("custom_mode_of_payment", "Payment Method"),
+        ("grand_total", "Total"),
+        (None, "Referring Page"),     # Blank Column
+        (None, "Entry Point"),        # Blank Column
+        (None, "Shipping"),           # Blank Column
+        (None, "Card Number"),        # Blank Column
+        (None, "Card Expiry"),        # Blank Column
+        (None, "Comments"),           # Blank Column
+        (None, "Link From"),          # Blank Column
+        (None, "Warning"),            # Blank Column
+        (None, "Auth Code"),          # Blank Column
+        (None, "AVS Code"),           # Blank Column
+        (None, "Gift Message"),       # Blank Column
+        ("custom_notes", "Notes"),
+        ("company", "Company"),
+        ("product_type", "Order Type")
+    ]
     
-    header_aliases = ["Order ID", "Date", 
-                      "Numeric Time", "Account",
-                      "Shipping Address 1", "Ship City",
-                      "Ship State", "Ship Country",
-                      "Ship Zip",  "Bill Name", "Billing Address 1",
-                      "Bill City", "Bill State", "Bill Country", "Bill Zip", 
-                      "Email", "Payment Method", "Total", "Notes",
-                      "Company", "Order Type", "Billing Phone",
-                      "Shipping Address 2", "Billing Address 2", "Shipping Phone",
-                      "Referring Page", "Entry Point", "Shipping", "Card Number",
-                      "Card Expiry", "Comments", "Link From", "Warning", "Auth Code",
-                      "AVS Code", "Gift Message",] # Added Company & Order Type aliases
+    # Generate the list of actual fields to fetch
+    actual_header_fields = [item[0] for item in header_map if item[0] is not None]
 
-    # 2b. Item Fields
+    # 2b. Item Fields (Unchanged)
     actual_item_fields = ["parent", "idx", "item_code", "item_name", "qty", "rate"]
-    item_aliases = ["Order ID", "Line ID", "Product ID", "Item Name", "Quantity", "Unit Price"]
+    item_header_map = [
+        ("parent", "Order ID"), 
+        ("idx", "Line ID"), 
+        ("item_code", "Product ID"), 
+        ("item_name", "Item Name"), 
+        ("qty", "Quantity"), 
+        ("rate", "Unit Price")
+    ]
 
     
-    # 3. Fetch all Sales Order Headers and Items (Using actual_fields)
+    # 3. Fetch all Sales Order Headers and Items 
     all_sales_orders = frappe.get_all(
         "Sales Order",
         filters=so_filters,
-        fields=actual_header_fields,
+        fields=actual_header_fields, # Use the list with only actual fields
     )
     
     if not all_sales_orders:
@@ -149,7 +154,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         "Sales Order Item",
         filters={"parent": ["in", [so.name for so in all_sales_orders]]},
         fields=actual_item_fields,
-        order_by="idx"
+        order_by="parent, idx"
     )
 
     # 4. Process and Generate Files
@@ -170,7 +175,6 @@ def export_dual_company_sales_orders(selected_so_names=None):
                 
                 is_type_match = True
                 if order_type_filter:
-                    # ✅ FIXED: Assuming the field is 'order_type' on Sales Order DocType
                     is_type_match = so.get("product_type") == order_type_filter 
                 
                 if is_company_match and is_type_match:
@@ -181,29 +185,27 @@ def export_dual_company_sales_orders(selected_so_names=None):
                 frappe.log_error(title=f"No SOs for {company_name}", message=f"No filtered Sales Orders found for {company_name} ({config['type']}).")
                 continue
 
-            # 4b. Filter Sales Order Items (Unchanged)
+            # 4b. Filter Sales Order Items
             item_data = [
                 item for item in all_items if item.get("parent") in target_so_names
             ]
 
-            # --- FILE GENERATION (Passing actual fields and aliases) ---
+            # --- FILE GENERATION (Passing the maps) ---
             file_urls.append(
                 _generate_csv_file(
                     data=header_data, 
-                    actual_fields=actual_header_fields, 
-                    header_aliases=header_aliases,
+                    header_map=header_map, # Pass the full header map
                     filename=f"SO_HEADER_{config['filename_base']}.csv",
-                    forSO=True
+                    forSO=True 
                 )
             )
 
             file_urls.append(
                 _generate_csv_file(
                     data=item_data, 
-                    actual_fields=actual_item_fields, 
-                    header_aliases=item_aliases,
+                    header_map=item_header_map, # Pass the item map
                     filename=f"SO_ITEM_{config['filename_base']}.csv",
-                    forSO=False
+                    forSO=False 
                 )
             )
 
