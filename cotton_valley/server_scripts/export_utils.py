@@ -6,7 +6,7 @@ from frappe import _
 from typing import List
 
 # --- START OF HELPER FUNCTION (Modified to handle separate fields and aliases) ---
-def _generate_csv_file(data, actual_fields, header_aliases, filename):
+def _generate_csv_file(data, actual_fields, header_aliases, filename, forSO=True):
     """Helper function to create a frappe.File document from data, fields, and aliases."""
     try:
         csv_buffer = StringIO()
@@ -15,10 +15,47 @@ def _generate_csv_file(data, actual_fields, header_aliases, filename):
         # 1. Write the explicit header row using the aliases
         writer.writerow(header_aliases)
 
+        # Get indices for empty columns (only if they exist in header_aliases)
+        if forSO:
+            empty_columns = {
+                "Shipping Phone": None,
+                "Billing Phone": None,
+                "Referring Page": None,
+                "Entry Point": None,
+                "Shipping": None,
+                "Card Number": None,
+                "Card Expiry": None,
+                "Comments": None,
+                "Link From": None,
+                "Warning": None,
+                "Auth Code": None,
+                "AVS Code": None,
+                "Gift Message": None
+            }
+            
+            # Build a list of (index, None) tuples for columns that exist
+            inserts_to_make = []
+            for col_name in empty_columns.keys():
+                try:
+                    idx = header_aliases.index(col_name)
+                    inserts_to_make.append(idx)
+                except ValueError:
+                    # Column doesn't exist in header_aliases, skip it
+                    pass
+            
+            # Sort indices in descending order to insert from right to left
+            inserts_to_make.sort(reverse=True)
+
         # 2. Write data rows using the actual field names to fetch values
         for row in data:
-            # We iterate over the actual fields to pull the correct value from the fetched data dict
-            writer.writerow([row.get(f) for f in actual_fields])
+            fetched_values = [row.get(f) for f in actual_fields]
+            
+            # Insert None values at the appropriate positions
+            if forSO:
+                for idx in inserts_to_make:
+                    fetched_values.insert(idx, None)
+            
+            writer.writerow(fetched_values)
 
         csv_content = csv_buffer.getvalue().encode('utf-8')
 
@@ -74,9 +111,9 @@ def export_dual_company_sales_orders(selected_so_names=None):
                             "submit_datetime", "customer_account_number",
                             "shipping_address_details", "shipping_city",
                             "shipping_state", "shipping_country",
-                            "shipping_zip_code", "billing_address_details",
-                            "billing_city", "state",
-                            "country", "zip_code",
+                            "shipping_zip_code", "customer_name",
+                            "billing_address_details", "billing_city", 
+                            "state", "country", "zip_code", 
                             "custom_customer_email", "custom_mode_of_payment",
                             "grand_total", "custom_notes", "company", "product_type"] # Added company & order_type for filtering
     
@@ -84,11 +121,14 @@ def export_dual_company_sales_orders(selected_so_names=None):
                       "Numeric Time", "Account",
                       "Shipping Address 1", "Ship City",
                       "Ship State", "Ship Country",
-                      "Ship Zip", "Billing Address 1",
-                      "Bill City", "Bill State",
-                      "Bill Country", "Bill Zip",
-                      "Email", "Payment Method",
-                      "Total", "Notes", "Company", "Order Type"] # Added Company & Order Type aliases
+                      "Ship Zip",  "Bill Name", "Billing Address 1",
+                      "Bill City", "Bill State", "Bill Country", "Bill Zip", 
+                      "Email", "Payment Method", "Total", "Notes",
+                      "Company", "Order Type", "Billing Phone",
+                      "Shipping Address 2", "Billing Address 2", "Shipping Phone",
+                      "Referring Page", "Entry Point", "Shipping", "Card Number",
+                      "Card Expiry", "Comments", "Link From", "Warning", "Auth Code",
+                      "AVS Code", "Gift Message",] # Added Company & Order Type aliases
 
     # 2b. Item Fields
     actual_item_fields = ["parent", "idx", "item_code", "item_name", "qty", "rate"]
@@ -152,7 +192,8 @@ def export_dual_company_sales_orders(selected_so_names=None):
                     data=header_data, 
                     actual_fields=actual_header_fields, 
                     header_aliases=header_aliases,
-                    filename=f"SO_HEADER_{config['filename_base']}.csv"
+                    filename=f"SO_HEADER_{config['filename_base']}.csv",
+                    forSO=True
                 )
             )
 
@@ -161,7 +202,8 @@ def export_dual_company_sales_orders(selected_so_names=None):
                     data=item_data, 
                     actual_fields=actual_item_fields, 
                     header_aliases=item_aliases,
-                    filename=f"SO_ITEM_{config['filename_base']}.csv"
+                    filename=f"SO_ITEM_{config['filename_base']}.csv",
+                    forSO=False
                 )
             )
 
