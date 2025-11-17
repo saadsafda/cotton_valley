@@ -129,12 +129,12 @@ def export_dual_company_sales_orders(selected_so_names=None):
     actual_header_fields = [item[0] for item in header_map if item[0] is not None]
 
     # 2b. Item Fields (Unchanged)
-    actual_item_fields = ["parent", "idx", "item_code", "item_name", "qty", "rate"]
+    actual_item_fields = ["parent", "idx", "item_code", "qty", "rate"]
     item_header_map = [
         ("parent", "Order ID"), 
         ("idx", "Line ID"), 
         ("item_code", "Product ID"), 
-        ("item_name", "Item Name"), 
+        (None, "Product Code"), 
         ("qty", "Quantity"), 
         ("rate", "Unit Price")
     ]
@@ -146,6 +146,17 @@ def export_dual_company_sales_orders(selected_so_names=None):
         filters=so_filters,
         fields=actual_header_fields, # Use the list with only actual fields
     )
+
+    # check if there are any sales order who already exported
+    already_exported_sos = [so for so in all_sales_orders if so.get("exported") == 1]
+    if already_exported_sos:
+        already_exported_names = [so.get("name") for so in already_exported_sos]
+        frappe.log_error(
+            title="Some Sales Orders Already Exported", 
+            message=f"The following Sales Orders have already been exported and will be skipped: {', '.join(already_exported_names)}"
+        )
+        # Filter them out from the main list
+        all_sales_orders = [so for so in all_sales_orders if so.get("exported") != 1]
     
     if not all_sales_orders:
         return []
@@ -208,6 +219,16 @@ def export_dual_company_sales_orders(selected_so_names=None):
                     forSO=False 
                 )
             )
+            
+            # Mark all exported sales orders as exported
+            for so_name in target_so_names:
+                try:
+                    frappe.db.set_value("Sales Order", so_name, "exported", 1)
+                except Exception as e:
+                    frappe.log_error(title=f"Failed to mark SO as exported: {so_name}", message=str(e))
+            
+            # Commit the changes
+            frappe.db.commit()
 
     # 5. Return all file URLs
     return [url for url in file_urls if url]
