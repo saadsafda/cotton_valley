@@ -109,6 +109,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         "Sales Order Item",
         filters={"parent": ["in", [so.name for so in all_sales_orders]]},
         fields=actual_item_fields,
+        order_by="idx"
     )
 
     # 4. Process and Generate Files
