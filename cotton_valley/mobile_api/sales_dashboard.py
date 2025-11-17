@@ -1,5 +1,9 @@
 import frappe
 from datetime import datetime, timedelta
+from frappe.utils import nowdate
+from erpnext.accounts.utils import get_fiscal_year
+
+
 
 @frappe.whitelist(allow_guest=False)
 def get_sales_achievement(fiscal_year=None, item_group=None, product_category=None):
@@ -269,6 +273,11 @@ def get_monthly_targets(item_group=None, product_category=None):
 
     return {"targets": final_targets}
 
+
+
+
+
+
 @frappe.whitelist()
 def get_monthly_sales_data():
     """
@@ -428,3 +437,335 @@ def get_monthly_sales_data():
                 "months": []
             }
         }
+    
+
+
+# @frappe.whitelist(allow_guest=True)
+# def get_category_wise_monthly_data():
+#     return frappe.db.sql("""
+#         WITH MonthlyTargets AS (
+#             SELECT
+#                 sp_target.parent AS sales_person,
+#                 dist_pct.month,
+#                 sp_target.fiscal_year,
+#                 sp_target.product_category,
+#                 (sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+#             FROM
+#                 `tabTarget Detail` AS sp_target
+#             JOIN
+#                 `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
+#         ),
+        
+#         MonthlyAchieved AS (
+#             SELECT
+#                 st.sales_person, -- FİX: Get sales_person from Sales Team table
+#                 MONTHNAME(si.posting_date) AS month,
+#                 YEAR(si.posting_date) AS fiscal_year,
+#                 sii.item_group AS product_category,
+#                 -- FİX: Calculate achieved amount based on allocation
+#                 SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+#             FROM
+#                 `tabSales Invoice` AS si
+#             JOIN
+#                 `tabSales Invoice Item` AS sii ON si.name = sii.parent
+#             JOIN
+#                 `tabSales Team` AS st ON si.name = st.parent -- FİX: Join the Sales Team table
+#             WHERE
+#                 si.docstatus = 1 -- Only count Submitted invoices
+#             GROUP BY
+#                 st.sales_person, MONTHNAME(si.posting_date), YEAR(si.posting_date), sii.item_group
+#         )
+
+#         -- Final step: Combine Targets and Achieved data (This part was already correct)
+#         SELECT
+#             CombinedData.sales_person AS "Sales Person",
+#             CombinedData.month AS "Month",
+#             CombinedData.fiscal_year AS "Fiscal Year",
+#             CombinedData.product_category AS "Product Category",
+#             SUM(CombinedData.monthly_target) AS "Target Amount",
+#             SUM(CombinedData.achieved_amount) AS "Achieved Amount",
+#             (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
+#         FROM (
+#             -- Get all target rows
+#             SELECT
+#                 sales_person,
+#                 month,
+#                 fiscal_year,
+#                 product_category,
+#                 monthly_target,
+#                 0 AS achieved_amount -- Set achieved to 0 for this set
+#             FROM
+#                 MonthlyTargets
+
+#             UNION ALL
+
+#             -- Get all achieved rows
+#             SELECT
+#                 sales_person,
+#                 month,
+#                 fiscal_year,
+#                 product_category,
+#                 0 AS monthly_target, -- Set target to 0 for this set
+#                 achieved_amount
+#             FROM
+#                 MonthlyAchieved
+#         ) AS CombinedData
+#         GROUP BY
+#             CombinedData.sales_person,
+#             CombinedData.month,
+#             CombinedData.fiscal_year,
+#             CombinedData.product_category
+#         ORDER BY
+#             CombinedData.fiscal_year,
+#             CombinedData.sales_person,
+#             FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+#     """, as_dict=True)
+
+
+@frappe.whitelist()
+def get_monthly_data(): # You might want to rename this function, e.g., get_monthly_sales_data()
+    
+    # Get the currently logged-in user
+    user = frappe.session.user
+    employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
+    if not employee:
+        return {
+            "status": "error",
+            "message": "No Employee found for the current user.",
+            "data": []
+        }
+    employee_name = employee[0]
+    sales_person = frappe.get_all("Sales Person", filters={"employee": employee_name}, fields=["name"], pluck="name")
+    if not sales_person:
+        return {
+            "status": "error",
+            "message": "No Sales Person found for the current employee.",
+            "data": []
+        }
+    sales_person_name = sales_person[0]
+    
+    # Get the current active fiscal year name
+    current_fiscal_year = get_fiscal_year(nowdate())[0]
+    
+    # Get the start and end dates for that fiscal year
+    fy_dates = frappe.db.get_value("Fiscal Year", current_fiscal_year, ["year_start_date", "year_end_date"], as_dict=True)
+    
+    if not fy_dates:
+        frappe.throw(f"Fiscal Year {current_fiscal_year} not found.")
+
+    # Create a dictionary of parameters to pass to the query
+    query_params = {
+        "user": sales_person_name,
+        "fiscal_year": current_fiscal_year,
+        "fy_start_date": fy_dates.year_start_date,
+        "fy_end_date": fy_dates.year_end_date
+    }
+
+    # The SQL query is updated to remove category breakdown
+    return frappe.db.sql("""
+        WITH MonthlyTargets AS (
+            SELECT
+                sp_target.parent AS sales_person,
+                dist_pct.month,
+                sp_target.fiscal_year,
+                -- SUM all category targets for the month
+                SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+            FROM
+                `tabTarget Detail` AS sp_target
+            JOIN
+                `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
+            WHERE
+                sp_target.parent = %(user)s 
+                AND sp_target.fiscal_year = %(fiscal_year)s
+            -- Group by month, not by category
+            GROUP BY
+                sp_target.parent,
+                dist_pct.month,
+                sp_target.fiscal_year
+        ),
+        
+        MonthlyAchieved AS (
+            SELECT
+                st.sales_person,
+                MONTHNAME(si.posting_date) AS month,
+                YEAR(si.posting_date) AS fiscal_year_num,
+                -- SUM all achieved amounts for the month
+                SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+            FROM
+                `tabSales Invoice` AS si
+            JOIN
+                `tabSales Invoice Item` AS sii ON si.name = sii.parent
+            JOIN
+                `tabSales Team` AS st ON si.name = st.parent
+            -- No longer need the join to `tabProduct Categoris`
+            WHERE
+                si.docstatus = 1
+                AND st.sales_person = %(user)s
+                AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+            -- Group by month, not by category
+            GROUP BY
+                st.sales_person,
+                MONTHNAME(si.posting_date),
+                YEAR(si.posting_date)
+        )
+
+        -- Final step: Combine Targets and Achieved data
+        SELECT
+            CombinedData.sales_person AS "Sales Person",
+            CombinedData.month AS "Month",
+            CombinedData.fiscal_year AS "Fiscal Year",
+            -- Removed Product Category
+            SUM(CombinedData.monthly_target) AS "Target Amount",
+            SUM(CombinedData.achieved_amount) AS "Achieved Amount",
+            (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
+        FROM (
+            SELECT
+                sales_person, month, fiscal_year,
+                monthly_target, 0 AS achieved_amount
+            FROM
+                MonthlyTargets
+            UNION ALL
+            SELECT
+                sales_person, 
+                month, 
+                %(fiscal_year)s AS fiscal_year,
+                0 AS monthly_target, 
+                achieved_amount
+            FROM
+                MonthlyAchieved
+        ) AS CombinedData
+        -- Group by month, not by category
+        GROUP BY
+            CombinedData.sales_person,
+            CombinedData.month,
+            CombinedData.fiscal_year
+        ORDER BY
+            CombinedData.fiscal_year,
+            CombinedData.sales_person,
+            FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+    """, query_params, as_dict=True)
+
+
+
+
+@frappe.whitelist()
+def get_category_wise_monthly_data():
+    
+    # Get the currently logged-in user
+    user = frappe.session.user
+    employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
+    if not employee:
+        return {
+            "status": "error",
+            "message": "No Employee found for the current user.",
+            "data": []
+        }
+    employee_name = employee[0]
+    sales_person = frappe.get_all("Sales Person", filters={"employee": employee_name}, fields=["name"], pluck="name")
+    if not sales_person:
+        return {
+            "status": "error",
+            "message": "No Sales Person found for the current employee.",
+            "data": []
+        }
+    sales_person_name = sales_person[0]
+    
+    # Get the current active fiscal year name
+    current_fiscal_year = get_fiscal_year(nowdate())[0]
+    
+    # FİX: Get the start and end dates for that fiscal year
+    fy_dates = frappe.db.get_value("Fiscal Year", current_fiscal_year, ["year_start_date", "year_end_date"], as_dict=True)
+    
+    if not fy_dates:
+        frappe.throw(f"Fiscal Year {current_fiscal_year} not found.")
+
+    # Create a dictionary of parameters to pass to the query
+    query_params = {
+        "user": sales_person_name,
+        "fiscal_year": current_fiscal_year,
+        "fy_start_date": fy_dates.year_start_date, # FİX: Add start date
+        "fy_end_date": fy_dates.year_end_date      # FİX: Add end date
+    }
+
+    return frappe.db.sql("""
+        WITH MonthlyTargets AS (
+            SELECT
+                sp_target.parent AS sales_person,
+                dist_pct.month,
+                sp_target.fiscal_year,
+                sp_target.product_category,
+                (sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+            FROM
+                `tabTarget Detail` AS sp_target
+            JOIN
+                `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
+            WHERE
+                -- This part is fine, as your custom 'Target Detail' table has this field
+                sp_target.parent = %(user)s 
+                AND sp_target.fiscal_year = %(fiscal_year)s
+        ),
+        
+        MonthlyAchieved AS (
+            SELECT
+                st.sales_person,
+                MONTHNAME(si.posting_date) AS month,
+                YEAR(si.posting_date) AS fiscal_year_num,
+                ipc.product_category,
+                SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+            FROM
+                `tabSales Invoice` AS si
+            JOIN
+                `tabSales Invoice Item` AS sii ON si.name = sii.parent
+            JOIN
+                `tabSales Team` AS st ON si.name = st.parent
+            JOIN
+                `tabProduct Categoris` AS ipc ON sii.item_code = ipc.parent 
+            WHERE
+                si.docstatus = 1
+                AND st.sales_person = %(user)s
+                -- FİX: Changed the filter from fiscal_year to posting_date
+                AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+            GROUP BY
+                st.sales_person,
+                MONTHNAME(si.posting_date),
+                YEAR(si.posting_date),
+                ipc.product_category
+        )
+
+        -- Final step: Combine Targets and Achieved data
+        SELECT
+            CombinedData.sales_person AS "Sales Person",
+            CombinedData.month AS "Month",
+            CombinedData.fiscal_year AS "Fiscal Year",
+            CombinedData.product_category AS "Product Category",
+            SUM(CombinedData.monthly_target) AS "Target Amount",
+            SUM(CombinedData.achieved_amount) AS "Achieved Amount",
+            (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
+        FROM (
+            SELECT
+                sales_person, month, fiscal_year, product_category,
+                monthly_target, 0 AS achieved_amount
+            FROM
+                MonthlyTargets
+            UNION ALL
+            SELECT
+                sales_person, 
+                month, 
+                %(fiscal_year)s AS fiscal_year,
+                product_category,
+                0 AS monthly_target, 
+                achieved_amount
+            FROM
+                MonthlyAchieved
+        ) AS CombinedData
+        GROUP BY
+            CombinedData.sales_person,
+            CombinedData.month,
+            CombinedData.fiscal_year,
+            CombinedData.product_category
+        ORDER BY
+            CombinedData.fiscal_year,
+            CombinedData.sales_person,
+            FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+    """, query_params, as_dict=True)
+
