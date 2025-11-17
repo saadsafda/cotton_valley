@@ -1,0 +1,56 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2025-11-17 02:31:22.097713",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letterhead": null,
+ "modified": "2025-11-17 02:39:33.629390",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Sales Person Customer Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Customer",
+ "report_name": "Sales Person Customer Report",
+ "report_script": "columns = [\n    {\"label\": \"Sales Person\", \"fieldname\": \"sales_person\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Customer\", \"fieldname\": \"customer_name\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"CV Price Level\", \"fieldname\": \"cv_price\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"UDC Price Level\", \"fieldname\": \"udc_price\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Assigned Price Date (CV)\", \"fieldname\": \"cv_assigned_date\", \"fieldtype\": \"Datetime\", \"width\": 180},\n    {\"label\": \"Assigned Price Date (UDC)\", \"fieldname\": \"udc_assigned_date\", \"fieldtype\": \"Datetime\", \"width\": 180},\n    {\"label\": \"Last Change Date in Price Level\", \"fieldname\": \"last_change_date\", \"fieldtype\": \"Datetime\", \"width\": 180},\n]\n\ndata = []\n\ncustomers = frappe.db.get_list(\n    \"Customer\",\n    fields=[\"name\", \"sales_person\", \"customer_name\", \"price_list_for_cv\", \"price_list_for_udc\"]\n)\n\nfor cust in customers:\n\n    # get change logs from Version table\n    versions = frappe.db.get_all(\n        \"Version\",\n        filters={\"ref_doctype\": \"Customer\", \"docname\": cust.name},\n        fields=[\"data\", \"creation\"],\n        order_by=\"creation desc\"\n    )\n\n    cv_assigned_date = None\n    udc_assigned_date = None\n    last_change_date = None\n\n    for v in versions:\n        try:\n            changes = json.loads(v.data)\n            if \"changed\" in changes:\n                for change in changes[\"changed\"]:\n                    fieldname, old, new = change\n                    if fieldname == \"price_list_for_cv\" and not cv_assigned_date:\n                        cv_assigned_date = v.creation\n                        last_change_date = v.creation\n                    if fieldname == \"price_list_for_udc\" and not udc_assigned_date:\n                        udc_assigned_date = v.creation\n                        last_change_date = v.creation\n        except Exception:\n            pass\n\n    data.append({\n        \"sales_person\": cust.sales_person,\n        \"customer_name\": cust.customer_name,\n        \"cv_price\": cust.price_list_for_cv,\n        \"udc_price\": cust.price_list_for_udc,\n        \"cv_assigned_date\": cv_assigned_date,\n        \"udc_assigned_date\": udc_assigned_date,\n        \"last_change_date\": last_change_date,\n    })\n\ndata = columns, data\n",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Sales Master Manager"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "ERPNext User"
+  },
+  {
+   "role": "Employee"
+  },
+  {
+   "role": "Sales Person"
+  }
+ ],
+ "timeout": 0
+}
