@@ -614,7 +614,7 @@ def get_monthly_data():
             CombinedData.month, CombinedData.fiscal_year
         ORDER BY
             CombinedData.fiscal_year,
-            FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+            FIELD(CombinedData.month, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
     """, query_params, as_dict=True)
 
     # --- 4. Transform the Data (NEW SECTION) ---
@@ -758,6 +758,6 @@ def get_category_wise_monthly_data():
         ORDER BY
             CombinedData.fiscal_year,
             CombinedData.sales_person,
-            FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
+            FIELD(CombinedData.month, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
     """, query_params, as_dict=True)
 
