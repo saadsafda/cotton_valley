@@ -178,7 +178,10 @@ doc_events = {
     "Sales Order": {
 		"on_submit": "cotton_valley.server_scripts.sales_order.update_customer_order_summary",
         "before_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
-	}
+	},
+	"Activity Log": {
+        "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"
+    }
 }
 
 # Scheduled Tasks
