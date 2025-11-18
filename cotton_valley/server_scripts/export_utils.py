@@ -15,6 +15,10 @@ def _generate_csv_file(data, header_map, filename, forSO=True):
         csv_buffer = StringIO()
         writer = csv.writer(csv_buffer)
 
+        if forSO:
+            # remove company and order type columns from header_map
+            header_map = [item for item in header_map if item[0] not in ("company", "product_type")]
+
         # 1. Get header aliases from the map
         header_aliases = [item[1] for item in header_map]
         writer.writerow(header_aliases)
@@ -107,14 +111,14 @@ def export_dual_company_sales_orders(selected_so_names=None):
         ("zip_code", "Bill Zip"), # Verify this field name
         (None, "Billing Phone"),      # Blank Column
         ("custom_customer_email", "Email"),
-        ("custom_mode_of_payment", "Payment Method"),
-        ("grand_total", "Total"),
         (None, "Referring Page"),     # Blank Column
         (None, "Entry Point"),        # Blank Column
         (None, "Shipping"),           # Blank Column
+        ("custom_mode_of_payment", "Payment Method"),
         (None, "Card Number"),        # Blank Column
         (None, "Card Expiry"),        # Blank Column
         (None, "Comments"),           # Blank Column
+        ("grand_total", "Total"),
         (None, "Link From"),          # Blank Column
         (None, "Warning"),            # Blank Column
         (None, "Auth Code"),          # Blank Column
