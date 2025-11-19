@@ -76,3 +76,35 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
             "status": "error",
             "message": str(e)
         }
+    
+
+@frappe.whitelist(allow_guest=True)
+def delete_sales_invoice(sales_order):
+    try:
+        # Fetch the Sales Order document
+        if not frappe.db.exists("Sales Order", sales_order):
+            return {
+                "status": "error",
+                "message": "Sales Order not found"
+            }
+        
+        si_exists = frappe.get_all("Sales Invoice", filters=[["Sales Invoice Item","sales_order","=", sales_order]])
+        if len(si_exists) == 0:
+            return {
+                "status": "error",
+                "message": "Sales Invoice not found for the given Sales Order"
+            }
+        
+        si = frappe.get_doc("Sales Invoice", si_exists[0].name)
+        si.delete()
+        frappe.db.commit()
+        return {
+            "status": "success",
+            "message": "Sales Invoice deleted successfully"
+        }
+    except Exception as e:
+        frappe.log_error("Sales Invoice Deletion Failed", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": str(e)
+        }
