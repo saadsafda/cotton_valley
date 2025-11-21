@@ -328,7 +328,7 @@ def get_panding_payments():
                 "docstatus": 1,
                 "custom_clear": 0
             },
-            fields=["customer", "customer_name", "grand_total", "submit_datetime as date"],
+            fields=["name", "customer", "customer_name", "grand_total", "submit_datetime as date"],
             order_by="submit_datetime desc"
         )
 

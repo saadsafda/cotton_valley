@@ -24,6 +24,13 @@ def get_all_products_with_price_levels():
                 i.custom_sub_category as sub_category,
                 i.custom_coming_soon as coming_soon,
                 i.custom_new_arrivals as new_arrivals,
+                i.custom_case_per_pallet as case_per_pallet,
+                i.custom_carton_upc as carton_upc,
+                i.custom_cbm as cbm,
+                i.custom_package_width_inch as package_width_inches,
+                i.custom_package_height_inch as package_height_inches,
+                i.custom_package_length_inch as package_length_inches,
+                i.custom_weight_lbs as weight_lbs,
                 COALESCE(SUM(b.actual_qty), 0) as stock
             FROM `tabItem` i
             LEFT JOIN `tabBin` b ON b.item_code = i.name
