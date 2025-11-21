@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 
 
 @frappe.whitelist()
-def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
+def get_sales_person_orders():
     """
     Get all sales orders for the current logged-in sales person.
     
@@ -16,8 +16,6 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
         dict: Sales orders with customer details and statistics
     """
     try:
-        limit_page_length = int(limit_page_length)
-        limit_start = int(limit_start)
         # Get current user
         current_user = frappe.session.user
         
@@ -53,16 +51,11 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
                 "message": "Employee is not a sales person"
             }
         
-        # Parse filters if provided
-        additional_filters = {}
-        if filters:
-            additional_filters = frappe.parse_json(filters) if isinstance(filters, str) else filters
-        
+    
         # Build filters for sales orders
         base_filters = {
             "custom_customer_sales_representative": sales_person
         }
-        base_filters.update(additional_filters)
         
         # Get sales orders
         sales_orders = frappe.get_all(
@@ -76,8 +69,6 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
                 "creation", "modified", "owner"
             ],
             order_by="creation desc",
-            limit_page_length=limit_page_length,
-            limit_start=limit_start
         )
         
         # Enrich with customer details
