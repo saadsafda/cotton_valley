@@ -144,12 +144,6 @@ def get_sales_person_orders():
             "status": "success",
             "sales_person": sales_person,
             "data": sales_orders,
-            "pagination": {
-                "total_count": total_count,
-                "limit_start": limit_start,
-                "limit_page_length": limit_page_length,
-                "has_more": (limit_start + limit_page_length) < total_count
-            },
             "statistics": stats[0] if stats else {}
         }
         
