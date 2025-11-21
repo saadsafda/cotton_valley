@@ -32,10 +32,10 @@ def _generate_csv_file(data, header_map, filename, forSO=True):
             for field_name, alias in header_map:
                 if field_name is None:
                     # This is a defined blank column
-                    output_row.append(None) 
+                    output_row.append("") 
                 else:
                     # This is a data column, get the value
-                    output_row.append(row.get(field_name))
+                    output_row.append(str(row.get(field_name)))
             
             writer.writerow(output_row)
 
@@ -71,6 +71,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
 
     # --- 0. Define Dynamic Filters ---
     so_filters = {"docstatus": 1} 
+    so_filters["exported"] = 0
     if selected_so_names and len(selected_so_names) > 0:
         so_filters["name"] = ["in", selected_so_names]
 
@@ -81,8 +82,8 @@ def export_dual_company_sales_orders(selected_so_names=None):
             {"type": "All", "filename_base": "cotton_valley_all"} 
         ],
         "UDC": [
-            {"type": "COD", "filename_base": "udc_cod", "order_type_filter": "COD"},
-            {"type": "Regular", "filename_base": "udc_regular", "order_type_filter": "Regular"},
+            {"type": "COD", "filename_base": "udc_cod_", "order_type_filter": "COD"},
+            {"type": "Regular", "filename_base": "udc_regular_", "order_type_filter": "Regular"},
         ],
     }
 
@@ -101,7 +102,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         ("shipping_state", "Ship State"),
         ("shipping_country", "Ship Country"),
         ("shipping_zip_code", "Ship Zip"),
-        (None, "Shipping Phone"),     # Blank Column
+        ("shipping_phone", "Shipping Phone"),
         ("customer_name", "Bill Name"),
         ("billing_address_details", "Billing Address 1"),
         (None, "Billing Address 2"),  # Blank Column
@@ -109,7 +110,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         ("state", "Bill State"), # Verify this field name
         ("country", "Bill Country"), # Verify this field name
         ("zip_code", "Bill Zip"), # Verify this field name
-        (None, "Billing Phone"),      # Blank Column
+        ("custom_billing_phone", "Billing Phone"),
         ("custom_customer_email", "Email"),
         (None, "Referring Page"),     # Blank Column
         (None, "Entry Point"),        # Blank Column
@@ -159,8 +160,6 @@ def export_dual_company_sales_orders(selected_so_names=None):
             title="Some Sales Orders Already Exported", 
             message=f"The following Sales Orders have already been exported and will be skipped: {', '.join(already_exported_names)}"
         )
-        # Filter them out from the main list
-        all_sales_orders = [so for so in all_sales_orders if so.get("exported") != 1]
     
     if not all_sales_orders:
         return []
