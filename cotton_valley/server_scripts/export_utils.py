@@ -223,12 +223,17 @@ def export_dual_company_sales_orders(selected_so_names=None):
                 )
             )
             
-            # Mark all exported sales orders as exported
-            for so_name in target_so_names:
+            # Mark all exported sales orders as exported using bulk update
+            if target_so_names:
                 try:
-                    frappe.db.set_value("Sales Order", so_name, "exported", 1)
+                    # Use SQL UPDATE to avoid concurrent modification conflicts
+                    frappe.db.sql("""
+                        UPDATE `tabSales Order`
+                        SET exported = 1
+                        WHERE name IN ({})
+                    """.format(', '.join(['%s'] * len(target_so_names))), target_so_names)
                 except Exception as e:
-                    frappe.log_error(title=f"Failed to mark SO as exported: {so_name}", message=str(e))
+                    frappe.log_error(title=f"Failed to mark SOs as exported", message=str(e))
             
             # Commit the changes
             frappe.db.commit()
