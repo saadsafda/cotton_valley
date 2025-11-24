@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 
 
 @frappe.whitelist()
-def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
+def get_sales_person_orders():
     """
     Get all sales orders for the current logged-in sales person.
     
@@ -16,8 +16,6 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
         dict: Sales orders with customer details and statistics
     """
     try:
-        limit_page_length = int(limit_page_length)
-        limit_start = int(limit_start)
         # Get current user
         current_user = frappe.session.user
         
@@ -53,31 +51,25 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
                 "message": "Employee is not a sales person"
             }
         
-        # Parse filters if provided
-        additional_filters = {}
-        if filters:
-            additional_filters = frappe.parse_json(filters) if isinstance(filters, str) else filters
-        
+    
         # Build filters for sales orders
         base_filters = {
             "custom_customer_sales_representative": sales_person
         }
-        base_filters.update(additional_filters)
         
         # Get sales orders
         sales_orders = frappe.get_all(
             "Sales Order",
             filters=base_filters,
             fields=[
-                "name", "customer", "customer_name", "transaction_date", 
+                "name", "customer", "customer_name",
+                "customer_account_number", "customer_company_name as customer_company", "transaction_date", 
                 "delivery_date", "status", "docstatus", "grand_total", "currency",
                 "company", "custom_mode_of_payment", "custom_notes",
                 "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
                 "creation", "modified", "owner"
             ],
             order_by="creation desc",
-            limit_page_length=limit_page_length,
-            limit_start=limit_start
         )
         
         # Enrich with customer details
@@ -152,12 +144,6 @@ def get_sales_person_orders(filters=None, limit_page_length=20, limit_start=0):
             "status": "success",
             "sales_person": sales_person,
             "data": sales_orders,
-            "pagination": {
-                "total_count": total_count,
-                "limit_start": limit_start,
-                "limit_page_length": limit_page_length,
-                "has_more": (limit_start + limit_page_length) < total_count
-            },
             "statistics": stats[0] if stats else {}
         }
         
@@ -328,7 +314,7 @@ def get_panding_payments():
                 "docstatus": 1,
                 "custom_clear": 0
             },
-            fields=["name", "customer", "customer_name", "grand_total", "submit_datetime as date"],
+            fields=["name", "customer", "customer_name", "customer_account_number as account_number", "customer_company_name as company_name", "grand_total", "submit_datetime as date"],
             order_by="submit_datetime desc"
         )
 
