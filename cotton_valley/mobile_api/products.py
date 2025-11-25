@@ -22,6 +22,8 @@ def get_all_products_with_price_levels():
                 i.image as product_thumbnail_id,
                 i.brand,
                 i.company,
+                i.custom_pallet_hi as pallet_hi,
+                i.custom_pallet_ti as pallet_ti,
                 i.custom_sub_category as sub_category,
                 i.custom_coming_soon as coming_soon,
                 i.custom_new_arrivals as new_arrivals,
