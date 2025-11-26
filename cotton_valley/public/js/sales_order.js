@@ -4,17 +4,17 @@ frappe.ui.form.on('Sales Order', {
     },
     refresh(frm) {
         if (frm.doc.docstatus === 1 && !frm.doc.custom_clear) {
-            frm.add_custom_button('Mark Clear', function() {
+            frm.add_custom_button('Mark Clear', function () {
                 frappe.confirm(
                     'Are you sure you want to mark this as Clear?',
-                    function() {
+                    function () {
                         // If user confirms
                         frm.set_value('custom_clear', 1);
-                        frappe.show_alert({message: 'Marked as Clear ✅', indicator: 'green'});
+                        frappe.show_alert({ message: 'Marked as Clear ✅', indicator: 'green' });
                     },
-                    function() {
+                    function () {
                         // If user cancels
-                        frappe.show_alert({message: 'Action cancelled ❌', indicator: 'red'});
+                        frappe.show_alert({ message: 'Action cancelled ❌', indicator: 'red' });
                     }
                 );
             });
@@ -43,31 +43,45 @@ frappe.ui.form.on('Sales Order', {
         }
 
         // ===== New Button: Send Email =====
-    if (frm.doc.docstatus === 1) { // Only allow for submitted orders
-        frm.add_custom_button(__('Send Email'), function() {
-            frappe.confirm(
-                __('Are you sure you want to send Sales Order confirmation email?'),
-                function() {
-                    // Call backend function
-                    frappe.call({
-                        method: 'cotton_valley.server_scripts.sales_order.send_sales_order_confirmation_email',
-                        args: {
-                            doc: frm.doc.name,
-                            method: 'manual_trigger'
-                        },
-                        callback: function(r) {
-                            frappe.msgprint(__('Sales Order confirmation email sent successfully!'));
-                        },
-                        error: function(r) {
-                            frappe.msgprint(__('Failed to send email: ' + r.responseText));
-                        }
-                    });
-                }
-            );
-        }).addClass('btn-primary');
+        if (frm.doc.docstatus === 1) { // Only allow for submitted orders
+            frm.add_custom_button(__('Send Email'), function () {
+                frappe.confirm(
+                    __('Are you sure you want to send Sales Order confirmation email?'),
+                    function () {
+                        // Call backend function
+                        frappe.call({
+                            method: 'cotton_valley.server_scripts.sales_order.send_sales_order_confirmation_email',
+                            args: {
+                                doc: frm.doc.name,
+                                method: 'manual_trigger'
+                            },
+                            callback: function (r) {
+                                frappe.msgprint(__('Sales Order confirmation email sent successfully!'));
+                            },
+                            error: function (r) {
+                                frappe.msgprint(__('Failed to send email: ' + r.responseText));
+                            }
+                        });
+                    }
+                );
+            }).addClass('btn-primary');
+        }
+    },
+
+    push_to_erp: function (frm) {
+        if (frm.doc.push_to_erp === 1) {
+
+            frm.set_value('order_status', 'Processed');
+
+            frm.refresh_field('order_status');
+
+            frappe.show_alert({
+                message: __('Sales Order successfully marked for ERP sync. Status updated to Processed.'),
+                indicator: 'green'
+            }, 5);
+        }
     }
-}
-    
+
 });
 
 function push_single_order_to_erp(frm) {
