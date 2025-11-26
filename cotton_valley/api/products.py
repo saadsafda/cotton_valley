@@ -248,7 +248,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         WHERE item_code in %s
         GROUP BY item_code
     """, (item_ids,), as_dict=True)
-    stock_map = {s["item_code"]: s["qty"] for s in stock_data}
+    stock_map = {s["item_code"]: (s["qty"] if s["qty"] >= 0 else 0) for s in stock_data}
 
     # Product Images
     galleries_data = frappe.get_all(
@@ -475,7 +475,7 @@ def get_product(product_id, company="Cotton Valley"):
         FROM `tabBin`
         WHERE item_code = %s
     """, (product_id,), as_dict=True)
-    product["quantity"] = qty_data[0]["qty"] if qty_data else 0
+    product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
     if product["quantity"] > 0:
             product["stock_status"] = "in_stock"
     else:
