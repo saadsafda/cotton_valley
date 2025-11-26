@@ -4,6 +4,7 @@ from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_product, get_all_products
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD
+import requests
 
 @frappe.whitelist(allow_guest=True)
 def get_submited_orders(company="Cotton Valley", page=None):
@@ -604,3 +605,98 @@ def unstock_items(order_id, items, total):
             "message": f"An error occurred: {str(e)}"
         }
 
+
+def get_all_sales_orders():
+    sales_orders = frappe.get_all(
+        "Sales Order",
+        filters={
+            "docstatus": 1,
+            "push_to_erp": 1
+        },
+    )
+
+    orders_not_invoiced = []
+    for order in sales_orders:
+        
+        is_invoiced = frappe.db.exists("Sales Invoice Item", {
+            "sales_order": order.name,
+            "docstatus": 1
+        })
+        
+        if not is_invoiced:
+            orders_not_invoiced.append(order.name)
+
+    return orders_not_invoiced
+
+@frappe.whitelist()
+def mark_orders_as_invoiced():
+    orders_to_update = get_all_sales_orders()
+    
+
+    for order_name in orders_to_update:
+        try:
+            url =f"https://erp.cottonvalley.us/ords/unvdst/sales/invoice/?trnrefno={order_name}"
+            response = requests.get(url, auth=(ERP_USERNAME, ERP_PASSWORD))
+             # Check if API responded successfully
+            if response.status_code != 200:
+                frappe.throw(f"API Error {response.status_code}: {response.text}")
+
+            # Check if response is not empty and is JSON
+            if not response.text.strip():
+                frappe.throw("Empty response from API")
+
+            try:
+                data = response.json()
+            except Exception:
+                frappe.throw(f"Invalid JSON response: {response.text[:500]}")
+
+            
+            sales_order = frappe.get_doc("Sales Order", order_name)
+
+            sales_invoice = frappe.db.exists("Sales Invoice Item", {
+                "sales_order": order_name,
+            })
+            if sales_invoice:
+                sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice)
+                sales_invoice_doc.items = []  # reset items
+                for row in data.get("items", []):
+                    sales_invoice_doc.append("items", {
+                        "item_code": row["itmid"],
+                        "qty": row["qty"],
+                        "rate": row["rate"],
+                        "sales_order": order_name,
+                    })
+                sales_invoice_doc.save(ignore_permissions=True)
+            else:
+                sales_invoice_doc = frappe.new_doc("Sales Invoice")
+                sales_invoice_doc.customer = sales_order.customer
+                sales_invoice_doc.company = sales_order.company
+                sales_invoice_doc.sales_order = order_name
+                sales_invoice_doc.posting_date = nowdate()
+                sales_invoice_doc.due_date = nowdate()
+                for row in data.get("items", []):
+                    sales_invoice_doc.append("items", {
+                        "item_code": row["itmid"],
+                        "qty": row["qty"],
+                        "rate": row["rate"],
+                        "sales_order": order_name,
+                    })
+                sales_invoice_doc.save(ignore_permissions=True)
+                frappe.db.commit()
+
+
+               
+            
+            frappe.log_error(
+                message=f"Failed to mark Sales Order {order_name} as Invoiced. ERP Response: {data}",
+                title="Mark Orders As Invoiced Failed"
+            )
+    
+
+        except Exception as e:
+            frappe.log_error(
+                message=f"Error updating Sales Order {order_name} to Invoiced: {str(e)}",
+                title="Mark Orders As Invoiced Error"
+            )
+
+   
