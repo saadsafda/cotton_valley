@@ -686,12 +686,16 @@ def mark_orders_as_invoiced():
             
             sales_order.db_set("order_status", "Shipped", update_modified=True)
             frappe.db.commit()
-    
+
 
         except Exception as e:
             frappe.log_error(
                 message=f"Error updating Sales Order {order_name} to Invoiced: {str(e)}",
                 title="Mark Orders As Invoiced Error"
             )
+    return {
+        "status": "success",
+        "message": f"Sales Orders {orders_to_update} marked as Invoiced.",
+    }
 
    
