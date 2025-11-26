@@ -811,11 +811,11 @@ def download_custom_catalog(items):
         worksheet.set_column('A:A', 25)
         worksheet.set_column('B:B', 15)
         worksheet.set_column('C:C', 35)
-        worksheet.set_column('D:I', 20)
-        worksheet.set_column('J:J', 25)
-        worksheet.set_column('K:L', 20)
-        worksheet.set_column('M:M', 30)
-        worksheet.set_column('N:P', 20)
+        worksheet.set_column('D:J', 20)
+        worksheet.set_column('K:K', 25)
+        worksheet.set_column('L:M', 20)
+        worksheet.set_column('N:N', 30)
+        worksheet.set_column('O:Q', 20)
 
         # --- COMPANY HEADER ---
         worksheet.set_row(0, 60)
@@ -834,7 +834,7 @@ def download_custom_catalog(items):
 
         # --- HEADERS ---
         headers = [
-            "Picture", "Code", "Description", "SubCategory", 
+            "Picture", "Code", "Description", "Category", "SubCategory", 
             "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
             "Case-Height(INCH)", "Net-Weight(LBS)", "Cases/Pallet Trucking",
             "Price in Case", "Price in Piece", "Item UPC", "CBM", 
@@ -844,7 +844,7 @@ def download_custom_catalog(items):
         start_row = 10
         worksheet.set_row(start_row, 30)
         for col, title in enumerate(headers):
-            fmt = header_yellow if col in [10, 11] else header_blue
+            fmt = header_yellow if col in [11, 12] else header_blue
             worksheet.write(start_row, col, title, fmt)
 
         # --- WRITE DATA ---
@@ -852,7 +852,12 @@ def download_custom_catalog(items):
         
         for item in data:
             worksheet.set_row(row, 90)
-
+            categories = frappe.db.sql("""
+                SELECT c.product_category as id, pc.title as title
+                FROM `tabProduct Categoris` c
+                INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
+                WHERE c.parent = %s
+            """, (item.item_code,), as_dict=True)
             # A: Image Handling
             if item.get("image"):
                 try:
@@ -903,19 +908,20 @@ def download_custom_catalog(items):
 
             worksheet.write(row, 1, item.get("item_code", "") or "-", text_fmt)
             worksheet.write(row, 2, item.get("item_name", "") or "-", text_fmt)
-            worksheet.write(row, 3, subcategoryName or "-", text_fmt)
-            worksheet.write(row, 4, item.get("case_pack", "") or "-", text_fmt)
-            worksheet.write(row, 5, item.get("case_length", "") or "-", text_blue_fmt)
-            worksheet.write(row, 6, item.get("case_width", "") or "-", text_blue_fmt)
-            worksheet.write(row, 7, item.get("case_height", "") or "-", text_blue_fmt)
-            worksheet.write(row, 8, item.get("net_weight", "") or "-", text_blue_fmt)
-            worksheet.write(row, 9, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
-            worksheet.write(row, 10, item.get("stock_price", 0) or 1, price_fmt)
-            worksheet.write(row, 11, (flt(item.get("stock_price", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
-            worksheet.write(row, 12, item.get("item_upc", "") or "-", text_fmt)
-            worksheet.write(row, 13, item.get("cbm", "") or "-", text_fmt)
-            worksheet.write(row, 14, item.get("available_stock", "") or "-", text_fmt)
-            worksheet.write(row, 15, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
+            worksheet.write(row, 3, str(categories[0].title) or "-", text_fmt)  # Category placeholder
+            worksheet.write(row, 4, subcategoryName or "-", text_fmt)
+            worksheet.write(row, 5, item.get("case_pack", "") or "-", text_fmt)
+            worksheet.write(row, 6, item.get("case_length", "") or "-", text_blue_fmt)
+            worksheet.write(row, 7, item.get("case_width", "") or "-", text_blue_fmt)
+            worksheet.write(row, 8, item.get("case_height", "") or "-", text_blue_fmt)
+            worksheet.write(row, 9, item.get("net_weight", "") or "-", text_blue_fmt)
+            worksheet.write(row, 10, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
+            worksheet.write(row, 11, (flt(item.get("stock_price", 0)) or 1), price_fmt)
+            worksheet.write(row, 12, (flt(item.get("stock_price", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
+            worksheet.write(row, 13, item.get("item_upc", "") or "-", text_fmt)
+            worksheet.write(row, 14, item.get("cbm", "") or "-", text_fmt)
+            worksheet.write(row, 15, item.get("available_stock", "") or "-", text_fmt)
+            worksheet.write(row, 16, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
             row += 1
 
         workbook.close()
