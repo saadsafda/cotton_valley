@@ -683,14 +683,9 @@ def mark_orders_as_invoiced():
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
                 frappe.db.commit()
-
-
-               
             
-            frappe.log_error(
-                message=f"Failed to mark Sales Order {order_name} as Invoiced. ERP Response: {data}",
-                title="Mark Orders As Invoiced Failed"
-            )
+            sales_order.db_set("order_status", "Shipped", update_modified=True)
+            frappe.db.commit()
     
 
         except Exception as e:
