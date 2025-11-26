@@ -1,6 +1,6 @@
 frappe.listview_settings['Item'] = {
     onload(listview) {
-        listview.page.add_inner_button(__('Export Custom Catalog'), function () {
+        listview.page.add_inner_button(__('Export Catalog'), function () {
 
             // 1. Get Selected Items
             const selected_items = listview.get_checked_items();

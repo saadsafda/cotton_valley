@@ -808,7 +808,7 @@ def download_custom_catalog(items):
         company_info_fmt = workbook.add_format({'font_size': 16, 'valign': 'vcenter', 'bold': True})
 
         # --- COLUMN WIDTHS ---
-        worksheet.set_column('A:A', 20)
+        worksheet.set_column('A:A', 25)
         worksheet.set_column('B:B', 15)
         worksheet.set_column('C:C', 35)
         worksheet.set_column('D:I', 20)
@@ -851,7 +851,7 @@ def download_custom_catalog(items):
         row = start_row + 1
         
         for item in data:
-            worksheet.set_row(row, 100)
+            worksheet.set_row(row, 90)
 
             # A: Image Handling
             if item.get("image"):
@@ -860,12 +860,35 @@ def download_custom_catalog(items):
                     image_path = frappe.get_site_path("public", "files", file_name)
 
                     if os.path.exists(image_path):
+                        # Get image dimensions to calculate proper scaling
+                        from PIL import Image
+                        img = Image.open(image_path)
+                        img_width, img_height = img.size
+                        
+                        # Define target container size (in pixels)
+                        target_width = 140
+                        target_height = 90
+                        
+                        # Calculate scale to fit within container while maintaining aspect ratio
+                        width_scale = target_width / img_width
+                        height_scale = target_height / img_height
+                        scale = min(width_scale, height_scale)  # Use smaller scale to fit within bounds
+                        
+                        # Calculate final dimensions
+                        final_width = img_width * scale
+                        final_height = img_height * scale
+                        
+                        # Calculate centering offsets
+                        x_offset = 15 + (target_width - final_width) / 2
+                        y_offset = 5 + (target_height - final_height) / 2
+                        
                         worksheet.insert_image(row, 0, image_path, {
-                            'x_scale': 0.15, 
-                            'y_scale': 0.15, 
-                            'x_offset': 20,
-                            'y_offset': 8,
-                            'object_position': 2
+                            'x_scale': scale,
+                            'y_scale': scale,
+                            'x_offset': x_offset,
+                            'y_offset': y_offset,
+                            'object_position': 2,
+                            'positioning': 1
                         })
                     else:
                         worksheet.write(row, 0, "No File", text_fmt)
