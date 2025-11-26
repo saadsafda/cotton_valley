@@ -6,6 +6,11 @@ from cotton_valley.api.website_theme_setting import get_file, get_categories_fro
 import requests
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 from cotton_valley.api.common import check_customer_token, get_customer_from_token
+from frappe.utils import flt
+import xlsxwriter
+import io
+import os
+import json
 
 
 @frappe.whitelist(allow_guest=True)
@@ -760,3 +765,145 @@ def get_product_prices():
         frappe.logger().info(f"Batch {start // CHUNK_SIZE + 1} completed.")
     return "All item prices updated successfully."
 
+
+
+@frappe.whitelist()
+def download_custom_catalog(items):
+    try:
+        # Parse the JSON string list of Item Names passed from JS
+        if isinstance(items, str):
+            item_names = json.loads(items)
+        else:
+            item_names = items
+            
+        # Validate input
+        if not item_names or not isinstance(item_names, list):
+            frappe.throw(_("Invalid items list provided"))
+        
+        # 1. Fetch Item Data
+        data = frappe.get_all("Item", 
+            filters={"name": ["in", item_names]},
+            fields=["image", "item_code", "item_name", "custom_sub_category as subcategory",  
+                    "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
+                    "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
+                    "custom_weight_lbs as net_weight", "custom_case_per_pallet as cases_per_pallet",
+                    "standard_rate", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock"]
+        )
+        
+        if not data:
+            frappe.throw(_("No items found"))
+
+        # 2. Setup Excel
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        worksheet = workbook.add_worksheet("Catalog")
+
+        # --- STYLES ---
+        header_blue = workbook.add_format({'bg_color': '#9FC5E8', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_yellow = workbook.add_format({'bg_color': '#FFFF00', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        text_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        text_blue_fmt = workbook.add_format({'bg_color': '#9FC5E8', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        price_fmt = workbook.add_format({'bg_color': '#FFFF00', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'num_format': '$0.00'})
+        company_header_fmt = workbook.add_format({'bold': True, 'font_size': 11, 'valign': 'vcenter'})
+        company_info_fmt = workbook.add_format({'font_size': 16, 'valign': 'vcenter', 'bold': True})
+
+        # --- COLUMN WIDTHS ---
+        worksheet.set_column('A:A', 20)
+        worksheet.set_column('B:B', 15)
+        worksheet.set_column('C:C', 35)
+        worksheet.set_column('D:I', 20)
+        worksheet.set_column('J:J', 25)
+        worksheet.set_column('K:L', 20)
+        worksheet.set_column('M:M', 30)
+        worksheet.set_column('N:P', 20)
+
+        # --- COMPANY HEADER ---
+        worksheet.set_row(0, 60)
+        worksheet.merge_range('A1:B1', '', None)
+        
+        # Add company logo if available
+        logo_path = frappe.get_site_path("public", "files", "CottonValley_UDC_logo.jpg")
+        if os.path.exists(logo_path):
+            worksheet.insert_image('A1', logo_path, {'x_scale': 1, 'y_scale': 1, 'x_offset': 10, 'y_offset': 5})
+        
+        # Company information
+        worksheet.write('A2', 'Universal Distribution LLC 326 APPLEGARTH ROAD MONROE, NJ 08831 | Cotton Valley LLC, 96 Distribution Blvd, Edison NJ 08817', company_info_fmt)
+        worksheet.write('A3', '(732) 248 4276 | (732) 248-4276', company_info_fmt)
+        worksheet.write('A4', ' info@universaldc.com | info@cottonvalley.net', company_info_fmt)
+        worksheet.write('A5', 'universaldc.com | cottonValley.net', company_info_fmt)
+
+        # --- HEADERS ---
+        headers = [
+            "Picture", "Code", "Description", "SubCategory", 
+            "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
+            "Case-Height(INCH)", "Net-Weight(LBS)", "Cases/Pallet Trucking",
+            "Price in Case", "Price in Piece", "Item UPC", "CBM", 
+            "Available Stock", "Stock in Pieces"
+        ]
+        
+        start_row = 10
+        worksheet.set_row(start_row, 30)
+        for col, title in enumerate(headers):
+            fmt = header_yellow if col in [10, 11] else header_blue
+            worksheet.write(start_row, col, title, fmt)
+
+        # --- WRITE DATA ---
+        row = start_row + 1
+        
+        for item in data:
+            worksheet.set_row(row, 100)
+
+            # A: Image Handling
+            if item.get("image"):
+                try:
+                    file_name = item.image.split("/")[-1]
+                    image_path = frappe.get_site_path("public", "files", file_name)
+
+                    if os.path.exists(image_path):
+                        worksheet.insert_image(row, 0, image_path, {
+                            'x_scale': 0.15, 
+                            'y_scale': 0.15, 
+                            'x_offset': 20,
+                            'y_offset': 8,
+                            'object_position': 2
+                        })
+                    else:
+                        worksheet.write(row, 0, "No File", text_fmt)
+                except Exception as e:
+                    frappe.log_error(f"Image insert error: {str(e)}", "Catalog Image Error")
+                    worksheet.write(row, 0, "Error", text_fmt)
+            else:
+                worksheet.write(row, 0, "", text_fmt)
+
+            # B-H: Data columns
+            worksheet.write(row, 1, item.get("item_code", "") or "-", text_fmt)
+            worksheet.write(row, 2, item.get("item_name", "") or "-", text_fmt)
+            worksheet.write(row, 3, item.get("subcategory", "") or "-", text_fmt)
+            worksheet.write(row, 4, item.get("case_pack", "") or "-", text_fmt)
+            worksheet.write(row, 5, item.get("case_length", "") or "-", text_blue_fmt)
+            worksheet.write(row, 6, item.get("case_width", "") or "-", text_blue_fmt)
+            worksheet.write(row, 7, item.get("case_height", "") or "-", text_blue_fmt)
+            worksheet.write(row, 8, item.get("net_weight", "") or "-", text_blue_fmt)
+            worksheet.write(row, 9, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
+            worksheet.write(row, 10, item.get("standard_rate", 0) or 1, price_fmt)
+            worksheet.write(row, 11, (flt(item.get("standard_rate", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
+            worksheet.write(row, 12, item.get("item_upc", "") or "-", text_fmt)
+            worksheet.write(row, 13, item.get("cbm", "") or "-", text_fmt)
+            worksheet.write(row, 14, item.get("available_stock", "") or "-", text_fmt)
+            worksheet.write(row, 15, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
+            row += 1
+
+        workbook.close()
+        output.seek(0)
+
+        # --- PROPER FRAPPE RESPONSE FOR DOWNLOAD ---
+        file_content = output.read()
+        filename = f'Catalog_{frappe.utils.today()}.xlsx'
+        
+        frappe.local.response.filename = filename
+        frappe.local.response.filecontent = file_content
+        frappe.local.response.type = "download"
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Catalog Download Error")
+        frappe.throw(_("Error generating catalog: {0}").format(str(e)))
