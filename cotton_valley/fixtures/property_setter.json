@@ -2817,22 +2817,6 @@
  },
  {
   "default_value": null,
-  "doc_type": "Item",
-  "docstatus": 0,
-  "doctype": "Property Setter",
-  "doctype_or_field": "DocField",
-  "field_name": "standard_rate",
-  "is_system_generated": 0,
-  "modified": "2025-08-23 04:14:25.788610",
-  "module": "Cotton Valley",
-  "name": "Item-standard_rate-hidden",
-  "property": "hidden",
-  "property_type": "Check",
-  "row_name": null,
-  "value": "1"
- },
- {
-  "default_value": null,
   "doc_type": "Customer",
   "docstatus": 0,
   "doctype": "Property Setter",
