@@ -787,7 +787,7 @@ def download_custom_catalog(items):
                     "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
                     "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
                     "custom_weight_lbs as net_weight", "custom_case_per_pallet as cases_per_pallet",
-                    "standard_rate", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock"]
+                    "stock_price", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock"]
         )
         
         if not data:
@@ -885,8 +885,8 @@ def download_custom_catalog(items):
             worksheet.write(row, 7, item.get("case_height", "") or "-", text_blue_fmt)
             worksheet.write(row, 8, item.get("net_weight", "") or "-", text_blue_fmt)
             worksheet.write(row, 9, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
-            worksheet.write(row, 10, item.get("standard_rate", 0) or 1, price_fmt)
-            worksheet.write(row, 11, (flt(item.get("standard_rate", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
+            worksheet.write(row, 10, item.get("stock_price", 0) or 1, price_fmt)
+            worksheet.write(row, 11, (flt(item.get("stock_price", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
             worksheet.write(row, 12, item.get("item_upc", "") or "-", text_fmt)
             worksheet.write(row, 13, item.get("cbm", "") or "-", text_fmt)
             worksheet.write(row, 14, item.get("available_stock", "") or "-", text_fmt)
