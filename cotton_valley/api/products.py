@@ -899,9 +899,11 @@ def download_custom_catalog(items):
                 worksheet.write(row, 0, "", text_fmt)
 
             # B-H: Data columns
+            subcategoryName = frappe.db.get_value("Product Subcategory", item.get("subcategory"), "title") if item.get("subcategory") else "-"
+
             worksheet.write(row, 1, item.get("item_code", "") or "-", text_fmt)
             worksheet.write(row, 2, item.get("item_name", "") or "-", text_fmt)
-            worksheet.write(row, 3, item.get("subcategory", "") or "-", text_fmt)
+            worksheet.write(row, 3, subcategoryName or "-", text_fmt)
             worksheet.write(row, 4, item.get("case_pack", "") or "-", text_fmt)
             worksheet.write(row, 5, item.get("case_length", "") or "-", text_blue_fmt)
             worksheet.write(row, 6, item.get("case_width", "") or "-", text_blue_fmt)
