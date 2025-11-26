@@ -649,7 +649,10 @@ def mark_orders_as_invoiced():
                 data = response.json()
             except Exception:
                 frappe.throw(f"Invalid JSON response: {response.text[:500]}")
-
+            frappe.log_error(
+                message=f"Sales Order {order_name} and api Response: {data}",
+                title="Check Data Value"
+            )
             
             sales_order = frappe.get_doc("Sales Order", order_name)
 
@@ -661,9 +664,9 @@ def mark_orders_as_invoiced():
                 sales_invoice_doc.items = []  # reset items
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
-                        "item_code": row["itmid"],
-                        "qty": row["qty"],
-                        "rate": row["rate"],
+                        "item_code": row.get("itmid"),
+                        "qty": float(row.get("qty", 0) or 0),
+                        "rate": float(row.get("rate", 0) or 0),
                         "sales_order": order_name,
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
@@ -671,14 +674,13 @@ def mark_orders_as_invoiced():
                 sales_invoice_doc = frappe.new_doc("Sales Invoice")
                 sales_invoice_doc.customer = sales_order.customer
                 sales_invoice_doc.company = sales_order.company
-                sales_invoice_doc.sales_order = order_name
                 sales_invoice_doc.posting_date = nowdate()
                 sales_invoice_doc.due_date = nowdate()
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
-                        "item_code": row["itmid"],
-                        "qty": row["qty"],
-                        "rate": row["rate"],
+                        "item_code": row.get("itmid"),
+                        "qty": float(row.get("qty", 0) or 0),
+                        "rate": float(row.get("rate", 0) or 0),
                         "sales_order": order_name,
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
