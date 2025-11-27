@@ -3,6 +3,9 @@ frappe.ui.form.on('Sales Order', {
         fetch_customer_details(frm);
     },
     refresh(frm) {
+        if (frm.doc.push_to_erp === 1) {
+            frm.set_df_property('push_to_erp', 'read_only', 1);
+        }
         if (frm.doc.docstatus === 1 && !frm.doc.custom_clear) {
             frm.add_custom_button('Mark Clear', function () {
                 frappe.confirm(

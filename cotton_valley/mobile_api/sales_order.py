@@ -308,11 +308,47 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
 @frappe.whitelist()
 def get_panding_payments():
     try:
+
+        current_user = frappe.session.user
+        
+        if not current_user or current_user == "Guest":
+            return {
+                "status": "error",
+                "message": "Authentication required"
+            }
+        
+        # Get employee for current user
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": current_user, "status": "Active"},
+            "name"
+        )
+        
+        if not employee:
+            return {
+                "status": "error",
+                "message": "Current user is not an active employee"
+            }
+        
+        # Get sales person linked to this employee
+        sales_person = frappe.db.get_value(
+            "Sales Person",
+            {"employee": employee, "enabled": 1},
+            "name"
+        )
+        
+        if not sales_person:
+            return {
+                "status": "error",
+                "message": "Employee is not a sales person"
+            }
+
         panding_customer_amount = frappe.get_list(
             "Sales Order",
             filters={
                 "docstatus": 1,
-                "custom_clear": 0
+                "custom_clear": 0,
+                "custom_customer_sales_representative": sales_person
             },
             fields=["name", "customer", "customer_name", "customer_account_number as account_number", "customer_company_name as company_name", "grand_total", "submit_datetime as date"],
             order_by="submit_datetime desc"
