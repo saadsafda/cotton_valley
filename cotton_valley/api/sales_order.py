@@ -231,6 +231,14 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                     "delivery_date": nowdate(),
                 })
 
+            sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+            if sales_person:
+                so_doc.sales_team = []
+                so_doc.append("sales_team", {
+                    "sales_person": sales_person,
+                    "allocated_percentage": 100
+                })
+
             so_doc.save(ignore_permissions=True)
             so_doc.submit()
             frappe.db.commit()
@@ -292,6 +300,14 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
             "rate": row["rate"],
             "delivery_date": nowdate(),
         })
+    sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    if sales_person:
+        so_doc.sales_team = []
+        so_doc.append("sales_team", {
+            "sales_person": sales_person,
+            "allocated_percentage": 100
+        })
+
     so_doc.save(ignore_permissions=True)
     if submit:
         so_doc.submit()

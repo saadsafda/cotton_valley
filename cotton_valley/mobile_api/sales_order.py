@@ -233,7 +233,13 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
                     "rate": row["rate"],
                     "delivery_date": nowdate(),
                 })
-
+            sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+            if sales_person:
+                so_doc.sales_team = []
+                so_doc.append("sales_team", {
+                    "sales_person": sales_person,
+                    "allocated_percentage": 100
+                })
             so_doc.save(ignore_permissions=True)
             so_doc.submit()
             frappe.db.commit()
@@ -297,6 +303,13 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
             "rate": row["rate"],
             "delivery_date": nowdate(),
         })
+    sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    if sales_person:
+        so_doc.sales_team = []
+        so_doc.append("sales_team", {
+            "sales_person": sales_person,
+            "allocated_percentage": 100
+        })
     so_doc.save(ignore_permissions=True)
     if submit:
         so_doc.submit()
@@ -343,16 +356,20 @@ def get_panding_payments():
                 "message": "Employee is not a sales person"
             }
 
-        panding_customer_amount = frappe.get_list(
-            "Sales Order",
-            filters={
-                "docstatus": 1,
-                "custom_clear": 0,
-                "custom_customer_sales_representative": sales_person
-            },
-            fields=["name", "customer", "customer_name", "customer_account_number as account_number", "customer_company_name as company_name", "grand_total", "submit_datetime as date"],
-            order_by="submit_datetime desc"
-        )
+        # get all sales invoices with pending payments for this sales person
+        panding_customer_amount = frappe.db.sql("""
+            SELECT 
+                si.customer,
+                c.customer_name,
+                SUM(si.outstanding_amount) as pending_amount
+            FROM `tabSales Invoice` si
+            INNER JOIN `tabCustomer` c ON c.name = si.customer
+            WHERE si.docstatus = 1
+                AND si.outstanding_amount > 0
+                AND c.custom_customer_sales_representative = %s
+            GROUP BY si.customer
+            HAVING pending_amount > 0
+        """, (sales_person,), as_dict=True)
 
         return {"status": "success", "data": panding_customer_amount}
 
