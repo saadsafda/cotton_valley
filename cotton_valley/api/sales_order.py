@@ -672,11 +672,13 @@ def mark_orders_as_invoiced():
             
             sales_order = frappe.get_doc("Sales Order", order_name)
 
-            sales_invoice = frappe.db.exists("Sales Invoice Item", {
-                "sales_order": order_name,
-            })
-            if sales_invoice:
-                sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice)
+            invoices = frappe.get_all(
+                "Sales Invoice Item",
+                filters={"sales_order": order_name},
+                fields=["parent"]
+            )
+            if len(invoices) > 0:
+                sales_invoice_doc = frappe.get_doc("Sales Invoice", order_name)
                 sales_invoice_doc.items = []  # reset items
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
@@ -692,6 +694,11 @@ def mark_orders_as_invoiced():
                 sales_invoice_doc.company = sales_order.company
                 sales_invoice_doc.posting_date = nowdate()
                 sales_invoice_doc.due_date = nowdate()
+                for sales_person in sales_order.sales_team:
+                    sales_invoice_doc.append("sales_team", {
+                        "sales_person": sales_person.sales_person,
+                        "allocated_percentage": sales_person.allocated_percentage
+                    })
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
                         "item_code": row.get("itmid"),

@@ -54,7 +54,8 @@ def get_sales_person_orders():
     
         # Build filters for sales orders
         base_filters = {
-            "custom_customer_sales_representative": sales_person
+            "custom_customer_sales_representative": sales_person,
+            "order_status": ["not in", ["Shipped"]]
         }
         
         # Get sales orders
