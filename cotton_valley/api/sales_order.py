@@ -231,6 +231,14 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                     "delivery_date": nowdate(),
                 })
 
+            sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+            if sales_person:
+                so_doc.sales_team = []
+                so_doc.append("sales_team", {
+                    "sales_person": sales_person,
+                    "allocated_percentage": 100
+                })
+
             so_doc.save(ignore_permissions=True)
             so_doc.submit()
             frappe.db.commit()
@@ -292,6 +300,14 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
             "rate": row["rate"],
             "delivery_date": nowdate(),
         })
+    sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    if sales_person:
+        so_doc.sales_team = []
+        so_doc.append("sales_team", {
+            "sales_person": sales_person,
+            "allocated_percentage": 100
+        })
+
     so_doc.save(ignore_permissions=True)
     if submit:
         so_doc.submit()
@@ -649,21 +665,26 @@ def mark_orders_as_invoiced():
                 data = response.json()
             except Exception:
                 frappe.throw(f"Invalid JSON response: {response.text[:500]}")
-
+            frappe.log_error(
+                message=f"Sales Order {order_name} and api Response: {data}",
+                title="Check Data Value"
+            )
             
             sales_order = frappe.get_doc("Sales Order", order_name)
 
-            sales_invoice = frappe.db.exists("Sales Invoice Item", {
-                "sales_order": order_name,
-            })
-            if sales_invoice:
-                sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice)
+            invoices = frappe.get_all(
+                "Sales Invoice Item",
+                filters={"sales_order": order_name},
+                fields=["parent"]
+            )
+            if len(invoices) > 0:
+                sales_invoice_doc = frappe.get_doc("Sales Invoice", order_name)
                 sales_invoice_doc.items = []  # reset items
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
-                        "item_code": row["itmid"],
-                        "qty": row["qty"],
-                        "rate": row["rate"],
+                        "item_code": row.get("itmid"),
+                        "qty": float(row.get("qty", 0) or 0),
+                        "rate": float(row.get("rate", 0) or 0),
                         "sales_order": order_name,
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
@@ -671,32 +692,35 @@ def mark_orders_as_invoiced():
                 sales_invoice_doc = frappe.new_doc("Sales Invoice")
                 sales_invoice_doc.customer = sales_order.customer
                 sales_invoice_doc.company = sales_order.company
-                sales_invoice_doc.sales_order = order_name
                 sales_invoice_doc.posting_date = nowdate()
                 sales_invoice_doc.due_date = nowdate()
+                for sales_person in sales_order.sales_team:
+                    sales_invoice_doc.append("sales_team", {
+                        "sales_person": sales_person.sales_person,
+                        "allocated_percentage": sales_person.allocated_percentage
+                    })
                 for row in data.get("items", []):
                     sales_invoice_doc.append("items", {
-                        "item_code": row["itmid"],
-                        "qty": row["qty"],
-                        "rate": row["rate"],
+                        "item_code": row.get("itmid"),
+                        "qty": float(row.get("qty", 0) or 0),
+                        "rate": float(row.get("rate", 0) or 0),
                         "sales_order": order_name,
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
                 frappe.db.commit()
-
-
-               
             
-            frappe.log_error(
-                message=f"Failed to mark Sales Order {order_name} as Invoiced. ERP Response: {data}",
-                title="Mark Orders As Invoiced Failed"
-            )
-    
+            sales_order.db_set("order_status", "Shipped", update_modified=True)
+            frappe.db.commit()
+
 
         except Exception as e:
             frappe.log_error(
                 message=f"Error updating Sales Order {order_name} to Invoiced: {str(e)}",
                 title="Mark Orders As Invoiced Error"
             )
+    return {
+        "status": "success",
+        "message": f"Sales Orders {orders_to_update} marked as Invoiced.",
+    }
 
    
