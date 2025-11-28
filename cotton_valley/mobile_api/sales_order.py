@@ -358,19 +358,36 @@ def get_panding_payments():
             }
 
         # get all sales invoices with pending payments for this sales person
-        panding_customer_amount = frappe.db.sql("""
-            SELECT 
-                si.customer,
-                c.customer_name,
-                SUM(si.outstanding_amount) as pending_amount
-            FROM `tabSales Invoice` si
-            INNER JOIN `tabCustomer` c ON c.name = si.customer
-            WHERE si.docstatus = 1
-                AND si.outstanding_amount > 0
-                AND c.custom_customer_sales_representative = %s
-            GROUP BY si.customer
-            HAVING pending_amount > 0
-        """, (sales_person,), as_dict=True)
+        panding_customer_amount = frappe.db.get_list('Sales Invoice',
+            filters={'docstatus': 0, 'custom_customer_sales_representative': sales_person},
+            fields=['name', 'customer', 'customer_name', 'grand_total'],
+        )
+        for record in panding_customer_amount:
+            # get customer email and phone and sales invoice items
+            customer_details = frappe.db.get_value(
+                "Customer",
+                record.customer,
+                ["custom_email_address", "custom_phone_number", "custom_company_name", "image"],
+                as_dict=True
+            )
+            if customer_details:
+                record["customer_email"] = customer_details.get("custom_email_address")
+                record["customer_phone"] = customer_details.get("custom_phone_number")
+                record["customer_company"] = customer_details.get("custom_company_name")
+                record["customer_image"] = customer_details.get("image")
+
+            # get items for this sales invoice
+            items = frappe.get_all(
+                "Sales Invoice Item",
+                filters={"parent": record.name},
+                fields=[
+                    "name", "item_code", "item_name", "description",
+                    "qty", "rate", "amount", "uom", "warehouse",
+                    "delivery_date", "idx", "case_pack"
+                ],
+                order_by="idx asc"
+            )
+            record["items"] = items
 
         return {"status": "success", "data": panding_customer_amount}
 
