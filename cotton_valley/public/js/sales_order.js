@@ -71,7 +71,7 @@ frappe.ui.form.on('Sales Order', {
     push_to_erp: function (frm) {
         if (frm.doc.push_to_erp === 1) {
 
-            frm.set_value('order_status', 'Processed');
+            frm.set_value('order_status', 'Processing');
 
             frm.refresh_field('order_status');
 

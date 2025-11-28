@@ -42,6 +42,7 @@ def update_customer_order_summary(doc, method):
 
     make_delivery_note_on_submit(doc, method)
     send_sales_order_confirmation_email(doc, method)
+    notify_customer_on_status_change(doc, method)
 
 @frappe.whitelist()
 def send_sales_order_confirmation_email(doc, method):
@@ -280,3 +281,54 @@ def send_abandoned_cart_emails():
 
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Abandoned Cart Scheduler Failed")
+
+
+
+def notify_customer_on_status_change(doc, method):
+
+
+    # 1. Validation: Ensure there is a customer
+    if not doc.customer:
+        return
+
+    # 2. Get the previous state
+    doc_before_save = doc.get_doc_before_save()
+    
+    # USE YOUR CUSTOM FIELD: order_status
+    previous_status = doc_before_save.order_status if doc_before_save else None
+    current_status = doc.order_status
+
+    # 3. Only proceed if the order_status has actually changed
+    # if current_status == previous_status:
+    #     return
+
+    message = None
+    
+    # 4. Define HTML Messages based on order_status
+    if current_status == "Pending":
+        message = f"Your order #{doc.name} has been updated and current order status is in Pending. Thank you for your patience!"
+        
+    elif current_status == "Processing":
+       message = f"Your order #{doc.name} has been updated and current order status is in Processing. Thank you for your patience!"
+        
+    elif current_status == "Shipped":
+       message = f"Your order has been successfully placed. Order ID: #{doc.name}. Thank you for choosing us."
+
+    # 5. Update the Customer Record
+    if message:
+        try:
+            customer_doc = frappe.get_doc("Customer", doc.customer)
+            
+            # --- FIELD MAPPING ---
+            # 'custom_notifications': This is the TABLE name in Customer. 
+            # (If your table field is named just 'notifications', change it below!)
+            
+            customer_doc.append("custom_notifications", {
+                "message": message,                  # HTML Field
+                "date_and_time": frappe.utils.now()  # Datetime Field (Updated)
+            })
+            
+            customer_doc.save(ignore_permissions=True)
+            
+        except Exception as e:
+            frappe.log_error(f"Error updating customer notification: {str(e)}", "Sales Order Notification Script")
