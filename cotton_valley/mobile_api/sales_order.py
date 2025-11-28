@@ -380,14 +380,94 @@ def get_panding_payments():
                 "Sales Invoice Item",
                 filters={"parent": record.name},
                 fields=[
-                    "name", "item_code", "item_name", "description",
+                    "name", "item_code", "item_name", "description", "sales_order",
                     "qty", "rate", "amount", "uom", "warehouse", "idx", "image", "case_pack"
                 ],
                 order_by="idx asc"
             )
+            record["against_sales_order"] = items[0].get("sales_order") if items else ""
             record["items"] = items
 
         return {"status": "success", "data": panding_customer_amount}
+
+    except Exception as e:
+        frappe.log_error("Get Pending Payments Failed", frappe.get_traceback())
+        frappe.local.response["http_status_code"] = 500
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def get_submit_payments():
+    try:
+
+        current_user = frappe.session.user
+        
+        if not current_user or current_user == "Guest":
+            return {
+                "status": "error",
+                "message": "Authentication required"
+            }
+        
+        # Get employee for current user
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": current_user, "status": "Active"},
+            "name"
+        )
+        
+        if not employee:
+            return {
+                "status": "error",
+                "message": "Current user is not an active employee"
+            }
+        
+        # Get sales person linked to this employee
+        sales_person = frappe.db.get_value(
+            "Sales Person",
+            {"employee": employee, "enabled": 1},
+            "name"
+        )
+        
+        if not sales_person:
+            return {
+                "status": "error",
+                "message": "Employee is not a sales person"
+            }
+
+        # get all sales invoices with pending payments for this sales person
+        submit_customer_amount = frappe.db.get_list('Sales Invoice',
+            filters={'docstatus': 1, 'custom_customer_sales_representative': sales_person},
+            fields=['name', 'customer', 'customer_name', 'company', 'customer_account_number', 'grand_total', "posting_date as transaction_date"],
+        )
+
+        
+        for record in submit_customer_amount:
+            # get customer email and phone and sales invoice items
+            customer_details = frappe.db.get_value(
+                "Customer",
+                record.customer,
+                ["custom_email_address", "custom_phone_number", "custom_company_name"],
+                as_dict=True
+            )
+            if customer_details:
+                record["customer_email"] = customer_details.get("custom_email_address")
+                record["customer_phone"] = customer_details.get("custom_phone_number")
+                record["customer_company"] = customer_details.get("custom_company_name")
+
+            # get items for this sales invoice
+            items = frappe.get_all(
+                "Sales Invoice Item",
+                filters={"parent": record.name},
+                fields=[
+                    "name", "item_code", "item_name", "description", "sales_order",
+                    "qty", "rate", "amount", "uom", "warehouse", "idx", "image", "case_pack"
+                ],
+                order_by="idx asc"
+            )
+            record["against_sales_order"] = items[0].get("sales_order") if items else ""
+            record["items"] = items
+
+        return {"status": "success", "data": submit_customer_amount}
 
     except Exception as e:
         frappe.log_error("Get Pending Payments Failed", frappe.get_traceback())
