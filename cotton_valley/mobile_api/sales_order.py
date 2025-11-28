@@ -360,7 +360,7 @@ def get_panding_payments():
         # get all sales invoices with pending payments for this sales person
         panding_customer_amount = frappe.db.get_list('Sales Invoice',
             filters={'docstatus': 0, 'custom_customer_sales_representative': sales_person},
-            fields=['name', 'customer', 'customer_name', 'customer_account_number as account_number', 'grand_total', "posting_date as date"],
+            fields=['name', 'customer', 'customer_name', 'company', 'customer_account_number', 'grand_total', "posting_date as transaction_date"],
         )
         for record in panding_customer_amount:
             # get customer email and phone and sales invoice items
@@ -373,7 +373,7 @@ def get_panding_payments():
             if customer_details:
                 record["customer_email"] = customer_details.get("custom_email_address")
                 record["customer_phone"] = customer_details.get("custom_phone_number")
-                record["company_name"] = customer_details.get("custom_company_name")
+                record["customer_company"] = customer_details.get("custom_company_name")
 
             # get items for this sales invoice
             items = frappe.get_all(
@@ -381,7 +381,7 @@ def get_panding_payments():
                 filters={"parent": record.name},
                 fields=[
                     "name", "item_code", "item_name", "description",
-                    "qty", "rate", "amount", "uom", "warehouse", "idx", "case_pack"
+                    "qty", "rate", "amount", "uom", "warehouse", "idx", "image", "case_pack"
                 ],
                 order_by="idx asc"
             )
