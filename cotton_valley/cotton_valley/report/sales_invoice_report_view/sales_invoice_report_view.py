@@ -42,7 +42,7 @@ def get_columns():
         {
             "label": _("Account Code"), 
             "fieldname": "account_code",
-            "fieldtype": "Data", # Changed to Data because "Sher-NY" is text, not a standard Account Link
+            "fieldtype": "Data", 
             "width": 140
         },
         {
@@ -127,7 +127,8 @@ def get_data(filters):
         FROM
             `tabSales Invoice` si
         WHERE
-            si.docstatus = 1
+
+            1=1
             
             AND (%(customer)s IS NULL OR si.customer = %(customer)s)
             
@@ -146,6 +147,9 @@ def get_data(filters):
                 WHERE item.parent = si.name 
                 AND item.sales_order LIKE CONCAT('%%', %(so_number)s, '%%')
             ))
+
+        GROUP BY
+            si.name
             
         ORDER BY
             si.posting_date DESC

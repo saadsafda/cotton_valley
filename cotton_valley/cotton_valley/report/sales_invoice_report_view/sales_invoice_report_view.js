@@ -3,13 +3,15 @@ frappe.query_reports["Sales Invoice report View"] = {
         {
             "fieldname": "si_number",
             "label": __("SI Number"),
-            "fieldtype": "Data",
+            "fieldtype": "Link",
+            "options": "Sales Invoice",
             "reqd": 0
         },
         {
             "fieldname": "so_number",
             "label": __("SO Number"),
-            "fieldtype": "Data",
+            "fieldtype": "Link",
+            "options": "Sales Order",
             "reqd": 0
         },
         {
@@ -22,8 +24,7 @@ frappe.query_reports["Sales Invoice report View"] = {
         {
             "fieldname": "account_code",
             "label": __("Account Code"),
-            "fieldtype": "Data",  // Changed to Data to allow searching text like 'Sher-NY'
-            "reqd": 0
+            "fieldtype": "Link",  
         }
     ]
 };
