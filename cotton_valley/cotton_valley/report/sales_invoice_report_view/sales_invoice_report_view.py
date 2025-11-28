@@ -128,9 +128,7 @@ def get_data(filters):
             `tabSales Invoice` si
         WHERE
 
-            1=1
-            
-            AND (%(customer)s IS NULL OR si.customer = %(customer)s)
+             (%(customer)s IS NULL OR si.customer = %(customer)s)
             
             AND (%(si_number)s IS NULL OR si.name LIKE CONCAT('%%', %(si_number)s, '%%'))
 
@@ -147,9 +145,6 @@ def get_data(filters):
                 WHERE item.parent = si.name 
                 AND item.sales_order LIKE CONCAT('%%', %(so_number)s, '%%')
             ))
-
-        GROUP BY
-            si.name
             
         ORDER BY
             si.posting_date DESC
