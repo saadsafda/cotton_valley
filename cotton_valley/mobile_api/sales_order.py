@@ -382,8 +382,7 @@ def get_panding_payments():
                 filters={"parent": record.name},
                 fields=[
                     "name", "item_code", "item_name", "description",
-                    "qty", "rate", "amount", "uom", "warehouse",
-                    "delivery_date", "idx", "case_pack"
+                    "qty", "rate", "amount", "uom", "warehouse", "idx", "case_pack"
                 ],
                 order_by="idx asc"
             )
