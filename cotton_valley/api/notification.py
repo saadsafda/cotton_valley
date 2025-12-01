@@ -22,7 +22,7 @@ def get_customer_notifications():
                 n.date_and_time
             FROM `tabNotifications` n
             WHERE n.parent = %s
-            ORDER BY n.created_at DESC
+            ORDER BY n.date_and_time DESC
         """, (customer,), as_dict=True)
 
         return {
