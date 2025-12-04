@@ -12,7 +12,7 @@ def check_current_user_is_sales_person():
     try:
         # Get current user
         current_user = frappe.session.user
-        
+
         if not current_user or current_user == "Guest":
             return {
                 "status": "error",
@@ -42,7 +42,9 @@ def check_current_user_is_sales_person():
         sales_person = frappe.db.get_value(
             "Sales Person",
             {"employee": employee.name, "enabled": 1},
-            ["name", "sales_person_name", "employee", "parent_sales_person"],
+            ["name", "sales_person_name", "employee", "parent_sales_person", "show_categorywise_details",
+             "show_catalog_screen", "show_database_management_screen", "show_submit_invoice_screen",
+              "show_local_order_screen", "show_sales_order_screen", "show_tag_screen"],
             as_dict=True
         )
         
@@ -62,12 +64,29 @@ def check_current_user_is_sales_person():
                 "user": current_user
             }
         
+        allocated_labels = frappe.db.get_all(
+            "Allowed Price Lable",
+            filters={
+                "parent": sales_person.name,
+                "parenttype": "Sales Person",
+                "parentfield": "allocated_price_label"
+            },
+            fields=["price"]
+        )
         # User is both an Employee and a Sales Person
         return {
             "status": "success",
             "message": "User is an active employee and sales person",
             "is_employee": True,
             "is_sales_person": True,
+            "show_categorywise_details": bool(sales_person.show_categorywise_details),
+            "show_catalog_screen": bool(sales_person.show_catalog_screen),
+            "show_database_management_screen": bool(sales_person.show_database_management_screen),
+            "show_submit_invoice_screen": bool(sales_person.show_submit_invoice_screen),
+            "show_local_order_screen": bool(sales_person.show_local_order_screen),
+            "show_sales_order_screen": bool(sales_person.show_sales_order_screen),
+            "show_tag_screen": bool(sales_person.show_tag_screen),
+        
             "employee": {
                 "id": employee.name,
                 "name": employee.employee_name,
@@ -75,11 +94,13 @@ def check_current_user_is_sales_person():
                 "phone": employee.cell_number,
                 "company": employee.company
             },
-            "sales_person": {
+              "sales_person": {
                 "id": sales_person.name,
                 "name": sales_person.sales_person_name,
                 "employee": sales_person.employee,
-                "parent_sales_person": sales_person.parent_sales_person
+                "parent_sales_person": sales_person.parent_sales_person,
+                "allocated_price_labels": allocated_labels,
+               
             },
             "user": current_user
         }
