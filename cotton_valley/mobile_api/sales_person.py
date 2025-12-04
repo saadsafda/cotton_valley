@@ -64,14 +64,14 @@ def check_current_user_is_sales_person():
                 "user": current_user
             }
         
-        allocated_labels = frappe.db.get_all(
+        allocated_lables = frappe.db.get_all(
             "Allowed Price Lable",
             filters={
                 "parent": sales_person.name,
                 "parenttype": "Sales Person",
-                "parentfield": "allocated_price_label"
             },
-            fields=["price"]
+            fields=["price"],
+            pluck="price"
         )
         # User is both an Employee and a Sales Person
         return {
@@ -99,7 +99,7 @@ def check_current_user_is_sales_person():
                 "name": sales_person.sales_person_name,
                 "employee": sales_person.employee,
                 "parent_sales_person": sales_person.parent_sales_person,
-                "allocated_price_labels": allocated_labels,
+                "allocated_price_lables": allocated_lables,
                
             },
             "user": current_user
