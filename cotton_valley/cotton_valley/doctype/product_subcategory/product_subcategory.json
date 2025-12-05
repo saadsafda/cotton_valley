@@ -8,8 +8,9 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "company",
   "column_break_kcvi",
-  "company"
+  "image"
  ],
  "fields": [
   {
@@ -34,12 +35,18 @@
    "label": "Company",
    "options": "Company",
    "reqd": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
   }
  ],
  "grid_page_length": 50,
+ "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-25 01:56:59.857465",
+ "modified": "2025-12-05 05:11:16.060386",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Subcategory",
