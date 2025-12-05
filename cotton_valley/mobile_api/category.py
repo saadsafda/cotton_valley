@@ -23,7 +23,7 @@ def get_all_categories():
 
         # Batch query for subcategories
         subcategories_data = frappe.db.sql("""
-            SELECT parent, product_subcategory as id, subcategory_name as name
+            SELECT parent, product_subcategory as id, subcategory_name as name, image
             FROM `tabSubCategories`
             WHERE parent IN %s
         """, (category_ids,), as_dict=True)
@@ -33,7 +33,8 @@ def get_all_categories():
         for subcat in subcategories_data:
             subcategories_map.setdefault(subcat["parent"], []).append({
                 "id": subcat["id"],
-                "name": subcat["name"]
+                "name": subcat["name"],
+                "image": frappe.utils.get_url(subcat["image"]) if subcat.get("image") else None
             })
 
         # Attach subcategories to categories
