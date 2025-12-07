@@ -49,11 +49,7 @@ def get_tag_info():
                 )
                 tag['products'] = []
 
-        return {
-            "status": "success",
-            "data": tag_list,
-            "count": len(tag_list)
-        }
+        return tag_list
 
     except Exception as e:
         frappe.log_error(
