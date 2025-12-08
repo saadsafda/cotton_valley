@@ -182,6 +182,8 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
 
     customer_id = customer
 
+    customer_name = frappe.db.get_value("Customer", customer_id, "customer_name")
+
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
             "Sales Order",
@@ -242,7 +244,8 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
                     "allocated_percentage": 100
                 })
             so_doc.save(ignore_permissions=True)
-            so_doc.submit()
+            if customer_name != "New Opportunity":
+                so_doc.submit()
             frappe.db.commit()
 
             created_orders.append({"type": so_type, "name": so_doc.name})
@@ -312,7 +315,7 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
             "allocated_percentage": 100
         })
     so_doc.save(ignore_permissions=True)
-    if submit:
+    if submit and customer_name != "New Opportunity":
         so_doc.submit()
     frappe.db.commit()
     return so_doc.name
