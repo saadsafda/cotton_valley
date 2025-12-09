@@ -13,6 +13,16 @@ def get_all_customers():
                     "no_of_orders", "orders_amount"]
         )
 
+        new_opt_customers = frappe.get_all("Customer",
+            filters={"customer_name": "New Opportunity"},
+            fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
+                    "mode_of_payment", "sales_person", "custom_company_name", "creation", "modified",
+                    "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
+                    "no_of_orders", "orders_amount"]
+        )
+
+        customers.extend(new_opt_customers)
+
         if not customers:
             return {
                 "status": "success",
