@@ -157,7 +157,7 @@ def get_sales_person_orders():
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     """
     Create or update a Sales Order from cart.
     items = [
@@ -213,6 +213,7 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
             so_doc.submit_datetime = submit_datetime
             so_doc.company = company
             so_doc.custom_notes = notes
+            so_doc.customer_details = customer_details
             so_doc.product_type = so_type
             so_doc.from_app = True
             if client_ip:
@@ -276,6 +277,7 @@ def create_or_update_sales_order(items, customer, notes="", submit_datetime=nowd
         so_doc.order_type = "Shopping Cart"
     
     so_doc.custom_notes = notes
+    so_doc.customer_details = customer_details
     so_doc.from_app = True
     so_doc.delivery_date = nowdate()
     so_doc.submit_datetime = submit_datetime
