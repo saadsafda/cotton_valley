@@ -10,11 +10,22 @@ def execute(filters=None):
     # --- 1. Prepare Item Filters ---
     item_filters = {}
     
-    # [NEW] Filter by specific Item ID if selected
+    # Filter by Item Code
     if filters.get("item_code"):
         item_filters["name"] = filters.get("item_code")
 
-    # Filter by Company (Your working logic)
+    # [NEW] Filter by Product Type (Item Group)
+    if filters.get("item_group"):
+        item_filters["item_group"] = filters.get("item_group")
+
+    # [NEW] Filter by Status (Enabled/Disabled)
+    if filters.get("enabled_status"):
+        if filters.get("enabled_status") == "Enabled":
+            item_filters["disabled"] = 0
+        elif filters.get("enabled_status") == "Disabled":
+            item_filters["disabled"] = 1
+
+    # Filter by Company
     if filters.get("company"):
         items_in_company = frappe.get_all("Item Default", 
             filters={"company": filters.get("company")}, 
@@ -25,15 +36,15 @@ def execute(filters=None):
             return [], [] 
             
         if "name" in item_filters:
-            # If user selected BOTH Item Code and Company, ensure Item is valid for that Company
             if item_filters["name"] not in items_in_company:
                 return [], []
         else:
             item_filters["name"] = ["in", items_in_company]
 
-    # --- 2. Fetch Items (Applies the filters defined above) ---
+    # --- 2. Fetch Items ---
+    # [UPDATED] Added 'item_group' and 'disabled' to fields
     items = frappe.get_all("Item", 
-        fields=["name", "image"], 
+        fields=["name", "image", "item_group", "disabled"], 
         filters=item_filters, 
         order_by="name asc"
     )
@@ -41,7 +52,6 @@ def execute(filters=None):
     if not items:
         return [], []
 
-    # Create list of names for child table fetching
     item_names = [item.name for item in items]
 
     # --- 3. Fetch Child Images ---
@@ -77,13 +87,28 @@ def execute(filters=None):
             "label": _("Company"),
             "fieldname": "company",
             "fieldtype": "Data",
-            "width": 150
+            "width": 120
         },
         {
             "label": _("Product ID"),
             "fieldname": "item_code",
             "fieldtype": "Link",
             "options": "Item",
+            "width": 120
+        },
+        # [NEW] Product Type Column
+        {
+            "label": _("Product Type"),
+            "fieldname": "item_group",
+            "fieldtype": "Link",
+            "options": "Item Group",
+            "width": 120
+        },
+        # [NEW] Status Column
+        {
+            "label": _("Status"),
+            "fieldname": "status",
+            "fieldtype": "Data",
             "width": 100
         },
         {
@@ -106,24 +131,35 @@ def execute(filters=None):
     for item in items:
         row = {}
         row["item_code"] = item.name
+        
+        # [NEW] Map Product Type
+        row["item_group"] = item.item_group
+        
+        # [NEW] Map Status (0=Enabled, 1=Disabled)
+        row["status"] = "Disabled" if item.disabled else "Enabled"
 
         comps = sorted(list(company_map.get(item.name, [])))
         row["company"] = ", ".join(comps)
 
-        # Main Image
+        # Main Image (Height set to 300px)
         if item.image:
-             row["main_image_html"] = f'<img src="{item.image}" style="max-height: 200px; max-width: 200px; object-fit: contain; border: 1px solid #ddd;">'
+             row["main_image_html"] = f'<img src="{item.image}" style="height: 300px; width: auto; object-fit: contain;">'
         else:
              row["main_image_html"] = ""
 
-        # Dynamic Images
+        # Dynamic Images (Height set to 300px)
         current_item_images = image_map.get(item.name, [])
         for i in range(1, max_images + 1):
             col_name = f"image_{i}"
             if (i - 1) < len(current_item_images):
                 img_url = current_item_images[i-1]
+                
+                # Fix path if missing /files/
+                if img_url and not img_url.startswith("http") and not img_url.startswith("/files/"):
+                     img_url = f"/files/{img_url}"
+
                 if img_url:
-                    row[col_name] = f'<img src="{img_url}" style="height: 200px; width: 200px; object-fit: contain;">'
+                    row[col_name] = f'<img src="{img_url}" style="height: 300px; width: auto; object-fit: contain;">'
                 else:
                     row[col_name] = ""
             else:
