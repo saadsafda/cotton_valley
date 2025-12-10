@@ -58,6 +58,29 @@ def execute(filters=None):
 
     item_names = [item.name for item in items]
 
+    stock_map = {}
+    if item_names:
+        # Build Query to sum actual_qty from Bin
+        # We join Warehouse to filter by Company if selected
+        query = """
+            SELECT bin.item_code, SUM(bin.actual_qty) as qty
+            FROM `tabBin` bin
+            JOIN `tabWarehouse` wh ON bin.warehouse = wh.name
+            WHERE bin.item_code IN %(items)s
+        """
+        params = {"items": item_names}
+
+        if filters.get("company"):
+            query += " AND wh.company = %(company)s"
+            params["company"] = filters.get("company")
+        
+        query += " GROUP BY bin.item_code"
+        
+        stock_data = frappe.db.sql(query, params, as_dict=1)
+        
+        for d in stock_data:
+            stock_map[d.item_code] = d.qty or 0.0
+
     # --- 3. Fetch Child Images ---
     all_child_images = frappe.get_all("Product Images", 
         filters={"parent": ["in", item_names]},
@@ -100,7 +123,6 @@ def execute(filters=None):
             "options": "Item",
             "width": 120
         },
-        # [NEW] Product Type Column
         {
             "label": _("Product Type"),
             "fieldname": "item_group",
@@ -108,7 +130,12 @@ def execute(filters=None):
             "options": "Item Group",
             "width": 120
         },
-        # [NEW] Status Column
+        {
+            "label": _("Available Stock"),
+            "fieldname": "stock_qty",
+            "fieldtype": "Float",
+            "width": 130
+        },
         {
             "label": _("Status"),
             "fieldname": "status",
@@ -141,6 +168,9 @@ def execute(filters=None):
         
         # [NEW] Map Status (0=Enabled, 1=Disabled)
         row["status"] = "Disabled" if item.disabled else "Enabled"
+
+        # [NEW] Map Stock
+        row["stock_qty"] = stock_map.get(item.name, 0.0)
 
         comps = sorted(list(company_map.get(item.name, [])))
         row["company"] = ", ".join(comps)
