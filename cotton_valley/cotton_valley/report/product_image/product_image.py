@@ -25,6 +25,10 @@ def execute(filters=None):
         elif filters.get("enabled_status") == "Disabled":
             item_filters["disabled"] = 1
 
+    # If the checkbox is checked (returns 1), filter for empty images
+    if filters.get("missing_main_image"):
+        item_filters["image"] = ["in", [None, ""]]
+
     # Filter by Company
     if filters.get("company"):
         items_in_company = frappe.get_all("Item Default", 

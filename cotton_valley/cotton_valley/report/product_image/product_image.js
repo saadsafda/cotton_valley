@@ -30,6 +30,12 @@ frappe.query_reports["Product image"] = {
             "fieldtype": "Select",
             "options": ["", "Enabled", "Disabled"],
             "default": ""
+        },
+        {
+            "fieldname": "missing_main_image",
+            "label": __("Main Image Not Found"),
+            "fieldtype": "Check",
+            "default": 0
         }
     ],
 
