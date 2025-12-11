@@ -8,7 +8,7 @@ def get_all_categories():
     """
     try:
         categories = frappe.get_all("Product Category",
-            fields=["name as id", "title", "category_image", "company"]
+            fields=["name as id", "title", "category_image", "company", "app_ranking"]
         )
 
         if not categories:
@@ -23,7 +23,7 @@ def get_all_categories():
 
         # Batch query for subcategories
         subcategories_data = frappe.db.sql("""
-            SELECT parent, product_subcategory as id, subcategory_name as name, image
+            SELECT parent, product_subcategory as id, subcategory_name as name, image, app_ranking
             FROM `tabSubCategories`
             WHERE parent IN %s
         """, (category_ids,), as_dict=True)

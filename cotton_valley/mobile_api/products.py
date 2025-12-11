@@ -34,6 +34,7 @@ def get_all_products_with_price_levels():
                 i.custom_package_height_inch as package_height_inches,
                 i.custom_package_length_inch as package_length_inches,
                 i.custom_weight_lbs as weight_lbs,
+                i.application_ranking as app_ranking,
                 COALESCE(SUM(b.actual_qty), 0) as stock
             FROM `tabItem` i
             LEFT JOIN `tabBin` b ON b.item_code = i.name
