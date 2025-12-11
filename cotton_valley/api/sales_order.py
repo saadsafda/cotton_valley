@@ -23,7 +23,7 @@ def get_submited_orders(company="Cotton Valley", page=None):
     orders = frappe.get_all(
         "Sales Order",
         filters={"customer": customer_id, "company": company, "docstatus": 1},
-        fields=["name as order_number", "grand_total as total", "status as payment_status", "submit_datetime as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
+        fields=["name as order_number", "grand_total as total", "order_status as payment_status", "submit_datetime as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
         order_by="creation desc",
         limit_start=limit_start,
         limit_page_length=limit_page_length

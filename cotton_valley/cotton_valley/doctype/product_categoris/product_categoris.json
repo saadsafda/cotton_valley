@@ -6,7 +6,9 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "product_category"
+  "product_category",
+  "column_break_akas",
+  "category_name"
  ],
  "fields": [
   {
@@ -14,13 +16,23 @@
    "fieldtype": "Link",
    "label": "Product Category",
    "options": "Product Category"
+  },
+  {
+   "fieldname": "column_break_akas",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "product_category.title",
+   "fieldname": "category_name",
+   "fieldtype": "Read Only",
+   "label": "Category Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-08-23 04:15:42.414536",
+ "modified": "2025-12-11 02:28:30.721153",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Categoris",
