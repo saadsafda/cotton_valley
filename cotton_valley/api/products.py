@@ -148,7 +148,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         "z-a": "item_name desc",
         "low-high": "price asc",
         "high-low": "price desc"
-    }.get(sortBy, "creation asc")  # default sort handled separately
+    }.get(sortBy, None)  # default sort handled separately
 
     print(sort_clause, "SORT CLAUSE")
 
@@ -168,124 +168,124 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     limit_page_length = 30 if page else None
 
     # get all items - use different query for default sort
-    # if sort_clause:
-    items = frappe.get_all(
-        "Item",
-        filters=filters,
-        or_filters=or_filters,
-        fields=[
-            "name as id",
-            "item_name as name",
-            "custom_short_description as short_description",
-            "description",
-            "item_group as type",
-            "name as sku",
-            "name as slug",
-            "stock_uom as unit",
-            "weight_uom as weight",
-            "custom_case_pack as case_pack",
-            "image as product_thumbnail_id",
-            "disabled as status",
-            "brand",
-            "custom_sub_category as sub_category",
-            "custom_carton_upc as carton_upc",
-            "custom_case_per_pallet as case_per_pallet",
-            "custom_cbm as cbm",
-            "custom_upc as upc_code",
-            "custom_pallet_hi as pallet_hi",
-            "custom_pallet_ti as pallet_ti",
-            "custom_package_width_inch as package_width",
-            "custom_package_length_inch as package_length",
-            "custom_package_height_inch as package_height",
-            "custom_weight_lbs as package_weight",
-            "custom_item_width_inch as item_width",
-            "custom_item_length_inch as item_length",
-            "custom_item_height_inch as item_height",
-            "custom_item_weight_lbs as item_weight",
-            "custom_coming_soon as coming_soon",
-            "custom_new_arrivals as new_arrivals"
-        ],
-        order_by=sort_clause,
-        limit_start=limit_start,
-        limit_page_length=limit_page_length
-    )
-    # else:
-    #     # Default sort with custom_web_ranking - null/0 values last
-    #     filter_conditions = []
-    #     filter_values = []
+    if sort_clause:
+        items = frappe.get_all(
+            "Item",
+            filters=filters,
+            or_filters=or_filters,
+            fields=[
+                "name as id",
+                "item_name as name",
+                "custom_short_description as short_description",
+                "description",
+                "item_group as type",
+                "name as sku",
+                "name as slug",
+                "stock_uom as unit",
+                "weight_uom as weight",
+                "custom_case_pack as case_pack",
+                "image as product_thumbnail_id",
+                "disabled as status",
+                "brand",
+                "custom_sub_category as sub_category",
+                "custom_carton_upc as carton_upc",
+                "custom_case_per_pallet as case_per_pallet",
+                "custom_cbm as cbm",
+                "custom_upc as upc_code",
+                "custom_pallet_hi as pallet_hi",
+                "custom_pallet_ti as pallet_ti",
+                "custom_package_width_inch as package_width",
+                "custom_package_length_inch as package_length",
+                "custom_package_height_inch as package_height",
+                "custom_weight_lbs as package_weight",
+                "custom_item_width_inch as item_width",
+                "custom_item_length_inch as item_length",
+                "custom_item_height_inch as item_height",
+                "custom_item_weight_lbs as item_weight",
+                "custom_coming_soon as coming_soon",
+                "custom_new_arrivals as new_arrivals"
+            ],
+            order_by=sort_clause,
+            limit_start=limit_start,
+            limit_page_length=limit_page_length
+        )
+    else:
+        # Default sort with custom_web_ranking - null/0 values last
+        filter_conditions = []
+        filter_values = []
         
-    #     if ids:
-    #         filter_conditions.append("name IN %s")
-    #         filter_values.append(ids)
+        if ids:
+            filter_conditions.append("name IN %s")
+            filter_values.append(ids)
         
-    #     if company:
-    #         filter_conditions.append("company = %s")
-    #         filter_values.append(company)
+        if company:
+            filter_conditions.append("company = %s")
+            filter_values.append(company)
         
-    #     if producttype:
-    #         filter_conditions.append("item_group IN %s")
-    #         filter_values.append(producttype)
+        if producttype:
+            filter_conditions.append("item_group IN %s")
+            filter_values.append(producttype)
         
-    #     if subcategory:
-    #         filter_conditions.append("custom_sub_category IN %s")
-    #         filter_values.append(subcategory)
+        if subcategory:
+            filter_conditions.append("custom_sub_category IN %s")
+            filter_values.append(subcategory)
         
-    #     filter_conditions.append("disabled = 0")
+        filter_conditions.append("disabled = 0")
         
-    #     search_condition = ""
-    #     if search:
-    #         search_condition = "AND (item_name LIKE %s OR name LIKE %s)"
-    #         filter_values.extend([f"%{search}%", f"%{search}%"])
+        search_condition = ""
+        if search:
+            search_condition = "AND (item_name LIKE %s OR name LIKE %s)"
+            filter_values.extend([f"%{search}%", f"%{search}%"])
         
-    #     where_clause = " AND ".join(filter_conditions)
+        where_clause = " AND ".join(filter_conditions)
         
-    #     limit_clause = ""
-    #     if limit_start is not None and limit_page_length:
-    #         limit_clause = f"LIMIT {limit_start}, {limit_page_length}"
-    #     elif limit_page_length:
-    #         limit_clause = f"LIMIT {limit_page_length}"
+        limit_clause = ""
+        if limit_start is not None and limit_page_length:
+            limit_clause = f"LIMIT {limit_start}, {limit_page_length}"
+        elif limit_page_length:
+            limit_clause = f"LIMIT {limit_page_length}"
         
-    #     query = f"""
-    #         SELECT 
-    #             name as id,
-    #             item_name as name,
-    #             custom_short_description as short_description,
-    #             description,
-    #             item_group as type,
-    #             name as sku,
-    #             name as slug,
-    #             stock_uom as unit,
-    #             weight_uom as weight,
-    #             custom_case_pack as case_pack,
-    #             image as product_thumbnail_id,
-    #             disabled as status,
-    #             brand,
-    #             custom_sub_category as sub_category,
-    #             custom_carton_upc as carton_upc,
-    #             custom_case_per_pallet as case_per_pallet,
-    #             custom_cbm as cbm,
-    #             custom_upc as upc_code,
-    #             custom_pallet_hi as pallet_hi,
-    #             custom_pallet_ti as pallet_ti,
-    #             custom_package_width_inch as package_width,
-    #             custom_package_length_inch as package_length,
-    #             custom_package_height_inch as package_height,
-    #             custom_weight_lbs as package_weight,
-    #             custom_item_width_inch as item_width,
-    #             custom_item_length_inch as item_length,
-    #             custom_item_height_inch as item_height,
-    #             custom_item_weight_lbs as item_weight,
-    #             custom_coming_soon as coming_soon,
-    #             custom_new_arrivals as new_arrivals
-    #         FROM `tabItem`
-    #         WHERE {where_clause} {search_condition}
-    #         ORDER BY 
-    #             CASE WHEN custom_web_ranking IS NULL OR custom_web_ranking = 0 THEN 1 ELSE 0 END,
-    #             custom_web_ranking ASC
-    #         {limit_clause}
-    #     """
+        query = f"""
+            SELECT 
+                name as id,
+                item_name as name,
+                custom_short_description as short_description,
+                description,
+                item_group as type,
+                name as sku,
+                name as slug,
+                stock_uom as unit,
+                weight_uom as weight,
+                custom_case_pack as case_pack,
+                image as product_thumbnail_id,
+                disabled as status,
+                brand,
+                custom_sub_category as sub_category,
+                custom_carton_upc as carton_upc,
+                custom_case_per_pallet as case_per_pallet,
+                custom_cbm as cbm,
+                custom_upc as upc_code,
+                custom_pallet_hi as pallet_hi,
+                custom_pallet_ti as pallet_ti,
+                custom_package_width_inch as package_width,
+                custom_package_length_inch as package_length,
+                custom_package_height_inch as package_height,
+                custom_weight_lbs as package_weight,
+                custom_item_width_inch as item_width,
+                custom_item_length_inch as item_length,
+                custom_item_height_inch as item_height,
+                custom_item_weight_lbs as item_weight,
+                custom_coming_soon as coming_soon,
+                custom_new_arrivals as new_arrivals
+            FROM `tabItem`
+            WHERE {where_clause} {search_condition}
+            ORDER BY 
+                CASE WHEN website_ranking IS NULL OR website_ranking = 0 THEN 1 ELSE 0 END,
+                website_ranking ASC
+            {limit_clause}
+        """
         
-    #    items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
+        items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
 
     if not items:
         return {"data": [], "total": total_count, "current_page": page or 1, "per_page": 30}
