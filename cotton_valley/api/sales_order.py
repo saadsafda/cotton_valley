@@ -110,7 +110,7 @@ def get_order_details(order_number):
         "invoice": si_invoice,
         "order_status": {
             "status": so_doc.order_status,
-            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.push_to_erp else 4 if so_doc.order_status == "Shipped" else 3,
+            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.order_status == "Processing" else 4 if so_doc.order_status == "Shipped" else 3,
         }
     }
 
