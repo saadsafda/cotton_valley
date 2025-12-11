@@ -14,6 +14,8 @@
   "company",
   "column_break_gumt",
   "category_image",
+  "web_ranking",
+  "app_ranking",
   "section_break_fcxy",
   "subcategories"
  ],
@@ -70,13 +72,25 @@
    "label": "Company",
    "options": "Company",
    "reqd": 1
+  },
+  {
+   "fieldname": "web_ranking",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Web Ranking"
+  },
+  {
+   "fieldname": "app_ranking",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "App Ranking"
   }
  ],
  "grid_page_length": 50,
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-25 01:56:38.394293",
+ "modified": "2025-12-11 04:20:51.443892",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",

@@ -10,7 +10,9 @@
   "title",
   "company",
   "column_break_kcvi",
-  "image"
+  "image",
+  "web_ranking",
+  "app_ranking"
  ],
  "fields": [
   {
@@ -40,13 +42,23 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
+  },
+  {
+   "fieldname": "web_ranking",
+   "fieldtype": "Data",
+   "label": "Web Ranking"
+  },
+  {
+   "fieldname": "app_ranking",
+   "fieldtype": "Data",
+   "label": "App Ranking"
   }
  ],
  "grid_page_length": 50,
  "image_field": "image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-05 05:11:16.060386",
+ "modified": "2025-12-11 04:20:25.384608",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Subcategory",
