@@ -34,7 +34,8 @@ def get_all_categories():
             subcategories_map.setdefault(subcat["parent"], []).append({
                 "id": subcat["id"],
                 "name": subcat["name"],
-                "image": frappe.utils.get_url(subcat["image"]) if subcat.get("image") else None
+                "image": frappe.utils.get_url(subcat["image"]) if subcat.get("image") else None,
+                "app_ranking": subcat.get("app_ranking")
             })
 
         # Attach subcategories to categories
