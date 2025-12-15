@@ -90,7 +90,7 @@
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-11 04:20:51.443892",
+ "modified": "2025-12-15 05:04:39.885966",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",
@@ -112,7 +112,6 @@
   }
  ],
  "row_format": "Dynamic",
- "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
