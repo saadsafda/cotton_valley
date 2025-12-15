@@ -31,7 +31,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-15 02:10:21.440169",
+ "modified": "2025-12-15 05:09:52.346153",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Tag",
@@ -54,5 +54,6 @@
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "tag_name"
 }
