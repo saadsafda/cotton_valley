@@ -142,6 +142,8 @@ def get_website_theme_settings(company="Cotton Valley"):
                         "content": "Your must-have item is calling – <strong>Buy Now!</strong>"
                     }
                 ],
+                "company_name": settings.other_company_name,
+                "company_link": settings.other_company_link,
                 "page_top_bar_dark": False,
                 "support_number": settings.support_number,
                 "today_deals": [row.product for row in settings.products],

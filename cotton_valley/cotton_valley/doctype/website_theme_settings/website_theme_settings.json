@@ -16,6 +16,10 @@
   "header_logo",
   "footer_logo",
   "header_section",
+  "other_company_name",
+  "column_break_ygqy",
+  "other_company_link",
+  "section_break_erly",
   "top_bar_content",
   "today_deals_section",
   "products",
@@ -372,14 +376,32 @@
    "fieldtype": "Float",
    "label": "Min Order Free Shipping",
    "reqd": 1
+  },
+  {
+   "fieldname": "other_company_name",
+   "fieldtype": "Data",
+   "label": "Other Company Name"
+  },
+  {
+   "fieldname": "column_break_ygqy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "other_company_link",
+   "fieldtype": "Data",
+   "label": "Other Company Link"
+  },
+  {
+   "fieldname": "section_break_erly",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-17 02:01:47.090317",
- "modified_by": "saad@gmail.com",
+ "modified": "2025-12-15 00:10:04.601916",
+ "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Website Theme Settings",
  "owner": "Administrator",
