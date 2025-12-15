@@ -167,16 +167,12 @@ def get_website_theme_settings(company="Cotton Valley"):
                     "link": "account/order"
                     },
                     {
-                    "label": "Wishlist",
-                    "link": "wishlist"
+                    "label": "Privacy Policy",
+                    "link": "privacy-policy"
                     },
                     {
-                    "label": "Compare",
-                    "link": "compare"
-                    },
-                    {
-                    "label": "FAQ's",
-                    "link": "faq"
+                    "label": "Shipping & Returns",
+                    "link": "shipping-and-returns"
                     },
                     {
                     "label": "Contact Us",
@@ -197,16 +193,12 @@ def get_website_theme_settings(company="Cotton Valley"):
                     "link": "about-us"
                     },
                     {
-                    "label": "Blogs",
-                    "link": "blogs"
-                    },
-                    {
-                    "label": "Offers",
-                    "link": "offer"
-                    },
-                    {
                     "label": "Search",
                     "link": "search"
+                    },
+                    {
+                    "label": "Terms & Conditions",
+                    "link": "terms-and-conditions"
                     }
                 ],
                 "support_number": settings.support_number,

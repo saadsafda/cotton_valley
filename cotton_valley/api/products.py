@@ -276,7 +276,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 custom_item_height_inch as item_height,
                 custom_item_weight_lbs as item_weight,
                 custom_coming_soon as coming_soon,
-                custom_new_arrivals as new_arrivals
+                custom_new_arrivals as new_arrivals,
+                tag_color,
+                tag_name
             FROM `tabItem`
             WHERE {where_clause} {search_condition}
             ORDER BY 
