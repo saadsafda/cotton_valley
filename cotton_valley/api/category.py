@@ -14,13 +14,28 @@ def get_category_list(category_id=None, company="Cotton Valley"):
     if category_id:
         filters["name"] = category_id
 
-    # get categories
-    categories = frappe.get_all(
-        "Product Category",
-        filters=filters,
-        fields=["name", "title", "category_image", "banner_image"],
-        order_by="title"
-    )
+    # get categories - use SQL for complex sorting with null/0 handling
+    filter_conditions = []
+    filter_values = []
+    
+    if company:
+        filter_conditions.append("company = %s")
+        filter_values.append(company)
+    
+    if category_id:
+        filter_conditions.append("name = %s")
+        filter_values.append(category_id)
+    
+    where_clause = " AND ".join(filter_conditions) if filter_conditions else "1=1"
+    
+    categories = frappe.db.sql(f"""
+        SELECT name, title, category_image, banner_image
+        FROM `tabProduct Category`
+        WHERE {where_clause}
+        ORDER BY 
+            CASE WHEN web_ranking IS NULL OR web_ranking = 0 THEN 1 ELSE 0 END,
+            web_ranking ASC
+    """, tuple(filter_values), as_dict=True)
 
     if not categories:
         return {"data": []}
@@ -47,6 +62,9 @@ def get_category_list(category_id=None, company="Cotton Valley"):
         INNER JOIN `tabProduct Subcategory` sub
             ON sub.name = sc.product_subcategory
         WHERE sub.company = %s
+        ORDER BY 
+            CASE WHEN sub.web_ranking IS NULL OR sub.web_ranking = 0 THEN 1 ELSE 0 END,
+            sub.web_ranking ASC
     """, company, as_dict=True)
 
     # group subcategories under their parent category

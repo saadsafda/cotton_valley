@@ -1,14 +1,21 @@
 import frappe
 
 @frappe.whitelist()
-def get_all_categories():
+def get_all_categories(company=None):
     """
     Fetch all categories with their subcategories.
     Returns categories with base64 encoded images for security.
     """
     try:
+        company = None if not company or company == "null" else company
+        filters = {}
+        if company:
+            filters = {"company": company}
+        else:
+            filters = {}
         categories = frappe.get_all("Product Category",
-            fields=["name as id", "title", "category_image", "company"]
+            filters=filters,
+            fields=["name as id", "title", "category_image", "company", "app_ranking"]
         )
 
         if not categories:
@@ -23,7 +30,7 @@ def get_all_categories():
 
         # Batch query for subcategories
         subcategories_data = frappe.db.sql("""
-            SELECT parent, product_subcategory as id, subcategory_name as name, image
+            SELECT parent, product_subcategory as id, subcategory_name as name, image, app_ranking
             FROM `tabSubCategories`
             WHERE parent IN %s
         """, (category_ids,), as_dict=True)
@@ -31,10 +38,12 @@ def get_all_categories():
         # Organize subcategories by parent
         subcategories_map = {}
         for subcat in subcategories_data:
+            app_ranking = frappe.db.get_value("Product Subcategory", subcat["id"], "app_ranking")
             subcategories_map.setdefault(subcat["parent"], []).append({
                 "id": subcat["id"],
                 "name": subcat["name"],
-                "image": frappe.utils.get_url(subcat["image"]) if subcat.get("image") else None
+                "image": frappe.utils.get_url(subcat["image"]) if subcat.get("image") else None,
+                "app_ranking": app_ranking
             })
 
         # Attach subcategories to categories

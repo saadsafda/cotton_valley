@@ -142,6 +142,8 @@ def get_website_theme_settings(company="Cotton Valley"):
                         "content": "Your must-have item is calling – <strong>Buy Now!</strong>"
                     }
                 ],
+                "company_name": settings.other_company_name,
+                "company_link": settings.other_company_link,
                 "page_top_bar_dark": False,
                 "support_number": settings.support_number,
                 "today_deals": [row.product for row in settings.products],
@@ -165,16 +167,12 @@ def get_website_theme_settings(company="Cotton Valley"):
                     "link": "account/order"
                     },
                     {
-                    "label": "Wishlist",
-                    "link": "wishlist"
+                    "label": "Privacy Policy",
+                    "link": "privacy-policy"
                     },
                     {
-                    "label": "Compare",
-                    "link": "compare"
-                    },
-                    {
-                    "label": "FAQ's",
-                    "link": "faq"
+                    "label": "Shipping & Returns",
+                    "link": "shipping-and-returns"
                     },
                     {
                     "label": "Contact Us",
@@ -195,22 +193,18 @@ def get_website_theme_settings(company="Cotton Valley"):
                     "link": "about-us"
                     },
                     {
-                    "label": "Blogs",
-                    "link": "blogs"
-                    },
-                    {
-                    "label": "Offers",
-                    "link": "offer"
-                    },
-                    {
                     "label": "Search",
                     "link": "search"
+                    },
+                    {
+                    "label": "Terms & Conditions",
+                    "link": "terms-and-conditions"
                     }
                 ],
                 "support_number": settings.support_number,
                 "support_email": settings.support_email,
-                "play_store_url": settings.play_store_url,
-                "app_store_url": settings.app_store_url,
+                # "play_store_url": settings.play_store_url,
+                # "app_store_url": settings.app_store_url,
                 "social_media_enable": settings.social_media_enable,
                 "facebook": settings.facebook_url,
                 "instagram": settings.instagram_url,

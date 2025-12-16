@@ -2,14 +2,28 @@ import frappe
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products_with_price_levels():
+def get_all_products_with_price_levels(company=None, subcategory=None):
     """
     Fetch all products with ALL price levels for mobile app.
     Optimized version with batch processing and minimal queries.
     """
     try:
+        # Build filter conditions
+        filter_conditions = ["i.disabled = 0"]
+        filter_values = []
+        
+        if company and company != "null":
+            filter_conditions.append("i.company = %s")
+            filter_values.append(company)
+        
+        if subcategory and subcategory != "null":
+            filter_conditions.append("i.custom_sub_category = %s")
+            filter_values.append(subcategory)
+        
+        where_clause = " AND ".join(filter_conditions)
+        
         # Single optimized query to get all data at once
-        products_data = frappe.db.sql("""
+        products_data = frappe.db.sql(f"""
             SELECT 
                 i.name as id,
                 i.item_name as name,
@@ -34,13 +48,14 @@ def get_all_products_with_price_levels():
                 i.custom_package_height_inch as package_height_inches,
                 i.custom_package_length_inch as package_length_inches,
                 i.custom_weight_lbs as weight_lbs,
+                i.application_ranking as app_ranking,
                 COALESCE(SUM(b.actual_qty), 0) as stock
             FROM `tabItem` i
             LEFT JOIN `tabBin` b ON b.item_code = i.name
-            WHERE i.disabled = 0
+            WHERE {where_clause}
             GROUP BY i.name
             ORDER BY i.item_name ASC
-        """, as_dict=True)
+        """, tuple(filter_values), as_dict=True)
 
         if not products_data:
             return {

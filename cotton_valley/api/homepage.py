@@ -8,12 +8,12 @@ def get_homepage_slides(company="Cotton Valley"):
     if company != "Cotton Valley":
         doctype = f"UDC Home Page"
     doc = frappe.get_single(doctype)
-    first_row_product_ids = [row.product for row in doc.product_row_1]
-    sec_row_product_ids = [row.product for row in doc.product_row_2]
-    first_slide_product_ids = [row.product for row in doc.slide_1_ids]
-    sec_slide_product_ids = [row.product for row in doc.slide_2_ids]
-    third_slide_product_ids = [row.product for row in doc.slide_3_ids]
-    fourth_slide_product_ids = [row.product for row in doc.slide_4_ids]
+    first_row_product_ids = [row.product for row in sorted(doc.product_row_1, key=lambda x: x.idx)]
+    sec_row_product_ids = [row.product for row in sorted(doc.product_row_2, key=lambda x: x.idx)]
+    first_slide_product_ids = [row.product for row in sorted(doc.slide_1_ids, key=lambda x: x.idx)]
+    sec_slide_product_ids = [row.product for row in sorted(doc.slide_2_ids, key=lambda x: x.idx)]
+    third_slide_product_ids = [row.product for row in sorted(doc.slide_3_ids, key=lambda x: x.idx)]
+    fourth_slide_product_ids = [row.product for row in sorted(doc.slide_4_ids, key=lambda x: x.idx)]
     all_product_ids = list(set(
         fourth_slide_product_ids +
         third_slide_product_ids +
@@ -24,7 +24,7 @@ def get_homepage_slides(company="Cotton Valley"):
     ))
 
     home_banners = []
-    for row in doc.home_banners:
+    for row in sorted(doc.home_banners, key=lambda x: x.idx):
         home_banners.append({
             "image_url": row.image,
             "redirect_link": {
@@ -71,7 +71,7 @@ def get_homepage_slides(company="Cotton Valley"):
             },
             "categories_image_list": {
                 "title": doc.category_title,
-                "category_ids": [d.product_category for d in doc.homepage_categories],
+                "category_ids": [d.product_category for d in sorted(doc.homepage_categories, key=lambda x: x.idx)],
                 "status": doc.show_categories
             },
             "products_list_1": {

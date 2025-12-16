@@ -23,7 +23,7 @@ def get_submited_orders(company="Cotton Valley", page=None):
     orders = frappe.get_all(
         "Sales Order",
         filters={"customer": customer_id, "company": company, "docstatus": 1},
-        fields=["name as order_number", "grand_total as total", "status as payment_status", "submit_datetime as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
+        fields=["name as order_number", "grand_total as total", "order_status as payment_status", "submit_datetime as created_at", "custom_mode_of_payment as payment_method", "product_type as order_type"],
         order_by="creation desc",
         limit_start=limit_start,
         limit_page_length=limit_page_length
@@ -110,7 +110,7 @@ def get_order_details(order_number):
         "invoice": si_invoice,
         "order_status": {
             "status": so_doc.order_status,
-            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.push_to_erp else 3 if so_doc.order_status == "Shipped" else 1,
+            "sequence": 1 if so_doc.order_status == "Pending" else 2 if so_doc.order_status == "Processing" else 4 if so_doc.order_status == "Shipped" else 3,
         }
     }
 

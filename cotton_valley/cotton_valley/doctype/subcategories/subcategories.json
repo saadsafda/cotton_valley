@@ -9,7 +9,8 @@
   "product_subcategory",
   "column_break_yqup",
   "subcategory_name",
-  "image"
+  "image",
+  "app_ranking"
  ],
  "fields": [
   {
@@ -36,13 +37,21 @@
    "fieldname": "image",
    "fieldtype": "Attach Image",
    "label": "Image"
+  },
+  {
+   "fetch_from": "product_subcategory.app_ranking",
+   "fieldname": "app_ranking",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "App Ranking",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-05 06:11:24.237517",
+ "modified": "2025-12-12 00:33:45.447822",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "SubCategories",

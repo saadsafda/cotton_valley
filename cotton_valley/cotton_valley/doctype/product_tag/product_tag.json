@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PRO-TAG-.#####",
+ "creation": "2025-12-15 02:08:14.080660",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "tag_name",
+  "column_break_yfkj",
+  "tag_color"
+ ],
+ "fields": [
+  {
+   "fieldname": "tag_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Tag Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_yfkj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tag_color",
+   "fieldtype": "Color",
+   "label": "Tag Color"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-15 05:09:52.346153",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Product Tag",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "tag_name"
+}
