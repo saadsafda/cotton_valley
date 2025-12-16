@@ -129,6 +129,7 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
                 product["image_url"] = None
                 
             product["images"] = galleries_by_item.get(product_id, [])
+            product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
 
             products.append(product)
 
