@@ -6,6 +6,7 @@ def execute(filters=None):
         filters = {}
 
     # --- Defaults ---
+    filters.setdefault('company', None)
     filters.setdefault('customer', None)
     filters.setdefault('si_number', None)
     filters.setdefault('so_number', None)
@@ -19,6 +20,13 @@ def execute(filters=None):
 
 def get_columns():
     return [
+        {
+            "label": _("Company"),
+            "fieldname": "company",
+            "fieldtype": "Link",
+            "options": "Company",
+            "width": 120
+        },
         {
             "label": _("SI Number"),
             "fieldname": "si_number",
@@ -94,6 +102,7 @@ def get_columns():
 def get_data(filters):
     sql_query = """
         SELECT
+            si.company AS company,
             si.name AS si_number,
             
             (SELECT GROUP_CONCAT(DISTINCT sales_order SEPARATOR ', ') 
@@ -127,8 +136,9 @@ def get_data(filters):
         FROM
             `tabSales Invoice` si
         WHERE
+             (%(company)s IS NULL OR si.company = %(company)s)
 
-             (%(customer)s IS NULL OR si.customer = %(customer)s)
+            AND (%(customer)s IS NULL OR si.customer = %(customer)s)
             
             AND (%(si_number)s IS NULL OR si.name LIKE CONCAT('%%', %(si_number)s, '%%'))
 

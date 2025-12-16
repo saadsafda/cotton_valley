@@ -1,6 +1,13 @@
 frappe.query_reports["Sales Invoice report View"] = {
     "filters": [
         {
+        "fieldname": "company",
+            "label": __("Company"),
+            "fieldtype": "Link",
+            "options": "Company",
+            "reqd": 0
+        },
+        {
             "fieldname": "si_number",
             "label": __("SI Number"),
             "fieldtype": "Link",
