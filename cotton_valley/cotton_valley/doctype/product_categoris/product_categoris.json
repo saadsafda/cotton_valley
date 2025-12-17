@@ -14,6 +14,7 @@
   {
    "fieldname": "product_category",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Product Category",
    "options": "Product Category"
   },
@@ -25,6 +26,7 @@
    "fetch_from": "product_category.title",
    "fieldname": "category_name",
    "fieldtype": "Read Only",
+   "in_list_view": 1,
    "label": "Category Name"
   }
  ],
@@ -32,7 +34,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-11 02:28:30.721153",
+ "modified": "2025-12-17 01:16:16.415796",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Categoris",
