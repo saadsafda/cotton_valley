@@ -7,6 +7,400 @@
   "docstatus": 0,
   "doctype": "Report",
   "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": "{\"filters\":[[\"Item\",\"company\",\"=\",\"Cotton Valley\"]],\"fields\":[[\"name\",\"Item\"],[\"docstatus\",\"Item\"],[\"item_name\",\"Item\"],[\"product_category\",\"Product Categoris\"],[\"category_name\",\"Product Categoris\"],[\"custom_sub_category\",\"Item\"],[\"sub_category_name\",\"Item\"],[\"item_group\",\"Item\"],[\"company\",\"Item\"],[\"custom_no_of_clicks\",\"Item\"],[\"modified\",\"Item\"],[\"modified_by\",\"Item\"],[\"creation\",\"Item\"],[\"disabled\",\"Item\"]],\"order_by\":\"`tabItem`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"docstatus\":120,\"item_name\":308,\"Product Categoris:product_category\":120,\"Product Categoris:category_name\":146,\"custom_sub_category\":120,\"sub_category_name\":172,\"item_group\":120,\"company\":120,\"custom_no_of_clicks\":120,\"modified\":120,\"modified_by\":120,\"creation\":120,\"disabled\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2025-12-15 06:03:28.780210",
+  "module": "Cotton Valley",
+  "name": "CV Product Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "CV Product Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Purchase User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Item Manager"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Manufacturing User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Desk User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "CV Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": "{\"filters\":[[\"Item\",\"company\",\"=\",\"UDC\"]],\"fields\":[[\"name\",\"Item\"],[\"docstatus\",\"Item\"],[\"item_name\",\"Item\"],[\"product_category\",\"Product Categoris\"],[\"category_name\",\"Product Categoris\"],[\"custom_sub_category\",\"Item\"],[\"sub_category_name\",\"Item\"],[\"item_group\",\"Item\"],[\"company\",\"Item\"],[\"custom_no_of_clicks\",\"Item\"],[\"modified\",\"Item\"],[\"modified_by\",\"Item\"],[\"creation\",\"Item\"],[\"disabled\",\"Item\"]],\"order_by\":\"`tabItem`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"docstatus\":120,\"item_name\":308,\"Product Categoris:product_category\":120,\"Product Categoris:category_name\":120,\"custom_sub_category\":120,\"sub_category_name\":173,\"item_group\":120,\"company\":120,\"custom_no_of_clicks\":120,\"modified\":120,\"modified_by\":120,\"creation\":120,\"disabled\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2025-12-15 06:03:15.930211",
+  "module": "Cotton Valley",
+  "name": "UDC Product Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "UDC Product Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Purchase User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Item Manager"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Manufacturing User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Desk User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "UDC Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-05 01:16:27.778478",
+  "module": "Cotton Valley",
+  "name": "Abandoned Cart Items",
+  "prepared_report": 0,
+  "query": "SELECT\n  soi.item_name,\n  COUNT(DISTINCT so.name) AS \"Carts:int:100\",\n  SUM(soi.amount) AS \"Total Value:Currency:150\"\nFROM\n  `tabSales Order Item` AS soi\nJOIN\n  `tabSales Order` AS so ON so.name = soi.parent\nWHERE\n  so.docstatus = 0 -- 0 = Draft\n  \n  -- Optional: Add this line to only show carts older than 1 hour\n  -- AND so.creation < (NOW() - INTERVAL 1 HOUR)\nGROUP BY\n  soi.item_code, soi.item_name\nORDER BY\n  `Carts:int:100` DESC\nLIMIT 5",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Abandoned Cart Items",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Abandoned Cart Items",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-05 01:45:30.004760",
+  "module": "Cotton Valley",
+  "name": "Top Cities by Order Value",
+  "prepared_report": 0,
+  "query": "SELECT\n  a.city,\n  COUNT(so.name) AS \"Orders:int:100\",\n  SUM(so.grand_total) AS \"Total Value:Currency:150\"\nFROM\n  `tabSales Order` AS so\nJOIN\n  `tabAddress` AS a ON a.name = so.shipping_address_name -- Link to the Address DocType\nWHERE\n  so.docstatus = 1 -- 1 = Submitted (actual orders)\n  AND a.city IS NOT NULL\n  AND a.city != ''\nGROUP BY\n  a.city\nORDER BY\n  \"Orders:int:100\" DESC\nLIMIT 5",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Cities by Order Value",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Cities by Order Value",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-05 01:33:57.903401",
+  "module": "Cotton Valley",
+  "name": "Sales Rep Performance",
+  "prepared_report": 0,
+  "query": "SELECT\n    t1.custom_customer_sales_representative,\n    COUNT(t1.name) AS 'Total Items Placed',  -- Sales Order ki count\n    SUM(t1.grand_total) AS 'Total Sales Amount' -- Sales value ka total\nFROM\n    `tabSales Order` t1\nWHERE\n    t1.docstatus = 1  -- Sirf submitted orders\nGROUP BY\n    t1.custom_customer_sales_representative\nORDER BY\n    `Total Sales Amount` DESC",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Sales Rep Performance",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Sales Rep Performance",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
   "is_standard": "Yes",
   "javascript": null,
   "json": null,
@@ -1638,6 +2032,80 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-05 02:53:18.657463",
+  "module": "Cotton Valley",
+  "name": "Top Selling Products Report",
+  "prepared_report": 0,
+  "query": "SELECT\n    t1.item_code AS sku,\n    t1.item_name AS product_name,\n    SUM(t1.qty) AS Total_Units_Sold,\n    SUM(t1.amount) AS Total_Revenue\n\nFROM\n    `tabSales Order Item` t1  -- Correct table for sales details\n\nJOIN\n    `tabItem` t2 ON t1.item_code = t2.item_code  -- Correct table for item master data\n\nGROUP BY\n    t1.item_code, t1.item_name\n\nORDER BY\n    Total_Units_Sold DESC\nLIMIT 5",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Selling Products Report",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Selling Products Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
    }
   ],
   "timeout": 0

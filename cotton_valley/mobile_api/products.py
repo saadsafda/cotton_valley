@@ -39,9 +39,12 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
                 i.custom_pallet_hi as pallet_hi,
                 i.custom_pallet_ti as pallet_ti,
                 i.custom_sub_category as sub_category,
+                i.sub_category_name as sub_category_name,
                 i.custom_coming_soon as coming_soon,
                 i.custom_new_arrivals as new_arrivals,
                 i.custom_case_per_pallet as case_per_pallet,
+                i.custom_case_trucking as case_trucking,
+                i.custom_upc as item_upc,
                 i.custom_carton_upc as carton_upc,
                 i.custom_cbm as cbm,
                 i.custom_package_width_inch as package_width_inches,
@@ -49,7 +52,9 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
                 i.custom_package_length_inch as package_length_inches,
                 i.custom_weight_lbs as weight_lbs,
                 i.application_ranking as app_ranking,
-                COALESCE(SUM(b.actual_qty), 0) as stock
+                COALESCE(SUM(b.actual_qty), 0) as stock,
+                i.tag_color,
+                i.tag_name
             FROM `tabItem` i
             LEFT JOIN `tabBin` b ON b.item_code = i.name
             WHERE {where_clause}
@@ -127,6 +132,7 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
                 product["image_url"] = None
                 
             product["images"] = galleries_by_item.get(product_id, [])
+            product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
 
             products.append(product)
 

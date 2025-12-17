@@ -203,7 +203,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 "custom_item_height_inch as item_height",
                 "custom_item_weight_lbs as item_weight",
                 "custom_coming_soon as coming_soon",
-                "custom_new_arrivals as new_arrivals"
+                "custom_new_arrivals as new_arrivals",
+                "tag_color",
+                "tag_name"
             ],
             order_by=sort_clause,
             limit_start=limit_start,
@@ -563,7 +565,7 @@ def get_product(product_id, company="Cotton Valley"):
     else:
         product["stock_status"] = "out_of_stock"
 
-    product["related_products"] = [row.product_name for row in frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"])]
+    product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
     product["trending_products"] = frappe.get_all("Item", filters={"custom_no_of_clicks": [">", 0], "company": company}, fields=["name"], pluck='name', order_by="custom_no_of_clicks desc", limit_page_length=4)
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
