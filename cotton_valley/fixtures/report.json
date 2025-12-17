@@ -9,6 +9,92 @@
   "filters": [],
   "is_standard": "No",
   "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-12-17 04:09:43.594293",
+  "module": "Cotton Valley",
+  "name": "Top Performing Customers CV",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    customer AS \"Customer:Link/Customer:200\",\r\n    COUNT(name) AS \"No. of Orders:Int:120\",\r\n    SUM(grand_total) AS \"Total Sales (PKR):Currency:150\"\r\nFROM\r\n    `tabSales Order`\r\nWHERE\r\n    docstatus = 1\r\n    AND company = 'Cotton Valley '\r\nGROUP BY \r\n    customer\r\nORDER BY \r\n    SUM(grand_total) DESC\r\nLIMIT 20\r\n",
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "Top Performing Customers CV",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Performing Customers CV",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
   "json": "{\"filters\":[[\"Item\",\"company\",\"=\",\"Cotton Valley\"]],\"fields\":[[\"name\",\"Item\"],[\"docstatus\",\"Item\"],[\"item_name\",\"Item\"],[\"product_category\",\"Product Categoris\"],[\"category_name\",\"Product Categoris\"],[\"custom_sub_category\",\"Item\"],[\"sub_category_name\",\"Item\"],[\"item_group\",\"Item\"],[\"company\",\"Item\"],[\"custom_no_of_clicks\",\"Item\"],[\"modified\",\"Item\"],[\"modified_by\",\"Item\"],[\"creation\",\"Item\"],[\"disabled\",\"Item\"]],\"order_by\":\"`tabItem`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"docstatus\":120,\"item_name\":308,\"Product Categoris:product_category\":120,\"Product Categoris:category_name\":146,\"custom_sub_category\":120,\"sub_category_name\":172,\"item_group\":120,\"company\":120,\"custom_no_of_clicks\":120,\"modified\":120,\"modified_by\":120,\"creation\":120,\"disabled\":120},\"group_by\":null}",
   "letter_head": null,
   "modified": "2025-12-15 06:03:28.780210",
