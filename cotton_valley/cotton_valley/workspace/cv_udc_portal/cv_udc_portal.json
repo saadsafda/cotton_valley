@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"XDTDEEDnYB\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CV Link</span>\",\"col\":12}},{\"id\":\"loAH_KoZkS\",\"type\":\"card\",\"data\":{\"card_name\":\"CV Pages\",\"col\":4}},{\"id\":\"alWeMg-I3O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Website Theme Settings\",\"col\":3}},{\"id\":\"DzlWOXjRbg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Testimonial\",\"col\":3}},{\"id\":\"c7D5G5Xb3A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>UDC Link</b></span>\",\"col\":12}},{\"id\":\"YNtRz-K4fA\",\"type\":\"card\",\"data\":{\"card_name\":\"UDC Pages\",\"col\":4}},{\"id\":\"xJ-yyCEG7x\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Website Theme Settings\",\"col\":3}},{\"id\":\"cCP_uo2qNG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Testimonial\",\"col\":3}}]",
+ "content": "[{\"id\":\"XDTDEEDnYB\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CV Link</span>\",\"col\":12}},{\"id\":\"loAH_KoZkS\",\"type\":\"card\",\"data\":{\"card_name\":\"CV Pages\",\"col\":4}},{\"id\":\"alWeMg-I3O\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Website Theme Settings\",\"col\":3}},{\"id\":\"DzlWOXjRbg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CV Testimonial\",\"col\":3}},{\"id\":\"c7D5G5Xb3A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>UDC Link</b></span>\",\"col\":12}},{\"id\":\"YNtRz-K4fA\",\"type\":\"card\",\"data\":{\"card_name\":\"UDC Pages\",\"col\":4}},{\"id\":\"cCP_uo2qNG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Testimonial\",\"col\":3}},{\"id\":\"xJ-yyCEG7x\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"UDC Website Theme Settings\",\"col\":3}}]",
  "creation": "2025-09-29 02:51:13.063554",
  "custom_blocks": [],
  "docstatus": 0,
@@ -152,7 +152,7 @@
    "type": "Link"
   }
  ],
- "modified": "2025-09-29 03:41:57.245617",
+ "modified": "2025-12-17 05:42:49.097693",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "CV UDC Portal",
@@ -162,8 +162,16 @@
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 1.0,
+ "sequence_id": 2.0,
  "shortcuts": [
+  {
+   "color": "Red",
+   "doc_view": "List",
+   "label": "UDC Testimonial",
+   "link_to": "Testimonial",
+   "stats_filter": "[[\"Testimonial\",\"company\",\"=\",\"UDC\",false]]",
+   "type": "DocType"
+  },
   {
    "color": "Grey",
    "doc_view": "List",
@@ -184,14 +192,6 @@
    "label": "CV Testimonial",
    "link_to": "Testimonial",
    "stats_filter": "[[\"Testimonial\",\"company\",\"=\",\"Cotton Valley\",false]]",
-   "type": "DocType"
-  },
-  {
-   "color": "Red",
-   "doc_view": "List",
-   "label": "Testimonial",
-   "link_to": "Testimonial",
-   "stats_filter": "[[\"Testimonial\",\"company\",\"=\",\"UDC\",false]]",
    "type": "DocType"
   }
  ],
