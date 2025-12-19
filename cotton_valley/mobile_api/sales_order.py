@@ -65,7 +65,7 @@ def get_sales_person_orders():
             fields=[
                 "name", "customer", "customer_name",
                 "customer_account_number", "customer_company_name as customer_company", "transaction_date", 
-                "delivery_date", "status", "docstatus", "grand_total", "currency",
+                "delivery_date", "order_status as status", "docstatus", "grand_total", "currency",
                 "company", "custom_mode_of_payment", "custom_notes",
                 "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
                 "creation", "modified", "owner"

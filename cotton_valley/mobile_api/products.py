@@ -52,6 +52,8 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
                 i.custom_package_length_inch as package_length_inches,
                 i.custom_weight_lbs as weight_lbs,
                 i.application_ranking as app_ranking,
+                i.po_qty,
+                i.eta,
                 COALESCE(SUM(b.actual_qty), 0) as stock,
                 i.tag_color,
                 i.tag_name
