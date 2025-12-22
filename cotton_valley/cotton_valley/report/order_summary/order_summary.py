@@ -78,7 +78,7 @@ def send_report_email(filters, recipient_email):
     <h3>Order Update Summary</h3>
     <table border="1" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 12px;">
         <thead>
-            <tr style="background-color: #FFFF00; font-weight: bold;"> <th style="padding: 5px;">Sales Order</th>
+            <tr style="font-weight: bold;"> <th style="padding: 5px;">Sales Order</th>
                 <th style="padding: 5px;">Customer#</th>
                 <th style="padding: 5px;">Customer Name</th>
                 <th style="padding: 5px;">Company</th>
