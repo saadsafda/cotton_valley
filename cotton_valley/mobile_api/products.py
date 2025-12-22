@@ -2,7 +2,7 @@ import frappe
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products_with_price_levels(company=None, subcategory=None):
+def get_all_products_with_price_levels(company=None, category=None, subcategory=None):
     """
     Fetch all products with ALL price levels for mobile app.
     Optimized version with batch processing and minimal queries.
@@ -15,7 +15,7 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
         if company and company != "null":
             filter_conditions.append("i.company = %s")
             filter_values.append(company)
-        
+
         if subcategory and subcategory != "null":
             filter_conditions.append("i.custom_sub_category = %s")
             filter_values.append(subcategory)
@@ -87,6 +87,14 @@ def get_all_products_with_price_levels(company=None, subcategory=None):
             if price["item_code"] not in prices_by_item:
                 prices_by_item[price["item_code"]] = {}
             prices_by_item[price["item_code"]][price["price_list"]] = price["price_list_rate"]
+
+        if not subcategory and subcategory == "null" and category and category != "null":
+            category_products_ids = frappe.get_all(
+                "Item",
+                fields=["name"],
+                filters=[["Product Categoris","product_category","=",category]]
+            , pluck="name")
+            item_ids = category_products_ids
 
         # Get categories in one query
         categories_data = frappe.db.sql("""
