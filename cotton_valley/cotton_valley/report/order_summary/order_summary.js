@@ -39,10 +39,36 @@ frappe.query_reports["Order Summary"] = {
     ],
 
 	"onload": function(report) {
-        // Add a button to the top-right menu
         report.page.add_inner_button(__("Send Report"), function() {
-            // Logic goes here. For now, it just shows a message.
-            frappe.msgprint("You clicked the custom button!");
+            // 1. Get current filters
+            let filters = report.get_values();
+
+            // 2. Ask user for email address
+            frappe.prompt([
+                {
+                    label: 'Email Address',
+                    fieldname: 'email',
+                    fieldtype: 'Data',
+                    reqd: 1,
+                    default: frappe.session.user_email
+                }
+            ], (values) => {
+                // 3. Call Server API
+                frappe.call({
+                    method: "cotton_valley.cotton_valley.report.order_summary.order_summary.send_report_email",
+                    args: {
+                        filters: filters,
+                        recipient_email: values.email
+                    },
+                    freeze: true,
+                    freeze_message: "Sending Email...",
+                    callback: function(r) {
+                        if (!r.exc) {
+                            frappe.msgprint("Email sent successfully!");
+                        }
+                    }
+                });
+            });
         });
     }
-};
+};;
