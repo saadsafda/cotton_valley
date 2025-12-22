@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import today, fmt_money
+from frappe.utils.pdf import get_pdf
 
 def execute(filters=None):
     if not filters: filters = {}
@@ -73,21 +74,92 @@ def send_report_email(filters, recipient_email):
     # 1. Fetch Data (Re-using logic)
     columns, data = execute(filters)
 
-    # 2. Build HTML Table (Matching your Excel style)
+    # 2. Calculate Summary (Grouping by Company)
+    summary_map = {}
+    for row in data:
+        comp = row.company or "Other"
+        if comp not in summary_map:
+            summary_map[comp] = {"count": 0, "amount": 0.0}
+        
+        summary_map[comp]["count"] += 1
+        summary_map[comp]["amount"] += (row.order_total or 0.0)
+
+    # 3. Build HTML for PDF
+    # Styles for clear PDF formatting
     html_content = """
-    <h3>Order Update Summary</h3>
-    <table border="1" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 12px;">
+    <html>
+    <head>
+       <style>
+            body { font-family: Arial, sans-serif; font-size: 11px; }
+            h3 { margin-bottom: 5px; margin-top: 15px; }
+            /* Global Table Styles */
+            table { border-collapse: collapse; border: 1px solid black; }
+            th, td { border: 1px solid black; padding: 5px; }
+            th { font-weight: bold; text-align: left; }
+            
+            /* Specific Widths */
+            .summary-table { width: 60%; margin-bottom: 20px; }
+            .detail-table { width: 100%; }
+        </style>
+    </head>
+    <body>
+        <h2>Order Update Summary</h2>
+    """
+
+    # --- PART A: SUMMARY TABLE ---
+    html_content += """
+    <h3>Company Summary</h3>
+    <table class="summary-table" border="1" cellspacing="0" cellpadding="5">
         <thead>
-            <tr style="font-weight: bold;"> <th style="padding: 5px;">Sales Order</th>
-                <th style="padding: 5px;">Customer#</th>
-                <th style="padding: 5px;">Customer Name</th>
-                <th style="padding: 5px;">Company</th>
-                <th style="padding: 5px;">Written By</th>
-                <th style="padding: 5px;">Order Status</th>
-                <th style="padding: 5px;">PL</th>
-                <th style="padding: 5px;">Order Total</th>
-                <th style="padding: 5px;">Order Case (QTY)</th>
-                <th style="padding: 5px;">Address</th>
+            <tr>
+                <th>Company Name</th>
+                <th>Order (Qty)</th>
+                <th>Order Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+    
+    total_orders = 0
+    total_amount = 0.0
+
+    for comp, stats in summary_map.items():
+        html_content += f"""
+        <tr>
+            <td>{comp}</td>
+            <td>{stats['count']}</td>
+            <td>{fmt_money(stats['amount'])}</td>
+        </tr>
+        """
+        total_orders += stats['count']
+        total_amount += stats['amount']
+
+    # Summary Totals Row
+    html_content += f"""
+        <tr style="background-color: #f0f0f0; font-weight: bold;">
+            <td>Total</td>
+            <td>{total_orders}</td>
+            <td>{fmt_money(total_amount)}</td>
+        </tr>
+    </tbody></table>
+    """
+
+    # --- PART B: DETAILED TABLE ---
+    html_content += """
+    <h3>Detailed Orders</h3>
+    <table class="detail-table" border="1" cellspacing="0" cellpadding="5">
+        <thead>
+            <tr>
+                <th>Sales Order</th>
+                <th>Customer#</th>
+                <th>Customer Name</th>
+                <th>Company</th>
+                <th>Written By</th>
+                <th>Order Status</th>
+                <th>PL</th>
+                <th>Order Total</th>
+                <th>Case QTY</th>
+                <th>Address</th>
             </tr>
         </thead>
         <tbody>
@@ -96,26 +168,33 @@ def send_report_email(filters, recipient_email):
     for row in data:
         html_content += f"""
         <tr>
-            <td style="padding: 5px;">{row.order_number or ''}</td>
-            <td style="padding: 5px;">{row.customer or ''}</td>
-            <td style="padding: 5px;">{row.customer_name or ''}</td>
-            <td style="padding: 5px;">{row.company or ''}</td>
-            <td style="padding: 5px;">{row.written_by or ''}</td>
-            <td style="padding: 5px;">{row.order_status or ''}</td>
-            <td style="padding: 5px;">{row.pl or ''}</td>
-            <td style="padding: 5px;">{fmt_money(row.order_total) if row.order_total else '0.00'}</td>
-            <td style="padding: 5px;">{row.order_case_qty or 0}</td>
-            <td style="padding: 5px;">{row.address or ''}</td>
+            <td>{row.order_number or ''}</td>
+            <td>{row.customer or ''}</td>
+            <td>{row.customer_name or ''}</td>
+            <td>{row.company or ''}</td>
+            <td>{row.written_by or ''}</td>
+            <td>{row.order_status or ''}</td>
+            <td>{row.pl or ''}</td>
+            <td>{fmt_money(row.order_total) if row.order_total else '0.00'}</td>
+            <td>{row.order_case_qty or 0}</td>
+            <td>{row.address or ''}</td>
         </tr>
         """
 
-    html_content += "</tbody></table>"
+    html_content += "</tbody></table></body></html>"
 
-    # 3. Send Email
+    # 4. Generate PDF
+    pdf_file = get_pdf(html_content)
+
+    # 5. Send Email with Attachment
     frappe.sendmail(
         recipients=[recipient_email],
         subject=f"Order Summary Report ({filters.get('from_date')} to {filters.get('to_date')})",
-        message=html_content,
+        message="Please find the attached Order Summary Report (PDF).",
+        attachments=[{
+            "fname": "Order_Summary.pdf",
+            "fcontent": pdf_file
+        }],
         now=True
     )
 
