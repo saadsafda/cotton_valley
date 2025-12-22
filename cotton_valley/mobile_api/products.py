@@ -1,16 +1,22 @@
 import frappe
+from cotton_valley.api.website_theme_setting import get_categories_from_string
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products_with_price_levels(company=None, category=None, subcategory=None):
+def get_all_products_with_price_levels(product_ids=None, company=None, category=None, subcategory=None):
     """
     Fetch all products with ALL price levels for mobile app.
     Optimized version with batch processing and minimal queries.
     """
     try:
+        product_ids = None if not product_ids or product_ids == "null" else get_categories_from_string(product_ids)
         # Build filter conditions
         filter_conditions = ["i.disabled = 0"]
         filter_values = []
+        
+        if product_ids:
+            filter_conditions.append("i.name IN %s")
+            filter_values.append(tuple(product_ids))
         
         if company and company != "null":
             filter_conditions.append("i.company = %s")
