@@ -16,6 +16,15 @@ def get_all_products_with_price_levels(company=None, category=None, subcategory=
             filter_conditions.append("i.company = %s")
             filter_values.append(company)
 
+        if category and category != "null":
+            filter_conditions.append("""
+                EXISTS (
+                    SELECT 1 FROM `tabProduct Categoris` pc
+                    WHERE pc.parent = i.name AND pc.product_category = %s
+                )
+            """)
+            filter_values.append(category)
+
         if subcategory and subcategory != "null":
             filter_conditions.append("i.custom_sub_category = %s")
             filter_values.append(subcategory)
@@ -87,14 +96,6 @@ def get_all_products_with_price_levels(company=None, category=None, subcategory=
             if price["item_code"] not in prices_by_item:
                 prices_by_item[price["item_code"]] = {}
             prices_by_item[price["item_code"]][price["price_list"]] = price["price_list_rate"]
-
-        if not subcategory and subcategory == "null" and category and category != "null":
-            category_products_ids = frappe.get_all(
-                "Item",
-                fields=["name"],
-                filters=[["Product Categoris","product_category","=",category]]
-            , pluck="name")
-            item_ids = category_products_ids
 
         # Get categories in one query
         categories_data = frappe.db.sql("""
