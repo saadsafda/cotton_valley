@@ -15,7 +15,8 @@ def get_all_categories(company=None):
             filters = {}
         categories = frappe.get_all("Product Category",
             filters=filters,
-            fields=["name as id", "title", "category_image", "company", "app_ranking"]
+            fields=["name as id", "title", "category_image", "company", "app_ranking"],
+            order_by="app_ranking asc"
         )
 
         if not categories:
