@@ -75,7 +75,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
             FROM `tabItem` i
             WHERE {where_clause}
             GROUP BY i.name
-            ORDER BY i.app_ranking ASC
+            ORDER BY i.application_ranking ASC
         """, tuple(filter_values), as_dict=True)
             # LEFT JOIN `tabBin` b ON b.item_code = i.name
 
