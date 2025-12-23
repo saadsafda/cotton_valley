@@ -205,7 +205,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 "custom_coming_soon as coming_soon",
                 "custom_new_arrivals as new_arrivals",
                 "tag_color",
-                "tag_name"
+                "tag_name",
+                "threshold_stock as stock"
             ],
             order_by=sort_clause,
             limit_start=limit_start,
@@ -280,7 +281,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 custom_coming_soon as coming_soon,
                 custom_new_arrivals as new_arrivals,
                 tag_color,
-                tag_name
+                tag_name,
+                threshold_stock as stock
             FROM `tabItem`
             WHERE {where_clause} {search_condition}
             ORDER BY 
@@ -369,7 +371,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             product["price"] = product["sale_price"] = product["discount"] = 0
 
         # Stock
-        qty = stock_map.get(product_id, 0)
+        # qty = stock_map.get(product_id, 0)
+        qty = product.get("stock", 0)
+
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
 
@@ -499,7 +503,8 @@ def get_product(product_id, company="Cotton Valley"):
             "custom_item_height_inch as item_height",
             "custom_item_weight_lbs as item_weight",
             "custom_coming_soon as coming_soon",
-            "custom_new_arrivals as new_arrivals"
+            "custom_new_arrivals as new_arrivals",
+            "threshold_stock as stock",
         ],
         as_dict=True
     )
@@ -559,7 +564,9 @@ def get_product(product_id, company="Cotton Valley"):
         FROM `tabBin`
         WHERE item_code = %s
     """, (product_id,), as_dict=True)
-    product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
+    # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
+    product["quantity"] = product.get("stock", 0)
+
     if product["quantity"] > 0:
             product["stock_status"] = "in_stock"
     else:

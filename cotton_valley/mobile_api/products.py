@@ -69,15 +69,15 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
                 i.application_ranking as app_ranking,
                 i.po_qty,
                 i.eta,
-                COALESCE(SUM(b.actual_qty), 0) as stock,
+                COALESCE(i.threshold_stock, 0) as stock,
                 i.tag_color,
                 i.tag_name
             FROM `tabItem` i
-            LEFT JOIN `tabBin` b ON b.item_code = i.name
             WHERE {where_clause}
             GROUP BY i.name
             ORDER BY i.app_ranking ASC
         """, tuple(filter_values), as_dict=True)
+            # LEFT JOIN `tabBin` b ON b.item_code = i.name
 
         if not products_data:
             return {
