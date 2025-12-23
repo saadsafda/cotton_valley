@@ -19,10 +19,13 @@ def update_item_stock_and_price(item_code):
         LIMIT 1
     """, (item_code,))
     valuation_rate = rate[0][0] if rate else 0
-
+    threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock") or 0
+    available_stock = frappe.db.get_value("Item", item_code, "available_stock") or 0
+    if threshold_stock == int(float(available_stock)):
+        frappe.db.set_value("Item", item_code, "threshold_stock", int(float(qty)))
     # Update item fields
     frappe.db.set_value("Item", item_code, {
-        "available_stock": qty,
+        "available_stock": int(float(qty)),
         "stock_price": valuation_rate
     })
 
