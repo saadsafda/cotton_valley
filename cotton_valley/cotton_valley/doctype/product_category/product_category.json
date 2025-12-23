@@ -12,6 +12,7 @@
   "section_break_sdiw",
   "title",
   "company",
+  "erp_id",
   "column_break_gumt",
   "category_image",
   "web_ranking",
@@ -84,13 +85,18 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "App Ranking"
+  },
+  {
+   "fieldname": "erp_id",
+   "fieldtype": "Data",
+   "label": "ERP ID"
   }
  ],
  "grid_page_length": 50,
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-15 05:04:39.885966",
+ "modified": "2025-12-23 06:11:27.480433",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",

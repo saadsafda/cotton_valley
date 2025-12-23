@@ -205,7 +205,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 "custom_coming_soon as coming_soon",
                 "custom_new_arrivals as new_arrivals",
                 "tag_color",
-                "tag_name"
+                "tag_name",
+                "threshold_stock as stock"
             ],
             order_by=sort_clause,
             limit_start=limit_start,
@@ -280,7 +281,8 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 custom_coming_soon as coming_soon,
                 custom_new_arrivals as new_arrivals,
                 tag_color,
-                tag_name
+                tag_name,
+                threshold_stock as stock
             FROM `tabItem`
             WHERE {where_clause} {search_condition}
             ORDER BY 
@@ -369,7 +371,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             product["price"] = product["sale_price"] = product["discount"] = 0
 
         # Stock
-        qty = stock_map.get(product_id, 0)
+        # qty = stock_map.get(product_id, 0)
+        qty = product.get("stock", 0)
+
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
 
@@ -499,7 +503,8 @@ def get_product(product_id, company="Cotton Valley"):
             "custom_item_height_inch as item_height",
             "custom_item_weight_lbs as item_weight",
             "custom_coming_soon as coming_soon",
-            "custom_new_arrivals as new_arrivals"
+            "custom_new_arrivals as new_arrivals",
+            "threshold_stock as stock",
         ],
         as_dict=True
     )
@@ -559,7 +564,9 @@ def get_product(product_id, company="Cotton Valley"):
         FROM `tabBin`
         WHERE item_code = %s
     """, (product_id,), as_dict=True)
-    product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
+    # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
+    product["quantity"] = product.get("stock", 0)
+
     if product["quantity"] > 0:
             product["stock_status"] = "in_stock"
     else:
@@ -741,6 +748,54 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
             item_doc.set(field, value)
             updated = True
 
+    # Handle category synchronization based on itmclsid (ERP ID)
+    itmclsid = item_data.get("itmclsid")
+    itmclsdsc = item_data.get("itmclsdsc")
+    
+    if itmclsid:
+        # Check if category with this ERP ID exists
+        category = frappe.db.get_value(
+            "Product Category",
+            {"erp_id": itmclsid, "company": company},
+            ["name", "title"],
+            as_dict=True
+        )
+        
+        if category:
+            # Category exists - update title if needed and different
+            if itmclsdsc and itmclsdsc != category.get("title"):
+                frappe.db.set_value("Product Category", category.get("name"), "title", itmclsdsc)
+                updated = True
+            
+            # Check if item already has this category
+            existing_category = frappe.db.exists("Product Categoris", {
+                "parent": item_code,
+                "product_category": category.get("name")
+            })
+            
+            if not existing_category:
+                # Add category to item
+                item_doc.append("product_categoris", {
+                    "product_category": category.get("name")
+                })
+                updated = True
+        else:
+            # Category doesn't exist - create new one if we have description
+            if itmclsdsc:
+                new_category = frappe.get_doc({
+                    "doctype": "Product Category",
+                    "title": itmclsdsc,
+                    "company": company,
+                    "erp_id": itmclsid
+                })
+                new_category.insert(ignore_permissions=True)
+                
+                # Add this category to the item
+                item_doc.append("product_categoris", {
+                    "product_category": new_category.name
+                })
+                updated = True
+
     if updated:
         item_doc.save(ignore_permissions=True)
         frappe.db.commit()
@@ -748,7 +803,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     # Update warehouse stock quantity
     qty_avlbl = item_data.get("qty_avlbl")
     if qty_avlbl not in [None, "", "null"]:
-        qty_avlbl = float(item_data.get("qty_avlbl") or 0)
+        qty_avlbl = int(float(item_data.get("qty_avlbl") or 0))
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
 
         # Check if Bin exists for item and warehouse
@@ -764,6 +819,11 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
                 "warehouse": warehouse,
                 "actual_qty": qty_avlbl
             }).insert(ignore_permissions=True)
+        item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
+        item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
+        if item_available_qty == item_threshold_stock:
+            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
+        frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
 
     frappe.db.commit()
 
