@@ -71,7 +71,7 @@ def send_report_email(filters, recipient_email):
     to_d_str = to_d_obj.strftime("%d/%m/%Y")
     
     # Ye variable "From - To" date show karega header me
-    date_range_header = f"{from_d_str} - {to_d_str}"
+    date_range_header = f"From: {from_d_str} - To: {to_d_str}"
     
     # Filename ke liye safe formatting (slashes hata kar)
     file_date_str = f"{from_d_obj.strftime('%Y-%m-%d')}_to_{to_d_obj.strftime('%Y-%m-%d')}"
@@ -312,8 +312,8 @@ def send_report_email(filters, recipient_email):
 
     frappe.sendmail(
         recipients=[recipient_email],
-        subject=f"Repzio Order Import Summary : {date_range_header}",
-        message="Please find the attached Order Summary Report.",
+        subject=f"Cotton Valley Order Import Summary : {date_range_header}",
+        message=html_content,
         attachments=[{
             "fname": f"Order_Summary_{file_date_str}.pdf",
             "fcontent": pdf_file
