@@ -738,8 +738,12 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
         "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
         "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
         "custom_carton_upc": item_data.get("cart_upc"),
+        "custom_upc": item_data.get("itm_chr2"),
         "custom_cbm": float(item_data.get("casecbm") or 0),
         "custom_case_pack": int(item_data.get("itmpack") or 0),
+        "custom_case_per_pallet": int(item_data.get("pall_case") or 0),
+        "custom_case_trucking": int(item_data.get("pall_case_tr") or 0),
+        "custom_short_description": item_data.get("itmdscpur"),
     }
 
     updated = False
@@ -780,21 +784,35 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
                 })
                 updated = True
         else:
-            # Category doesn't exist - create new one if we have description
-            if itmclsdsc:
-                new_category = frappe.get_doc({
-                    "doctype": "Product Category",
-                    "title": itmclsdsc,
-                    "company": company,
-                    "erp_id": itmclsid
-                })
-                new_category.insert(ignore_permissions=True)
-                
-                # Add this category to the item
-                item_doc.append("product_categoris", {
-                    "product_category": new_category.name
-                })
+            # Category doesn't exist - show the error
+            frappe.msgprint(f"Category with ERP ID {itmclsid} not found. Please create it first.")
+
+    # Handle subcategory synchronization based on itmctgid (ERP ID)
+    itmctgid = item_data.get("itmctgid")
+    itmctgdsc = item_data.get("itmctgdsc")
+    
+    if itmctgid:
+        # Check if subcategory with this ERP ID exists
+        subcategory = frappe.db.get_value(
+            "Product Subcategory",
+            {"erp_id": itmctgid, "company": company},
+            ["name", "title"],
+            as_dict=True
+        )
+        
+        if subcategory:
+            # Subcategory exists - update title if needed and different
+            if itmctgdsc and itmctgdsc != subcategory.get("title"):
+                frappe.db.set_value("Product Subcategory", subcategory.get("name"), "title", itmctgdsc)
                 updated = True
+            
+            # Update item's subcategory field
+            if item_doc.custom_sub_category != subcategory.get("name"):
+                item_doc.custom_sub_category = subcategory.get("name")
+                updated = True
+        else:
+            # Subcategory doesn't exist - show the error
+            frappe.msgprint(f"Subcategory with ERP ID {itmctgid} not found. Please create it first.")
 
     if updated:
         item_doc.save(ignore_permissions=True)
