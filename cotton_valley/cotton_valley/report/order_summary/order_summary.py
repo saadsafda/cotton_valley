@@ -62,91 +62,76 @@ def send_report_email(filters, recipient_email):
     
     columns, data = execute(filters)
 
-    # 1. Dates Setup
-    current_time_str = now_datetime().strftime("%d/%m/%Y, %H:%M")
-    report_date_obj = getdate(filters.get('from_date'))
-    report_date_str = report_date_obj.strftime("%m/%d/%Y")
-    long_date_str = report_date_obj.strftime("%a, %b %d, %Y at 6:30 PM")
+    # --- 1. DATES SETUP (Updated Part) ---
+    # From Date aur To Date ko fetch karke format kar rahe hain
+    from_d_obj = getdate(filters.get("from_date") or today())
+    to_d_obj = getdate(filters.get("to_date") or today())
+    
+    from_d_str = from_d_obj.strftime("%d/%m/%Y")
+    to_d_str = to_d_obj.strftime("%d/%m/%Y")
+    
+    # Ye variable "From - To" date show karega header me
+    date_range_header = f"{from_d_str} - {to_d_str}"
+    
+    # Filename ke liye safe formatting (slashes hata kar)
+    file_date_str = f"{from_d_obj.strftime('%Y-%m-%d')}_to_{to_d_obj.strftime('%Y-%m-%d')}"
 
-    # 2. Data Calculation
-    summary_data = {}
-    company_list = [] 
+    # Email body date
+    long_date_str = from_d_obj.strftime("%a, %b %d, %Y")
+
+    # --- 2. DATA CALCULATION ---
+    stats = {
+        "cv_app": {"count": 0, "amount": 0.0},       
+        "cv_web": {"count": 0, "amount": 0.0},       
+        "udc_reg_app": {"count": 0, "amount": 0.0},  
+        "udc_reg_web": {"count": 0, "amount": 0.0},  
+        "udc_cod_app": {"count": 0, "amount": 0.0},  
+        "udc_cod_web": {"count": 0, "amount": 0.0},  
+    }
 
     for row in data:
-        comp = row.company or "Other"
-        
-        if comp == "UDC":
-            comp = "Universal DC"
-
-        if row.from_app:
-            display_source = "App"
-        else:
-            display_source = "Website"
-
-        p_type = row.product_type 
-
-        if comp not in summary_data:
-            summary_data[comp] = {
-                "App": {"count": 0, "amount": 0.0}, 
-                "Website": {"count": 0, "amount": 0.0},
-                "Total": {"count": 0, "amount": 0.0},
-                "ProductTypesBreakdown": {}, 
-                "ProductTypesTotal": {}      
-            }
-            company_list.append(comp)
-
         amount = row.order_total or 0.0
-        
-        # A. Add to App/Website Bucket
-        summary_data[comp][display_source]["count"] += 1
-        summary_data[comp][display_source]["amount"] += amount
-        
-        # B. Add to Product Type Buckets
-        if p_type:
-            # 1. Breakdown (App/Web separate)
-            pt_key = (p_type, display_source)
-            if pt_key not in summary_data[comp]["ProductTypesBreakdown"]:
-                summary_data[comp]["ProductTypesBreakdown"][pt_key] = {"count": 0, "amount": 0.0}
-            summary_data[comp]["ProductTypesBreakdown"][pt_key]["count"] += 1
-            summary_data[comp]["ProductTypesBreakdown"][pt_key]["amount"] += amount
+        company_name = (row.company or "").lower()
+        if "cotton" in company_name:
+            if row.from_app:
+                stats["cv_app"]["count"] += 1
+                stats["cv_app"]["amount"] += amount
+            else:
+                stats["cv_web"]["count"] += 1
+                stats["cv_web"]["amount"] += amount
+        elif "universal" in company_name or "udc" in company_name:
+            p_type = (row.product_type or "").upper()
+            if "REG" in p_type:
+                if row.from_app:
+                    stats["udc_reg_app"]["count"] += 1
+                    stats["udc_reg_app"]["amount"] += amount
+                else:
+                    stats["udc_reg_web"]["count"] += 1
+                    stats["udc_reg_web"]["amount"] += amount
+            elif "COD" in p_type:
+                if row.from_app:
+                    stats["udc_cod_app"]["count"] += 1
+                    stats["udc_cod_app"]["amount"] += amount
+                else:
+                    stats["udc_cod_web"]["count"] += 1
+                    stats["udc_cod_web"]["amount"] += amount
 
-            # 2. Product Total (Combined App + Web)
-            if p_type not in summary_data[comp]["ProductTypesTotal"]:
-                summary_data[comp]["ProductTypesTotal"][p_type] = {"count": 0, "amount": 0.0}
-            summary_data[comp]["ProductTypesTotal"][p_type]["count"] += 1
-            summary_data[comp]["ProductTypesTotal"][p_type]["amount"] += amount
-
-        # C. Add to Grand Total
-        summary_data[comp]["Total"]["count"] += 1
-        summary_data[comp]["Total"]["amount"] += amount
-
-    # Sort companies alphabetically
-    company_list = sorted(list(set(company_list)))
-
-    # 3. HTML Construction
+    # --- 3. HTML CONSTRUCTION ---
     html_content = f"""
     <html>
     <head>
         <style>
             body {{ font-family: Calibri, Arial, sans-serif; font-size: 12px; color: #000; }}
-            
-            /* Summary Table Styles */
             .summary-table {{ border-collapse: collapse; width: 60%; margin-bottom: 20px; font-size: 11px; }}
             .summary-table th {{ 
-                background-color: #FFFF00; 
-                border: 1px solid #000; 
-                padding: 5px; 
-                text-align: left; 
-                font-weight: bold;
+                background-color: #FFFF00; border: 1px solid #000; padding: 5px; 
+                text-align: left; font-weight: bold;
             }}
             .summary-table td {{ border: 1px solid #000; padding: 5px; }}
             .total-row {{ background-color: #D9D9D9; font-weight: bold; }}
-
-            /* Detail Table Styles */
             .detail-table {{ border-collapse: collapse; width: 100%; font-size: 10px; }}
             .detail-table th {{ background-color: #FFFF00; border: 1px solid #000; padding: 4px; }}
             .detail-table td {{ border: 1px solid #000; padding: 4px; }}
-            
             .title-row {{ background-color: #F8CBAD; font-weight: bold; text-align: center; }}
             .right {{ text-align: right; }}
             .center {{ text-align: center; }}
@@ -157,7 +142,7 @@ def send_report_email(filters, recipient_email):
     <body>
         <table style="border: none; width: 100%; margin-bottom: 5px;">
             <tr>
-                <td style="border: none; width: 20%;">{current_time_str}</td>
+                <td style="border: none; width: 25%; font-weight: bold;">{date_range_header}</td>
                 <td style="border: none; text-align: center; font-weight: bold;">Cotton Valley LLC Mail - Order Import Summary</td>
                 <td style="border: none; width: 20%;"></td>
             </tr>
@@ -167,7 +152,11 @@ def send_report_email(filters, recipient_email):
              <span class="logo-text">Cotton Valley</span> 
         </div>
 
-       
+        <div>
+            <strong>Cotton Valley</strong> &lt;cottonvalley@.net&gt;<br>
+            To: Orders &lt;orders@cottonvalley.net&gt;<br>
+            <span style="color:#777">{long_date_str}</span>
+        </div>
         <br>
 
         <table class="summary-table">
@@ -181,88 +170,92 @@ def send_report_email(filters, recipient_email):
             <tbody>
     """
     
-    # --- SECTION 1: ALL APP ROWS (Summary + Breakdown) ---
-    for comp in company_list:
-        stats = summary_data[comp]
-        
-        # 1. Main App Summary Row
-        if stats["App"]["count"] > 0:
-            html_content += f"""
-            <tr>
-                <td>{comp} (App)</td>
-                <td class="center">{stats["App"]["count"]}</td>
-                <td class="right">{fmt_money(stats["App"]["amount"])}</td>
-            </tr>
-            """
-            
-            # 2. Detailed Breakdown for App (e.g. Regular - App)
-            p_breakdown = summary_data[comp]["ProductTypesBreakdown"]
-            # Filter only App keys
-            app_keys = [k for k in p_breakdown.keys() if k[1] == "App"]
-            
-            for (p_name, p_source) in sorted(app_keys):
-                p_stats = p_breakdown[(p_name, p_source)]
-                html_content += f"""
-                <tr>
-                    <td>{comp} - {p_name} ({p_source})</td>
-                    <td class="center">{p_stats["count"]}</td>
-                    <td class="right">{fmt_money(p_stats["amount"])}</td>
-                </tr>
-                """
-
-    # --- SECTION 2: ALL WEBSITE ROWS (Summary + Breakdown) ---
-    for comp in company_list:
-        stats = summary_data[comp]
-        
-        # 1. Main Website Summary Row
-        if stats["Website"]["count"] > 0:
-            html_content += f"""
-            <tr>
-                <td>{comp} (Website)</td>
-                <td class="center">{stats["Website"]["count"]}</td>
-                <td class="right">{fmt_money(stats["Website"]["amount"])}</td>
-            </tr>
-            """
-            
-            # 2. Detailed Breakdown for Website (e.g. Regular - Website)
-            p_breakdown = summary_data[comp]["ProductTypesBreakdown"]
-            # Filter only Website keys
-            web_keys = [k for k in p_breakdown.keys() if k[1] == "Website"]
-            
-            for (p_name, p_source) in sorted(web_keys):
-                p_stats = p_breakdown[(p_name, p_source)]
-                html_content += f"""
-                <tr>
-                    <td>{comp} - {p_name} ({p_source})</td>
-                    <td class="center">{p_stats["count"]}</td>
-                    <td class="right">{fmt_money(p_stats["amount"])}</td>
-                </tr>
-                """
-
-    # --- SECTION 3: ALL TOTALS (Product Combined + Grand Total) ---
-    for comp in company_list:
-        # 1. Combined Product Totals (e.g. Total Regular)
-        p_totals = summary_data[comp]["ProductTypesTotal"]
-        for p_name in sorted(p_totals.keys()):
-            p_stats = p_totals[p_name]
-            if p_stats["count"] > 0:
-                html_content += f"""
-                <tr class="total-row">
-                    <td>Total {comp} - {p_name} Order</td>
-                    <td class="center">{p_stats["count"]}</td>
-                    <td class="right">{fmt_money(p_stats["amount"])}</td>
-                </tr>
-                """
-        
-        # 2. Grand Total
-        stats = summary_data[comp]
-        html_content += f"""
-        <tr class="total-row">
-            <td>Total {comp} Order</td>
-            <td class="center">{stats['Total']['count']}</td>
-            <td class="right">{fmt_money(stats['Total']['amount'])}</td>
+    # 1. Cotton Valley LLC (App)
+    html_content += f"""
+        <tr>
+            <td>Cotton Valley LLC (App)</td>
+            <td class="center">{stats['cv_app']['count']}</td>
+            <td class="right">${fmt_money(stats['cv_app']['amount'])}</td>
         </tr>
-        """
+    """
+
+    # 2. Universal DC - REG (App)
+    html_content += f"""
+        <tr>
+            <td>Universal DC - REG (App)</td>
+            <td class="center">{stats['udc_reg_app']['count']}</td>
+            <td class="right">${fmt_money(stats['udc_reg_app']['amount'])}</td>
+        </tr>
+    """
+
+    # 3. Universal DC - COD (App)
+    html_content += f"""
+        <tr>
+            <td>Universal DC - COD (App)</td>
+            <td class="center">{stats['udc_cod_app']['count']}</td>
+            <td class="right">${fmt_money(stats['udc_cod_app']['amount'])}</td>
+        </tr>
+    """
+
+    # 4. Cotton Valley LLC (Website)
+    html_content += f"""
+        <tr>
+            <td>Cotton Valley LLC (Website)</td>
+            <td class="center">{stats['cv_web']['count']}</td>
+            <td class="right">${fmt_money(stats['cv_web']['amount'])}</td>
+        </tr>
+    """
+
+    # 5. Universal DC - REG (Website)
+    html_content += f"""
+        <tr>
+            <td>Universal DC - REG (Website)</td>
+            <td class="center">{stats['udc_reg_web']['count']}</td>
+            <td class="right">${fmt_money(stats['udc_reg_web']['amount'])}</td>
+        </tr>
+    """
+
+    # 6. Universal DC - COD (Website)
+    html_content += f"""
+        <tr>
+            <td>Universal DC - COD (Website)</td>
+            <td class="center">{stats['udc_cod_web']['count']}</td>
+            <td class="right">${fmt_money(stats['udc_cod_web']['amount'])}</td>
+        </tr>
+    """
+
+    # 7. Total Cotton Valley Order
+    total_cv_count = stats['cv_app']['count'] + stats['cv_web']['count']
+    total_cv_amt = stats['cv_app']['amount'] + stats['cv_web']['amount']
+    html_content += f"""
+        <tr class="total-row">
+            <td>Total Cotton Valley Orders</td>
+            <td class="center">{total_cv_count}</td>
+            <td class="right">${fmt_money(total_cv_amt)}</td>
+        </tr>
+    """
+
+    # 8. Total Universal DC - REG Order
+    total_reg_count = stats['udc_reg_app']['count'] + stats['udc_reg_web']['count']
+    total_reg_amt = stats['udc_reg_app']['amount'] + stats['udc_reg_web']['amount']
+    html_content += f"""
+        <tr class="total-row">
+            <td>Total Universal DC - REG Order</td>
+            <td class="center">{total_reg_count}</td>
+            <td class="right">${fmt_money(total_reg_amt)}</td>
+        </tr>
+    """
+
+    # 9. Total Universal DC - COD Order
+    total_cod_count = stats['udc_cod_app']['count'] + stats['udc_cod_web']['count']
+    total_cod_amt = stats['udc_cod_app']['amount'] + stats['udc_cod_web']['amount']
+    html_content += f"""
+        <tr class="total-row">
+            <td>Total Universal DC - COD Order</td>
+            <td class="center">{total_cod_count}</td>
+            <td class="right">${fmt_money(total_cod_amt)}</td>
+        </tr>
+    """
 
     html_content += """
             </tbody>
@@ -276,14 +269,15 @@ def send_report_email(filters, recipient_email):
         <thead>
             <tr>
                 <td colspan="11" class="title-row">
-                    Cotton Valley LLC Order Update Summary: {report_date_str}
+                    Cotton Valley LLC Order Update Summary: {date_range_header}
                 </td>
             </tr>
             <tr>
                 <th>Sales Order</th>
-                <th>Customer#</th>
+                <th>Customer</th>
                 <th>Customer Name</th>
                 <th>Company</th>
+                <th>Product Type</th>
                 <th>Written By</th>
                 <th>Order Status</th>
                 <th>PL</th>
@@ -302,6 +296,7 @@ def send_report_email(filters, recipient_email):
             <td>{row.customer or ''}</td>
             <td>{row.customer_name or ''}</td>
             <td>{row.company or ''}</td>
+            <td>{row.product_type or ''}</td>
             <td>{row.written_by or ''}</td>
             <td>{row.order_status or ''}</td>
             <td>{row.pl or ''}</td>
@@ -317,10 +312,10 @@ def send_report_email(filters, recipient_email):
 
     frappe.sendmail(
         recipients=[recipient_email],
-        subject=f"Repzio Order Import Summary : {report_date_str}",
+        subject=f"Repzio Order Import Summary : {date_range_header}",
         message="Please find the attached Order Summary Report.",
         attachments=[{
-            "fname": f"Order_Summary_{report_date_str}.pdf",
+            "fname": f"Order_Summary_{file_date_str}.pdf",
             "fcontent": pdf_file
         }],
         now=True
