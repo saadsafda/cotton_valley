@@ -829,7 +829,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
         if bin_exists:
             bin_doc = frappe.get_doc("Bin", bin_exists)
             bin_doc.actual_qty = qty_avlbl
-            bin_doc.save(ignore_perwmissions=True)
+            bin_doc.save(ignore_permissions=True)
         else:
             frappe.get_doc({
                 "doctype": "Bin",
