@@ -62,43 +62,45 @@ def send_report_email(filters, recipient_email):
     
     columns, data = execute(filters)
 
-    # 1. Dates Setup
-    current_time_str = now_datetime().strftime("%d/%m/%Y, %H:%M")
-    report_date_obj = getdate(filters.get('from_date'))
-    report_date_str = report_date_obj.strftime("%m/%d/%Y")
-    long_date_str = report_date_obj.strftime("%a, %b %d, %Y at 6:30 PM")
+    # --- 1. DATES SETUP (Updated Part) ---
+    # From Date aur To Date ko fetch karke format kar rahe hain
+    from_d_obj = getdate(filters.get("from_date") or today())
+    to_d_obj = getdate(filters.get("to_date") or today())
+    
+    from_d_str = from_d_obj.strftime("%d/%m/%Y")
+    to_d_str = to_d_obj.strftime("%d/%m/%Y")
+    
+    # Ye variable "From - To" date show karega header me
+    date_range_header = f"{from_d_str} - {to_d_str}"
+    
+    # Filename ke liye safe formatting (slashes hata kar)
+    file_date_str = f"{from_d_obj.strftime('%Y-%m-%d')}_to_{to_d_obj.strftime('%Y-%m-%d')}"
 
-    # 2. Data Calculation (Specific Buckets for 1-9 Order)
-    # Hum pehle saare variables 0 set kar denge
+    # Email body date
+    long_date_str = from_d_obj.strftime("%a, %b %d, %Y")
+
+    # --- 2. DATA CALCULATION ---
     stats = {
-        "cv_app": {"count": 0, "amount": 0.0},       # 1. Cotton Valley (App)
-        "cv_web": {"count": 0, "amount": 0.0},       # 4. Cotton Valley (Website)
-        
-        "udc_reg_app": {"count": 0, "amount": 0.0},  # 2. Universal DC - REG (App)
-        "udc_reg_web": {"count": 0, "amount": 0.0},  # 5. Universal DC - REG (Website)
-        
-        "udc_cod_app": {"count": 0, "amount": 0.0},  # 3. Universal DC - COD (App)
-        "udc_cod_web": {"count": 0, "amount": 0.0},  # 6. Universal DC - COD (Website)
+        "cv_app": {"count": 0, "amount": 0.0},       
+        "cv_web": {"count": 0, "amount": 0.0},       
+        "udc_reg_app": {"count": 0, "amount": 0.0},  
+        "udc_reg_web": {"count": 0, "amount": 0.0},  
+        "udc_cod_app": {"count": 0, "amount": 0.0},  
+        "udc_cod_web": {"count": 0, "amount": 0.0},  
     }
 
     for row in data:
         amount = row.order_total or 0.0
-        
-        # Check Company Name
         company_name = (row.company or "").lower()
         if "cotton" in company_name:
-            # Logic for Cotton Valley
             if row.from_app:
                 stats["cv_app"]["count"] += 1
                 stats["cv_app"]["amount"] += amount
             else:
                 stats["cv_web"]["count"] += 1
                 stats["cv_web"]["amount"] += amount
-
         elif "universal" in company_name or "udc" in company_name:
-            # Logic for Universal DC
-            p_type = (row.product_type or "").upper() # REG or COD check karne ke liye
-            
+            p_type = (row.product_type or "").upper()
             if "REG" in p_type:
                 if row.from_app:
                     stats["udc_reg_app"]["count"] += 1
@@ -114,30 +116,22 @@ def send_report_email(filters, recipient_email):
                     stats["udc_cod_web"]["count"] += 1
                     stats["udc_cod_web"]["amount"] += amount
 
-    # 3. HTML Construction
+    # --- 3. HTML CONSTRUCTION ---
     html_content = f"""
     <html>
     <head>
         <style>
             body {{ font-family: Calibri, Arial, sans-serif; font-size: 12px; color: #000; }}
-            
-            /* Summary Table Styles */
             .summary-table {{ border-collapse: collapse; width: 60%; margin-bottom: 20px; font-size: 11px; }}
             .summary-table th {{ 
-                background-color: #FFFF00; 
-                border: 1px solid #000; 
-                padding: 5px; 
-                text-align: left; 
-                font-weight: bold;
+                background-color: #FFFF00; border: 1px solid #000; padding: 5px; 
+                text-align: left; font-weight: bold;
             }}
             .summary-table td {{ border: 1px solid #000; padding: 5px; }}
             .total-row {{ background-color: #D9D9D9; font-weight: bold; }}
-
-            /* Detail Table Styles */
             .detail-table {{ border-collapse: collapse; width: 100%; font-size: 10px; }}
             .detail-table th {{ background-color: #FFFF00; border: 1px solid #000; padding: 4px; }}
             .detail-table td {{ border: 1px solid #000; padding: 4px; }}
-            
             .title-row {{ background-color: #F8CBAD; font-weight: bold; text-align: center; }}
             .right {{ text-align: right; }}
             .center {{ text-align: center; }}
@@ -148,7 +142,7 @@ def send_report_email(filters, recipient_email):
     <body>
         <table style="border: none; width: 100%; margin-bottom: 5px;">
             <tr>
-                <td style="border: none; width: 20%;">{current_time_str}</td>
+                <td style="border: none; width: 25%; font-weight: bold;">{date_range_header}</td>
                 <td style="border: none; text-align: center; font-weight: bold;">Cotton Valley LLC Mail - Order Import Summary</td>
                 <td style="border: none; width: 20%;"></td>
             </tr>
@@ -159,7 +153,7 @@ def send_report_email(filters, recipient_email):
         </div>
 
         <div>
-            <strong>Repzio Cotton Valley</strong> &lt;repzio@cottonvalley.net&gt;<br>
+            <strong>Cotton Valley</strong> &lt;cottonvalley@.net&gt;<br>
             To: Orders &lt;orders@cottonvalley.net&gt;<br>
             <span style="color:#777">{long_date_str}</span>
         </div>
@@ -176,14 +170,12 @@ def send_report_email(filters, recipient_email):
             <tbody>
     """
     
-    # --- EXACT ROW ORDER 1 to 9 ---
-
     # 1. Cotton Valley LLC (App)
     html_content += f"""
         <tr>
             <td>Cotton Valley LLC (App)</td>
             <td class="center">{stats['cv_app']['count']}</td>
-            <td class="right">{fmt_money(stats['cv_app']['amount'])}</td>
+            <td class="right">${fmt_money(stats['cv_app']['amount'])}</td>
         </tr>
     """
 
@@ -192,7 +184,7 @@ def send_report_email(filters, recipient_email):
         <tr>
             <td>Universal DC - REG (App)</td>
             <td class="center">{stats['udc_reg_app']['count']}</td>
-            <td class="right">{fmt_money(stats['udc_reg_app']['amount'])}</td>
+            <td class="right">${fmt_money(stats['udc_reg_app']['amount'])}</td>
         </tr>
     """
 
@@ -201,7 +193,7 @@ def send_report_email(filters, recipient_email):
         <tr>
             <td>Universal DC - COD (App)</td>
             <td class="center">{stats['udc_cod_app']['count']}</td>
-            <td class="right">{fmt_money(stats['udc_cod_app']['amount'])}</td>
+            <td class="right">${fmt_money(stats['udc_cod_app']['amount'])}</td>
         </tr>
     """
 
@@ -210,7 +202,7 @@ def send_report_email(filters, recipient_email):
         <tr>
             <td>Cotton Valley LLC (Website)</td>
             <td class="center">{stats['cv_web']['count']}</td>
-            <td class="right">{fmt_money(stats['cv_web']['amount'])}</td>
+            <td class="right">${fmt_money(stats['cv_web']['amount'])}</td>
         </tr>
     """
 
@@ -219,7 +211,7 @@ def send_report_email(filters, recipient_email):
         <tr>
             <td>Universal DC - REG (Website)</td>
             <td class="center">{stats['udc_reg_web']['count']}</td>
-            <td class="right">{fmt_money(stats['udc_reg_web']['amount'])}</td>
+            <td class="right">${fmt_money(stats['udc_reg_web']['amount'])}</td>
         </tr>
     """
 
@@ -228,40 +220,40 @@ def send_report_email(filters, recipient_email):
         <tr>
             <td>Universal DC - COD (Website)</td>
             <td class="center">{stats['udc_cod_web']['count']}</td>
-            <td class="right">{fmt_money(stats['udc_cod_web']['amount'])}</td>
+            <td class="right">${fmt_money(stats['udc_cod_web']['amount'])}</td>
         </tr>
     """
 
-    # 7. Total Cotton Valley Order (Row 1 + Row 4)
+    # 7. Total Cotton Valley Order
     total_cv_count = stats['cv_app']['count'] + stats['cv_web']['count']
     total_cv_amt = stats['cv_app']['amount'] + stats['cv_web']['amount']
     html_content += f"""
         <tr class="total-row">
             <td>Total Cotton Valley Orders</td>
             <td class="center">{total_cv_count}</td>
-            <td class="right">{fmt_money(total_cv_amt)}</td>
+            <td class="right">${fmt_money(total_cv_amt)}</td>
         </tr>
     """
 
-    # 8. Total Universal DC - REG Order (Row 2 + Row 5)
+    # 8. Total Universal DC - REG Order
     total_reg_count = stats['udc_reg_app']['count'] + stats['udc_reg_web']['count']
     total_reg_amt = stats['udc_reg_app']['amount'] + stats['udc_reg_web']['amount']
     html_content += f"""
         <tr class="total-row">
             <td>Total Universal DC - REG Order</td>
             <td class="center">{total_reg_count}</td>
-            <td class="right">{fmt_money(total_reg_amt)}</td>
+            <td class="right">${fmt_money(total_reg_amt)}</td>
         </tr>
     """
 
-    # 9. Total Universal DC - COD Order (Row 3 + Row 6)
+    # 9. Total Universal DC - COD Order
     total_cod_count = stats['udc_cod_app']['count'] + stats['udc_cod_web']['count']
     total_cod_amt = stats['udc_cod_app']['amount'] + stats['udc_cod_web']['amount']
     html_content += f"""
         <tr class="total-row">
             <td>Total Universal DC - COD Order</td>
             <td class="center">{total_cod_count}</td>
-            <td class="right">{fmt_money(total_cod_amt)}</td>
+            <td class="right">${fmt_money(total_cod_amt)}</td>
         </tr>
     """
 
@@ -271,18 +263,18 @@ def send_report_email(filters, recipient_email):
         <br>
     """
 
-    # --- DETAIL TABLE (As it was) ---
+    # --- DETAIL TABLE ---
     html_content += f"""
     <table class="detail-table">
         <thead>
             <tr>
                 <td colspan="11" class="title-row">
-                    Cotton Valley LLC Order Update Summary: {report_date_str}
+                    Cotton Valley LLC Order Update Summary: {date_range_header}
                 </td>
             </tr>
             <tr>
                 <th>Sales Order</th>
-                <th>Customer#</th>
+                <th>Customer</th>
                 <th>Customer Name</th>
                 <th>Company</th>
                 <th>Product Type</th>
@@ -320,10 +312,10 @@ def send_report_email(filters, recipient_email):
 
     frappe.sendmail(
         recipients=[recipient_email],
-        subject=f"Repzio Order Import Summary : {report_date_str}",
+        subject=f"Repzio Order Import Summary : {date_range_header}",
         message="Please find the attached Order Summary Report.",
         attachments=[{
-            "fname": f"Order_Summary_{report_date_str}.pdf",
+            "fname": f"Order_Summary_{file_date_str}.pdf",
             "fcontent": pdf_file
         }],
         now=True
