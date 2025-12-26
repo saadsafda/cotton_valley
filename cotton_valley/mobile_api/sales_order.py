@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 
 
 @frappe.whitelist()
-def get_sales_person_orders(company=None):
+def get_sales_person_orders(company=None, customer=None):
     """
     Get all sales orders for the current logged-in sales person.
     
@@ -17,6 +17,7 @@ def get_sales_person_orders(company=None):
     """
     try:
         company = None if not company or company == "null" else company
+        customer = None if not customer or customer == "null" else customer
         # Get current user
         current_user = frappe.session.user
         
@@ -61,6 +62,9 @@ def get_sales_person_orders(company=None):
 
         if company:
             base_filters["company"] = company
+
+        if customer:
+            base_filters["customer"] = customer
         
         # Get sales orders
         sales_orders = frappe.get_all(
