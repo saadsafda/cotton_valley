@@ -848,7 +848,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
-CHUNK_SIZE = 500  # adjust as needed
+CHUNK_SIZE = 50  # adjust as needed
 
 @frappe.whitelist()
 def get_product_prices():
@@ -920,9 +920,9 @@ def get_product_prices():
                             "currency": "USD"   # or your default currency
                         }).insert()
 
-                frappe.db.commit()
             except Exception as e:
                 frappe.logger().error(f"Error for {item_code}: {str(e)}")
+            frappe.db.commit()
 
         frappe.logger().info(f"Batch {start // CHUNK_SIZE + 1} completed.")
     return "All item prices updated successfully."
