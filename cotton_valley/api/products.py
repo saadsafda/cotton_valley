@@ -559,11 +559,11 @@ def get_product(product_id, company="Cotton Valley"):
         product["discount"] = None
 
     # quantity (stock across all warehouses)
-    qty_data = frappe.db.sql("""
-        SELECT COALESCE(SUM(actual_qty), 0) as qty
-        FROM `tabBin`
-        WHERE item_code = %s
-    """, (product_id,), as_dict=True)
+    # qty_data = frappe.db.sql("""
+    #     SELECT COALESCE(SUM(actual_qty), 0) as qty
+    #     FROM `tabBin`
+    #     WHERE item_code = %s
+    # """, (product_id,), as_dict=True)
     # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
     product["quantity"] = product.get("stock", 0)
 
@@ -584,6 +584,8 @@ def get_product(product_id, company="Cotton Valley"):
         order_by="list_index asc"
     )
     product["product_galleries"] = [get_file(gallery.image) for gallery in galleries]
+    product["meta_title"] = product["name"]
+    product["meta_description"] = product["short_description"]
     product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
     # thumbnail (first gallery file or image field)
