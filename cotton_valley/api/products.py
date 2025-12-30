@@ -112,6 +112,13 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     if producttype:
         filters["item_group"] = ["in", producttype]
 
+    # --- Stock Filter ---
+    if attribute:
+        if attribute == ["in_stock"]:
+            filters["threshold_stock"] = [">", 0]
+        if attribute == ["out_stock"]:
+            filters["threshold_stock"] = ["<=", 0]
+
     # --- Category Filter ---
     if category:
         # get all product IDs linked to this category
@@ -185,14 +192,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         out_of_stock_filters = filters.copy()
         out_of_stock_filters["threshold_stock"] = ["<=", 0]
         out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
-
-
-    # --- Stock Filter ---
-    if attribute:
-        if attribute == ["in_stock"]:
-            filters["threshold_stock"] = [">", 0]
-        if attribute == ["out_stock"]:
-            filters["threshold_stock"] = ["<=", 0]
 
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
