@@ -112,13 +112,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     if producttype:
         filters["item_group"] = ["in", producttype]
 
-    # --- Stock Filter ---
-    if attribute:
-        if attribute == ["in_stock"]:
-            filters["threshold_stock"] = [">", 0]
-        if attribute == ["out_stock"]:
-            filters["threshold_stock"] = ["<=", 0]
-
     # --- Category Filter ---
     if category:
         # get all product IDs linked to this category
@@ -134,6 +127,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             return {"data": [], "total": 0}  # no products found for this category
 
         filters["name"] = ["in", product_ids]
+    # --- Stock Filter ---
+    if attribute:
+        if attribute == ["in_stock"]:
+            filters["threshold_stock"] = [">", 0]
+        if attribute == ["out_stock"]:
+            filters["threshold_stock"] = ["<=", 0]
 
     # --- Subcategory Filter ---
     if subcategory:
@@ -196,7 +195,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
-
+    print(filters, or_filters, "Filters Applied")
     # get all items - use different query for default sort
     if sort_clause:
         items = frappe.get_all(
@@ -262,6 +261,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         if subcategory:
             filter_conditions.append("custom_sub_category IN %s")
             filter_values.append(subcategory)
+
+        if attribute:
+            if attribute == ["in_stock"]:
+                filter_conditions.append("threshold_stock > 0")
+            if attribute == ["out_stock"]:
+                filter_conditions.append("threshold_stock <= 0")
         
         filter_conditions.append("disabled = 0")
         
@@ -406,6 +411,13 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
+
+        # Stock Filter
+        # if attribute:
+        #     if attribute == ["in_stock"] and qty <= 0:
+        #         continue
+        #     if attribute == ["out_stock"] and qty > 0:
+        #         continue
 
         # --- Price Filter (List Support) ---
         if price:
