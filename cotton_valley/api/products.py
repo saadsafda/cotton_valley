@@ -163,6 +163,31 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     else:
         total_count = frappe.db.count("Item", filters=filters)
 
+    
+    in_stock_count = 0
+    out_of_stock_count = 0
+    if search:
+        # For search, we need to count in-stock and out-of-stock separately
+        stock_data = frappe.db.sql("""
+            SELECT 
+                SUM(CASE WHEN threshold_stock > 0 THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN threshold_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock
+            FROM `tabItem`
+            WHERE item_name LIKE %s OR item_code LIKE %s
+        """, (f"%{search}%", f"%{search}%"), as_dict=True)
+        if stock_data:
+            in_stock_count = stock_data[0]["in_stock"] or 0
+            out_of_stock_count = stock_data[0]["out_of_stock"] or 0
+    else:
+        # For non-search, we can use the filters directly
+        in_stock_filters = filters.copy()
+        in_stock_filters["threshold_stock"] = [">", 0]
+        in_stock_count = frappe.db.count("Item", filters=in_stock_filters)
+
+        out_of_stock_filters = filters.copy()
+        out_of_stock_filters["threshold_stock"] = ["<=", 0]
+        out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
+
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
@@ -350,8 +375,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
     # --- Final Assembly ---
     products = []
-    in_stock_count = 0
-    out_of_stock_count = 0
     for product in items:
         product_id = product["id"]
 
@@ -378,10 +401,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
-        if qty > 0:
-            in_stock_count += 1
-        else:
-            out_of_stock_count += 1
 
         # Stock Filter
         if attribute:
