@@ -150,8 +150,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         "high-low": "price desc"
     }.get(sortBy, None)  # default sort handled separately
 
-    print(sort_clause, "SORT CLAUSE")
-
     # --- Total Count ---
     total_count = 0
     if search:
@@ -187,6 +185,14 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         out_of_stock_filters = filters.copy()
         out_of_stock_filters["threshold_stock"] = ["<=", 0]
         out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
+
+
+    # --- Stock Filter ---
+    if attribute:
+        if attribute == ["in_stock"]:
+            filters["threshold_stock"] = [">", 0]
+        if attribute == ["out_stock"]:
+            filters["threshold_stock"] = ["<=", 0]
 
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
@@ -401,13 +407,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
-
-        # Stock Filter
-        if attribute:
-            if attribute == ["in_stock"] and qty <= 0:
-                continue
-            if attribute == ["out_stock"] and qty > 0:
-                continue
 
         # --- Price Filter (List Support) ---
         if price:
