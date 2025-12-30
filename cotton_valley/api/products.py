@@ -897,7 +897,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
-CHUNK_SIZE = 200  # adjust as needed
+CHUNK_SIZE = 10  # adjust as needed
 
 @frappe.whitelist()
 def get_product_prices():
@@ -990,12 +990,12 @@ def get_product_prices():
                     frappe.db.commit()
                 processed_count += 1
 
-            frappe.log_error("Batch Completed", f"Batch {start // CHUNK_SIZE + 1} completed.")
+            frappe.log_error(f"Batch {start // CHUNK_SIZE + 1} completed.", "Batch Completed")
     except Exception as e:
-        frappe.log_error("Critical Error", f"Critical error in get_product_prices: {str(e)}")
+        frappe.log_error(f"Critical error in get_product_prices: {str(e)}", "Critical Error")
         error_count += 1
     finally:
-        frappe.log_error("Job Completed", f"Price update job completed. Processed: {processed_count}, Errors: {error_count}")
+        frappe.log_error(f"Price update job completed. Processed: {processed_count}, Errors: {error_count}", "Job Completed")
     return f"All item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
