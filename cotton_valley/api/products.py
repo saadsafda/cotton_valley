@@ -127,6 +127,12 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             return {"data": [], "total": 0}  # no products found for this category
 
         filters["name"] = ["in", product_ids]
+    # --- Stock Filter ---
+    if attribute:
+        if attribute == ["in_stock"]:
+            filters["threshold_stock"] = [">", 0]
+        if attribute == ["out_stock"]:
+            filters["threshold_stock"] = ["<=", 0]
 
     # --- Subcategory Filter ---
     if subcategory:
@@ -150,8 +156,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         "high-low": "price desc"
     }.get(sortBy, None)  # default sort handled separately
 
-    print(sort_clause, "SORT CLAUSE")
-
     # --- Total Count ---
     total_count = 0
     if search:
@@ -163,10 +167,34 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     else:
         total_count = frappe.db.count("Item", filters=filters)
 
+    
+    in_stock_count = 0
+    out_of_stock_count = 0
+    if search:
+        # For search, we need to count in-stock and out-of-stock separately
+        stock_data = frappe.db.sql("""
+            SELECT 
+                SUM(CASE WHEN threshold_stock > 0 THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN threshold_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock
+            FROM `tabItem`
+            WHERE item_name LIKE %s OR item_code LIKE %s
+        """, (f"%{search}%", f"%{search}%"), as_dict=True)
+        if stock_data:
+            in_stock_count = stock_data[0]["in_stock"] or 0
+            out_of_stock_count = stock_data[0]["out_of_stock"] or 0
+    else:
+        # For non-search, we can use the filters directly
+        in_stock_filters = filters.copy()
+        in_stock_filters["threshold_stock"] = [">", 0]
+        in_stock_count = frappe.db.count("Item", filters=in_stock_filters)
+
+        out_of_stock_filters = filters.copy()
+        out_of_stock_filters["threshold_stock"] = ["<=", 0]
+        out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
+
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
-
     # get all items - use different query for default sort
     if sort_clause:
         items = frappe.get_all(
@@ -228,10 +256,30 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         if producttype:
             filter_conditions.append("item_group IN %s")
             filter_values.append(producttype)
-        
+
+        if category:
+            # get all product IDs linked to this category
+            product_ids = frappe.db.sql("""
+                SELECT DISTINCT i.name
+                FROM `tabItem` i
+                INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
+                WHERE c.product_category in %s
+            """, (category,), as_dict=True)
+            product_ids = [p["name"] for p in product_ids]
+            if not product_ids:
+                return {"data": [], "total": 0}  # no products found for this category
+            filter_conditions.append("name IN %s")
+            filter_values.append(product_ids)
+
         if subcategory:
             filter_conditions.append("custom_sub_category IN %s")
             filter_values.append(subcategory)
+
+        if attribute:
+            if attribute == ["in_stock"]:
+                filter_conditions.append("threshold_stock > 0")
+            if attribute == ["out_stock"]:
+                filter_conditions.append("threshold_stock <= 0")
         
         filter_conditions.append("disabled = 0")
         
@@ -328,13 +376,13 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
-    stock_data = frappe.db.sql("""
-        SELECT item_code, SUM(actual_qty) as qty
-        FROM `tabBin`
-        WHERE item_code in %s
-        GROUP BY item_code
-    """, (item_ids,), as_dict=True)
-    stock_map = {s["item_code"]: (s["qty"] if s["qty"] >= 0 else 0) for s in stock_data}
+    # stock_data = frappe.db.sql("""
+    #     SELECT item_code, SUM(actual_qty) as qty
+    #     FROM `tabBin`
+    #     WHERE item_code in %s
+    #     GROUP BY item_code
+    # """, (item_ids,), as_dict=True)
+    # stock_map = {s["item_code"]: (s["qty"] if s["qty"] >= 0 else 0) for s in stock_data}
 
     # Product Images
     galleries_data = frappe.get_all(
@@ -378,21 +426,11 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
 
         # Stock Filter
-        if attribute:
-            if attribute == ["in_stock"] and qty <= 0:
-                continue
-            if attribute == ["out_stock"] and qty > 0:
-                continue
-
-        # --- Stock Filter ---
-        if attribute:
-            # if only "in_stock" selected → only keep items with qty > 0
-            if attribute == ["in_stock"] and product["quantity"] <= 0:
-                continue
-            # if only "out_stock" selected → only keep items with qty = 0
-            if attribute == ["out_stock"] and product["quantity"] > 0:
-                continue
-            # if both are passed, ignore filter (show all)
+        # if attribute:
+        #     if attribute == ["in_stock"] and qty <= 0:
+        #         continue
+        #     if attribute == ["out_stock"] and qty > 0:
+        #         continue
 
         # --- Price Filter (List Support) ---
         if price:
@@ -462,7 +500,16 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
     product_showing = page * 30 if page and page > 0 else total_count
     from_showing = (product_showing - 30) + 1 if page and page > 0 else 1
-    return {"data": products, "total": total_count, "from": from_showing, "to": product_showing, "current_page": page or 1, "per_page": limit_page_length or total_count}
+    return {
+        "data": products, 
+        "total": total_count, 
+        "from": from_showing, 
+        "to": product_showing, 
+        "current_page": page or 1, 
+        "per_page": limit_page_length or total_count, 
+        "in_stock_count": in_stock_count,
+        "out_of_stock_count": out_of_stock_count
+    }
 
 
 @frappe.whitelist(allow_guest=True)
@@ -559,11 +606,11 @@ def get_product(product_id, company="Cotton Valley"):
         product["discount"] = None
 
     # quantity (stock across all warehouses)
-    qty_data = frappe.db.sql("""
-        SELECT COALESCE(SUM(actual_qty), 0) as qty
-        FROM `tabBin`
-        WHERE item_code = %s
-    """, (product_id,), as_dict=True)
+    # qty_data = frappe.db.sql("""
+    #     SELECT COALESCE(SUM(actual_qty), 0) as qty
+    #     FROM `tabBin`
+    #     WHERE item_code = %s
+    # """, (product_id,), as_dict=True)
     # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
     product["quantity"] = product.get("stock", 0)
 
@@ -584,6 +631,8 @@ def get_product(product_id, company="Cotton Valley"):
         order_by="list_index asc"
     )
     product["product_galleries"] = [get_file(gallery.image) for gallery in galleries]
+    product["meta_title"] = product["name"]
+    product["meta_description"] = product["short_description"]
     product["product_meta_image"] = get_file(product["product_thumbnail_id"])
 
     # thumbnail (first gallery file or image field)
@@ -848,84 +897,106 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
-CHUNK_SIZE = 50  # adjust as needed
+CHUNK_SIZE = 10  # adjust as needed
 
 @frappe.whitelist()
 def get_product_prices():
     items = frappe.get_all("Item", pluck="name")
     total = len(items)
-    frappe.logger().info(f"Starting price update for {total} items...")
+    frappe.log_error("Starting", f"Starting price update for {total} items...")
     username = ""
     password = ""
-    # Process in chunks
-    for start in range(0, total, CHUNK_SIZE):
-        batch = items[start:start + CHUNK_SIZE]
-        frappe.logger().info(f"Processing items {start + 1} to {start + len(batch)}...")
+    error_count = 0
+    processed_count = 0
+    try:
+        # Process in chunks
+        for start in range(0, total, CHUNK_SIZE):
+            batch = items[start:start + CHUNK_SIZE]
+            frappe.log_error("Processing", f"Processing items {start + 1} to {start + len(batch)}...")
 
-        for item_code in batch:
-            company = frappe.get_value("Item", item_code, "company")
-            if company == "Cotton Valley":
-                url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-                username = CV_USER
-                password = CV_PASSWORD
-            elif company == "UDC":
-                url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-                username = UDC_USER
-                password = UDC_PASSWORD
-            else:
-                continue  # skip if company is not recognized
-            try:
-                response = requests.get(url, auth=(username, password), timeout=30)
-                if response.status_code != 200:
-                    frappe.logger().error(f"{item_code}: API Error {response.status_code}")
-                    continue
-
-                # Check if response is not empty and is JSON
-                if not response.text.strip():
-                    frappe.logger().warning(f"{item_code}: Empty response")
-                    continue
-
-
-                data = response.json()
-                if not data.get("items"):
-                    continue
-
-                for item in data["items"]:
-                    region_name = item.get("rgnname")
-                    rate = item.get("rate")
-
-                    if not region_name or not rate or float(rate) <= 0:
+            for item_code in batch:
+                company = frappe.get_value("Item", item_code, "company")
+                if company == "Cotton Valley":
+                    url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+                    username = CV_USER
+                    password = CV_PASSWORD
+                elif company == "UDC":
+                    url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+                    username = UDC_USER
+                    password = UDC_PASSWORD
+                else:
+                    continue  # skip if company is not recognized
+                try:
+                    response = requests.get(url, auth=(username, password), timeout=30)
+                    if response.status_code != 200:
+                        frappe.log_error("API Error", f"{item_code}: API Error {response.status_code}")
+                        error_count += 1
                         continue
 
-                    price_list = frappe.db.exists("Price List", region_name)
-                    if not price_list:
+                    # Check if response is not empty and is JSON
+                    if not response.text.strip():
+                        frappe.log_error("Empty Response", f"{item_code}: Empty response")
+                        error_count += 1
                         continue
 
+                    try:
+                        data = response.json()
+                    except Exception as e:
+                        frappe.log_error("JSON Decode Error", f"{item_code}: JSON decode error: {str(e)}")
+                        error_count += 1
+                        continue
 
-                    existing = frappe.db.exists("Item Price", {
-                        "item_code": item_code,
-                        "price_list": price_list
-                    })
+                    if not data.get("items"):
+                        continue
 
-                    if existing:
-                        ip = frappe.get_doc("Item Price", existing)
-                        ip.price_list_rate = float(rate)
-                        ip.save()
-                    else:
-                        frappe.get_doc({
-                            "doctype": "Item Price",
+                    for item in data["items"]:
+                        region_name = item.get("rgnname")
+                        rate = item.get("rate")
+
+                        if not region_name or not rate or float(rate) <= 0:
+                            continue
+
+                        price_list = frappe.db.exists("Price List", region_name)
+                        if not price_list:
+                            continue
+
+                        existing = frappe.db.exists("Item Price", {
                             "item_code": item_code,
-                            "price_list": price_list,
-                            "price_list_rate": float(rate),
-                            "currency": "USD"   # or your default currency
-                        }).insert()
+                            "price_list": price_list
+                        })
 
-            except Exception as e:
-                frappe.logger().error(f"Error for {item_code}: {str(e)}")
-            frappe.db.commit()
+                        try:
+                            if existing:
+                                ip = frappe.get_doc("Item Price", existing)
+                                ip.price_list_rate = float(rate)
+                                ip.save()
+                            else:
+                                frappe.get_doc({
+                                    "doctype": "Item Price",
+                                    "item_code": item_code,
+                                    "price_list": price_list,
+                                    "price_list_rate": float(rate),
+                                    "currency": "USD"   # or your default currency
+                                }).insert()
+                        except Exception as e:
+                            frappe.log_error(frappe.get_traceback(), f"{item_code}: Error saving price: {str(e)}")
+                            error_count += 1
+                            continue
 
-        frappe.logger().info(f"Batch {start // CHUNK_SIZE + 1} completed.")
-    return "All item prices updated successfully."
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(), f"Error for {item_code}: {str(e)}")
+                    error_count += 1
+                finally:
+                    frappe.db.commit()
+                processed_count += 1
+
+            frappe.log_error(f"Batch {start // CHUNK_SIZE + 1} completed.", "Batch Completed")
+    except Exception as e:
+        frappe.log_error(f"Critical error in get_product_prices: {str(e)}", "Critical Error")
+        error_count += 1
+    finally:
+        frappe.log_error(f"Price update job completed. Processed: {processed_count}, Errors: {error_count}", "Job Completed")
+    return f"All item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
 

@@ -31,7 +31,10 @@ def get_location_from_ip(doc, method):
                
                 
                 try:
-                    doc.db_set()
+                    doc.db_set({
+                        'custom_country': country,
+                        'custom_city': city
+                    })
                     frappe.log_error(
                         title='IP Location Update Success',
                         message=f"IP: {doc.ip_address}, Location: {city}, {country}"
