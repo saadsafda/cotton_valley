@@ -194,7 +194,10 @@ doc_events = {
 	},
 	"Activity Log": {
         "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"
-    }
+    },
+    "Scheduled Job Log": {
+		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
+	}
 }
 
 # Scheduled Tasks
