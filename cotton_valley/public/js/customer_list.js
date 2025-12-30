@@ -1,5 +1,4 @@
 
-
 frappe.listview_settings['Customer'] = {
     onload(listview) {
         if (frappe.get_route()[2] === 'Report' && !frappe.get_route()[3]) {
