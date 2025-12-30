@@ -701,11 +701,11 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-11-11 03:09:17.546711",
+  "modified": "2025-12-24 02:48:59.138154",
   "module": "Cotton Valley",
   "name": "New Customers Last 7 Days",
   "prepared_report": 0,
-  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)\r\nORDER BY creation DESC\r\n",
+  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)\r\nORDER BY creation DESC\r\n",
   "ref_doctype": "Customer",
   "reference_report": null,
   "report_name": "New Customers Last 7 Days",
@@ -2134,11 +2134,11 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-11-05 02:53:18.657463",
+  "modified": "2025-12-24 02:50:31.805163",
   "module": "Cotton Valley",
   "name": "Top Selling Products Report",
   "prepared_report": 0,
-  "query": "SELECT\n    t1.item_code AS sku,\n    t1.item_name AS product_name,\n    SUM(t1.qty) AS Total_Units_Sold,\n    SUM(t1.amount) AS Total_Revenue\n\nFROM\n    `tabSales Order Item` t1  -- Correct table for sales details\n\nJOIN\n    `tabItem` t2 ON t1.item_code = t2.item_code  -- Correct table for item master data\n\nGROUP BY\n    t1.item_code, t1.item_name\n\nORDER BY\n    Total_Units_Sold DESC\nLIMIT 5",
+  "query": "SELECT\n    t1.item_code AS sku,\n    t1.item_name AS product_name,\n    SUM(t1.qty) AS Total_Units_Sold,\n    SUM(t1.amount) AS Total_Revenue\n\nFROM\n    `tabSales Order Item` t1  -- Correct table for sales details\n\nJOIN\n    `tabItem` t2 ON t1.item_code = t2.item_code  \nGROUP BY\n    t1.item_code, t1.item_name\n\nORDER BY\n    Total_Units_Sold DESC\nLIMIT 5",
   "ref_doctype": "Sales Order",
   "reference_report": null,
   "report_name": "Top Selling Products Report",
@@ -2266,6 +2266,92 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "Employee"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-12-29 04:13:43.156452",
+  "module": "Cotton Valley",
+  "name": "Items With Price level",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "Items With Price level",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Purchase User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Item Manager"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Manufacturing User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Desk User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Items With Price level",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
    }
   ],
   "timeout": 0
