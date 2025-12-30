@@ -256,7 +256,21 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         if producttype:
             filter_conditions.append("item_group IN %s")
             filter_values.append(producttype)
-        
+
+        if category:
+            # get all product IDs linked to this category
+            product_ids = frappe.db.sql("""
+                SELECT DISTINCT i.name
+                FROM `tabItem` i
+                INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
+                WHERE c.product_category in %s
+            """, (category,), as_dict=True)
+            product_ids = [p["name"] for p in product_ids]
+            if not product_ids:
+                return {"data": [], "total": 0}  # no products found for this category
+            filter_conditions.append("name IN %s")
+            filter_values.append(product_ids)
+            
         if subcategory:
             filter_conditions.append("custom_sub_category IN %s")
             filter_values.append(subcategory)
