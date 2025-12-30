@@ -353,13 +353,13 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
             price_map = {p["item_code"]: p["price_list_rate"] for p in price_data}
 
     # Stock
-    stock_data = frappe.db.sql("""
-        SELECT item_code, SUM(actual_qty) as qty
-        FROM `tabBin`
-        WHERE item_code in %s
-        GROUP BY item_code
-    """, (item_ids,), as_dict=True)
-    stock_map = {s["item_code"]: (s["qty"] if s["qty"] >= 0 else 0) for s in stock_data}
+    # stock_data = frappe.db.sql("""
+    #     SELECT item_code, SUM(actual_qty) as qty
+    #     FROM `tabBin`
+    #     WHERE item_code in %s
+    #     GROUP BY item_code
+    # """, (item_ids,), as_dict=True)
+    # stock_map = {s["item_code"]: (s["qty"] if s["qty"] >= 0 else 0) for s in stock_data}
 
     # Product Images
     galleries_data = frappe.get_all(
@@ -408,16 +408,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 continue
             if attribute == ["out_stock"] and qty > 0:
                 continue
-
-        # --- Stock Filter ---
-        if attribute:
-            # if only "in_stock" selected → only keep items with qty > 0
-            if attribute == ["in_stock"] and product["quantity"] <= 0:
-                continue
-            # if only "out_stock" selected → only keep items with qty = 0
-            if attribute == ["out_stock"] and product["quantity"] > 0:
-                continue
-            # if both are passed, ignore filter (show all)
 
         # --- Price Filter (List Support) ---
         if price:
