@@ -270,7 +270,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
                 return {"data": [], "total": 0}  # no products found for this category
             filter_conditions.append("name IN %s")
             filter_values.append(product_ids)
-            
+
         if subcategory:
             filter_conditions.append("custom_sub_category IN %s")
             filter_values.append(subcategory)
@@ -897,8 +897,7 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
-CHUNK_SIZE = 50  # adjust as needed
-
+CHUNK_SIZE = 200  # adjust as needed
 
 @frappe.whitelist()
 def get_product_prices():
