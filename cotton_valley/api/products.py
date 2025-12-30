@@ -195,7 +195,6 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
-    print(filters, or_filters, "Filters Applied")
     # get all items - use different query for default sort
     if sort_clause:
         items = frappe.get_all(
