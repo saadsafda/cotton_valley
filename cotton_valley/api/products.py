@@ -806,7 +806,8 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
                 frappe.get_doc({
                     "doctype": "Item Value Updates",
                     "item_code": item_code,
-                    "title": field,
+                    "company": company,
+                    "title": f"{item_code} - {field}",
                     "message": f"Value not updated: {value!r} is invalid or empty"
                 }).insert(ignore_permissions=True)
         except Exception as e:
@@ -814,7 +815,8 @@ def sync_item_from_api(item_code, company="Cotton Valley"):
             frappe.get_doc({
                 "doctype": "Item Value Updates",
                 "item_code": item_code,
-                "title": field,
+                "company": company,
+                "title": f"{item_code} - {field}",
                 "message": f"Failed to update: {str(e)}"
             }).insert(ignore_permissions=True)
 
@@ -1005,7 +1007,8 @@ def scheduler_sync_item_from_api():
                             frappe.get_doc({
                                 "doctype": "Item Value Updates",
                                 "item_code": item_code,
-                                "title": field,
+                                "company": company,
+                                "title": f"{item_code} - {field}",
                                 "message": f"Value not updated: {value!r} is invalid or empty"
                             }).insert(ignore_permissions=True)
                     except Exception as e:
@@ -1013,7 +1016,8 @@ def scheduler_sync_item_from_api():
                         frappe.get_doc({
                             "doctype": "Item Value Updates",
                             "item_code": item_code,
-                            "title": field,
+                            "company": company,
+                            "title": f"{item_code} - {field}",
                             "message": f"Failed to update: {str(e)}"
                         }).insert(ignore_permissions=True)
 
