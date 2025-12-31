@@ -979,9 +979,26 @@ def scheduler_sync_item_from_api():
 
                 updated = False
                 for field, value in field_mapping.items():
-                    if value not in [None, "", 0, "0", "null"]:
-                        item_doc.set(field, value)
-                        updated = True
+                    try:
+                        if value not in [None, "", 0, "0", "null"]:
+                            item_doc.set(field, value)
+                            updated = True
+                        else:
+                            # Log to Item Value Updates if value is not set
+                            frappe.get_doc({
+                                "doctype": "Item Value Updates",
+                                "item_code": item_code,
+                                "title": field,
+                                "message": f"Value not updated: {value!r} is invalid or empty"
+                            }).insert(ignore_permissions=True)
+                    except Exception as e:
+                        # Log to Item Value Updates if set fails
+                        frappe.get_doc({
+                            "doctype": "Item Value Updates",
+                            "item_code": item_code,
+                            "title": field,
+                            "message": f"Failed to update: {str(e)}"
+                        }).insert(ignore_permissions=True)
 
                 itmclsid = item_data.get("itmclsid")
                 itmclsdsc = item_data.get("itmclsdsc")
