@@ -1380,3 +1380,11 @@ def download_custom_catalog(items):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Catalog Download Error")
         frappe.throw(_("Error generating catalog: {0}").format(str(e)))
+
+
+@frappe.whitelist()
+def delete_all_item_value_updates():
+    """Delete all records from the Item Value Updates doctype."""
+    frappe.db.delete("Item Value Updates")
+    frappe.db.commit()
+    return {"status": "success", "message": "All Item Value Updates records deleted."}

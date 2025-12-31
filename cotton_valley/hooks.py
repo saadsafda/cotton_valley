@@ -219,9 +219,9 @@ scheduler_events = {
 # 	"hourly": [
 # 		"cotton_valley.tasks.hourly"
 # 	],
-# 	"weekly": [
-# 		"cotton_valley.tasks.weekly"
-# 	],
+	"weekly": [
+		"cotton_valley.api.products.delete_all_item_value_updates"
+	],
 # 	"monthly": [
 # 		"cotton_valley.tasks.monthly"
 # 	],
