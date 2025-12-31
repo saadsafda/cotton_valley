@@ -85,7 +85,7 @@ doctype_js = {
 	"Activity Log": "public/js/activity_log.js",
 	"Tag": "public/js/tag.js"
 }
-doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/js/item_list.js", "Sales Order" : "public/js/sales_order_list.js"}
+doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/js/item_list.js", "Sales Order" : "public/js/sales_order_list.js", "Lead": "public/js/lead_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
