@@ -27,7 +27,7 @@ def get_columns(price_lists):
         {
             "fieldname": "item_code",
             "label": "Item Code",
-            "fieldtype": "Link",
+            "fieldtype": "Data",
             "options": "Item",
             "width": 150
         },
