@@ -140,7 +140,7 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
 
 # Register Email For Customer
 @frappe.whitelist(allow_guest=True)
-def send_registration_email(customer_email, firstname, lastname, company):
+def send_registration_email(customer_email, sales_person, firstname, lastname, company):
     """
     Send welcome email to newly registered customer
     Uses Email Template from ERPNext for easy content management
@@ -149,6 +149,11 @@ def send_registration_email(customer_email, firstname, lastname, company):
         if not customer_email:
             frappe.log_error("No email address found for customer", "Registration Email Failed")
             return
+        sales_person_email = ""
+        if sales_person:
+            sales_person_employee = frappe.db.get_value("Sales Person", sales_person, "employee")
+            if sales_person_employee:
+                sales_person_email = frappe.db.get_value("Employee", sales_person_employee, "user_id")
         
         # Try to get Email Template from ERPNext
         template_name = ""
@@ -200,7 +205,7 @@ def send_registration_email(customer_email, firstname, lastname, company):
         
         # Send the email with CC
         frappe.sendmail(
-            recipients=[customer_email],
+            recipients=[customer_email, sales_person_email] if sales_person_email else [customer_email],
             cc=cc_emails if cc_emails else None,
             subject=email_subject,
             message=email_message,

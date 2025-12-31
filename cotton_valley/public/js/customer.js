@@ -31,10 +31,10 @@ frappe.ui.form.on('Customer', {
 
                                         // Open new window and set cookie
                                         // Open portal in new tab
-                                        window.open(`http://156.67.27.94:3001/en/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://cottonvalley.destrotechnologies.website/en/auth/erplogin?token=${token}`, "_blank");
 
                                     } else {
-                                        window.open(`http://156.67.27.94:3002/en/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://universal.destrotechnologies.website/en/auth/erplogin?token=${token}`, "_blank");
                                     }
                                 } else {
                                     frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
@@ -62,6 +62,7 @@ frappe.ui.form.on('Customer', {
                             method: 'cotton_valley.api.api.send_registration_email',
                             args: {
                                 customer_email: frm.doc.custom_email_address,
+                                sales_person: frm.doc.sales_person,
                                 firstname: frm.doc.customer_name,
                                 lastname: frm.doc.custom_last_name || "",
                                 company: frm.doc.register_company
