@@ -4,7 +4,7 @@ import requests
 def get_location_from_ip(doc, method):
     # Field name check: Standard 'ip_address' ya Custom 'custom_ip_address'
     # Jo field aapke Customer form me hai, wo pehle priority lega
-    ip_addr = getattr(doc, 'ip_address', None) or getattr(doc, 'custom_ip_address', None)
+    ip_addr = getattr(doc, 'custom_ip_address', None)
     
     # Agar IP nahi hai to function yahin rok dein
     if not ip_addr:
