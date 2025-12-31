@@ -1,4 +1,5 @@
 import frappe # type: ignore
+from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
 def get_homepage_slides(company="Cotton Valley"):
@@ -26,7 +27,7 @@ def get_homepage_slides(company="Cotton Valley"):
     home_banners = []
     for row in sorted(doc.home_banners, key=lambda x: x.idx):
         home_banners.append({
-            "image_url": row.image,
+            "image_url": frappe.utils.get_url(row.image),
             "redirect_link": {
                 "link": row.link,
                 "link_type": get_subbanner_link_type(row.link_type),
@@ -55,14 +56,14 @@ def get_homepage_slides(company="Cotton Valley"):
                 "status": True,
                 "main_banner": home_banners,
                 "sub_banner_1": {
-                    "image_url": doc.right_top,
+                    "image_url": frappe.utils.get_url(doc.right_top),
                     "redirect_link": {
                         "link": doc.right_top_banner_link,
                         "link_type": get_subbanner_link_type(doc.right_top_banner_link_type),
                     }
                 },
                 "sub_banner_2": {
-                    "image_url": doc.right_bottom,
+                    "image_url": frappe.utils.get_url(doc.right_bottom),
                     "redirect_link": {
                         "link": doc.right_bottom_banner_link,
                         "link_type": get_subbanner_link_type(doc.right_bottom_banner_link_type),
@@ -87,14 +88,14 @@ def get_homepage_slides(company="Cotton Valley"):
             "promotion_banner": {
                 "status": doc.show_promotion_baners,
                 "banner_1": {
-                    "image_url": doc.promotion_banner,
+                    "image_url": frappe.utils.get_url(doc.promotion_banner),
                     "redirect_link": {
                         "link_type": get_subbanner_link_type(doc.link_type),
                         "link": promotion_link
                     }
                 },
                 "banner_2": {
-                    "image_url": doc.promotion_subbanner,
+                    "image_url": frappe.utils.get_url(doc.promotion_subbanner),
                     "redirect_link": {
                         "link_type": get_subbanner_link_type(doc.sublink_type),
                         "link": subPromotion_link
