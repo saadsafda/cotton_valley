@@ -2355,5 +2355,55 @@
    }
   ],
   "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Lead\"],[\"docstatus\",\"Lead\"],[\"lead_name\",\"Lead\"],[\"company\",\"Lead\"],[\"email_id\",\"Lead\"],[\"mobile_no\",\"Lead\"],[\"custom_square_footage\",\"Lead\"],[\"custom_type_of_business\",\"Lead\"],[\"custom_address\",\"Lead\"]],\"order_by\":\"`tabLead`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"lead_name\":120,\"company\":120,\"email_id\":120,\"mobile_no\":120,\"custom_square_footage\":120,\"custom_type_of_business\":120,\"custom_address\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2025-12-30 05:56:51.218302",
+  "module": "Cotton Valley",
+  "name": "Default Lead Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Lead",
+  "reference_report": null,
+  "report_name": "Default Lead Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "Default Lead Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Default Lead Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Default Lead Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Default Lead Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
  }
 ]
