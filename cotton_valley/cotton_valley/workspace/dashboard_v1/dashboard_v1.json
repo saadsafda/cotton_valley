@@ -1,0 +1,65 @@
+{
+ "charts": [
+  {
+   "chart_name": "Top 5 Selling Items",
+   "label": "Top 5 Selling Items"
+  },
+  {
+   "chart_name": "Order Status Summary",
+   "label": "Order Status Summary"
+  },
+  {
+   "chart_name": "Excellent Sales Reps",
+   "label": "Excellent Sales Reps"
+  },
+  {
+   "chart_name": "Top 5 States",
+   "label": "Top 5 States"
+  },
+  {
+   "chart_name": "Top 5 Cities",
+   "label": "Top 5 Cities"
+  }
+ ],
+ "content": "[{\"id\":\"qG0s346AFl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Dashboad</span>\",\"col\":12}},{\"id\":\"9a0Hb0G9c5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V1\",\"col\":3}},{\"id\":\"M15xmNH2EA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V2\",\"col\":3}},{\"id\":\"Pb_k6pbQc-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"kwNSAMbQE2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Selling Items\",\"col\":6}},{\"id\":\"loNpqkJckM\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Order Status Summary\",\"col\":6}},{\"id\":\"mynb34FYde\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Excellent Sales Reps\",\"col\":12}},{\"id\":\"lmyg6byz8p\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 States\",\"col\":6}},{\"id\":\"sdleNsN6Lc\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Cities\",\"col\":6}}]",
+ "creation": "2025-10-10 02:14:29.864535",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "unhide",
+ "idx": 2,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Dashboard V1",
+ "links": [],
+ "modified": "2026-01-02 01:55:22.701726",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Dashboard V1",
+ "number_cards": [],
+ "owner": "saad@gmail.com",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Dashboard V1",
+   "link_to": "Dashboard V1",
+   "type": "Dashboard"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Dashboard V2",
+   "link_to": "Dashboard V2",
+   "type": "Dashboard"
+  }
+ ],
+ "title": "Dashboard V1"
+}
