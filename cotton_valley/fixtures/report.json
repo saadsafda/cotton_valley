@@ -11,6 +11,86 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
+  "modified": "2025-11-24 00:27:05.754465",
+  "module": "Cotton Valley",
+  "name": "Last Month Orders Summary UDC V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    name AS \"Sales Order:Link/Sales Order:150\",\r\n    transaction_date AS \"Order Date:Date:120\",\r\n    customer AS \"Customer:Link/Customer:150\",\r\n    grand_total AS \"Total Amount:Currency:120\",\r\n    status AS \"Status::100\"\r\nFROM `tabSales Order`\r\nWHERE docstatus = 1\r\n   AND company = 'UDC'\r\n  AND transaction_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')\r\n  AND transaction_date < DATE_FORMAT(CURDATE(), '%%Y-%%m-01')\r\nORDER BY transaction_date DESC\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Last Month Orders Summary UDC V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Last Month Orders Summary UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
   "modified": "2025-12-17 04:09:43.594293",
   "module": "Cotton Valley",
   "name": "Top Performing Customers CV",
@@ -2402,6 +2482,1390 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 00:40:49.274718",
+  "module": "Cotton Valley",
+  "name": "Best Selling Products UDC V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    SOI.item_code AS item_code,\r\n    SOI.item_name AS item_name,\r\n    SUM(SOI.qty) AS total_quantity_sold,\r\n    SUM(SOI.qty * SOI.base_rate) AS total_sales_value\r\nFROM\r\n    `tabSales Order Item` SOI\r\nJOIN\r\n    `tabSales Order` SO ON SOI.parent = SO.name\r\nWHERE\r\n    SO.docstatus = 1  -- Only consider submitted/confirmed orders\r\n    AND SO.company = 'UDC'\r\nGROUP BY\r\n    SOI.item_code, SOI.item_name\r\nORDER BY\r\n    total_quantity_sold DESC, total_sales_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Best Selling Products UDC V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Best Selling Products UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 02:42:15.787486",
+  "module": "Cotton Valley",
+  "name": "Top Performing Customers CV V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    customer AS \"Customer:Link/Customer:200\",\r\n    COUNT(name) AS \"No. of Orders:Int:120\",\r\n    SUM(grand_total) AS \"Total Sales (PKR):Currency:150\"\r\nFROM `tabSales Order`\r\nWHERE docstatus = 1\r\nAND company = 'Cotton Valley'\r\nGROUP BY customer\r\nORDER BY SUM(grand_total) DESC\r\nLIMIT 20\r\n",
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "Top Performing Customers CV V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Performing Customers CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:54:01.606773",
+  "module": "Cotton Valley",
+  "name": "Top Shipping Cities UDC V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    A.city AS city,\r\n    COUNT(SO.name) AS total_orders,\r\n    SUM(SOI.base_rate * SOI.qty) AS total_order_value\r\nFROM\r\n    `tabSales Order` SO\r\nJOIN\r\n    `tabSales Order Item` SOI ON SOI.parent = SO.name\r\nJOIN\r\n    `tabAddress` A ON A.name = SO.shipping_address_name\r\nWHERE\r\n    SO.company = 'UDC'\r\nGROUP BY\r\n    A.city\r\nORDER BY\r\n    total_orders DESC, total_order_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Shipping Cities UDC V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 00:46:52.350821",
+  "module": "Cotton Valley",
+  "name": "Top Shipping Cities UDC V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    A.city AS city,\r\n    COUNT(SO.name) AS total_orders,\r\n    SUM(SOI.base_rate * SOI.qty) AS total_order_value\r\nFROM\r\n    `tabSales Order` SO\r\nJOIN\r\n    `tabSales Order Item` SOI ON SOI.parent = SO.name\r\nJOIN\r\n    `tabAddress` A ON A.name = SO.shipping_address_name\r\nWHERE\r\n    SO.company = 'UDC'\r\nGROUP BY\r\n    A.city\r\nORDER BY\r\n    total_orders DESC, total_order_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Shipping Cities UDC V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Shipping Cities UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 01:05:04.929992",
+  "module": "Cotton Valley",
+  "name": "New Customers Last 7 Days CV V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)\r\nAND register_company = 'Cotton Valley'\r\nORDER BY creation DESC\r\n",
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "New Customers Last 7 Days CV V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "New Customers Last 7 Days CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:50:18.111520",
+  "module": "Cotton Valley",
+  "name": "Abandoned Carts Report UDC V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    T1.item_name,\r\n    SUM(T1.qty) AS total_abandoned_quantity,\r\n    SUM(T1.base_rate * T1.qty) AS total_abandoned_value\r\nFROM\r\n    `tabSales Order Item` T1\r\nJOIN\r\n    `tabSales Order` T2 ON T1.parent = T2.name\r\nWHERE\r\n    T2.company = 'UDC'\r\nGROUP BY\r\n    T1.item_name\r\nORDER BY\r\n    total_abandoned_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Abandoned Carts Report UDC V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Abandoned Carts Report UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 00:33:09.997924",
+  "module": "Cotton Valley",
+  "name": "Top Performing Customers UDC V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    customer AS \"Customer:Link/Customer:200\",\r\n    COUNT(name) AS \"No. of Orders:Int:120\",\r\n    SUM(grand_total) AS \"Total Sales (PKR):Currency:150\"\r\nFROM `tabSales Order`\r\nWHERE docstatus = 1\r\n AND company = 'UDC'\r\nGROUP BY customer\r\nORDER BY SUM(grand_total) DESC\r\nLIMIT 20\r\n",
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "Top Performing Customers UDC V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Performing Customers UDC V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 04:51:08.846255",
+  "module": "Cotton Valley",
+  "name": "Sales Person-wise Summary CV V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    COALESCE(so.custom_customer_sales_representative, 'Not Assigned') AS \"Sales Person:Link/Sales Person:150\",\r\n    COUNT(DISTINCT so.name) AS \"Total Orders:Int:100\",\r\n    SUM(so_item.qty) AS \"Total Quantity:Float:120\",\r\n    SUM(so_item.base_net_amount) AS \"Total Amount (PKR):Currency:150\"\r\nFROM\r\n    `tabSales Order` AS so\r\nLEFT JOIN\r\n    `tabSales Order Item` AS so_item ON so_item.parent = so.name\r\nWHERE\r\n    so.docstatus = 1\r\n    AND so.company = 'Cotton Valley'\r\nGROUP BY\r\n    so.custom_customer_sales_representative\r\nORDER BY\r\n    SUM(so_item.base_net_amount) DESC\r\nLIMIT 5;",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Sales Person-wise Summary CV V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Sales Person-wise Summary CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 01:51:52.083476",
+  "module": "Cotton Valley",
+  "name": "Best Selling Products CV V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    SOI.item_code AS item_code,\r\n    SOI.item_name AS item_name,\r\n    SUM(SOI.qty) AS total_quantity_sold,\r\n    SUM(SOI.qty * SOI.base_rate) AS total_sales_value\r\nFROM\r\n    `tabSales Order Item` SOI\r\nJOIN\r\n    `tabSales Order` SO ON SOI.parent = SO.name\r\nWHERE\r\n    SO.docstatus = 1  -- Only consider submitted/confirmed orders\r\n    AND SO.company = 'Cotton Valley'\r\nGROUP BY\r\n    SOI.item_code, SOI.item_name\r\nORDER BY\r\n    total_quantity_sold DESC, total_sales_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Best Selling Products CV V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Best Selling Products CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 02:35:57.523717",
+  "module": "Cotton Valley",
+  "name": "Last Month Orders Summary CV V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    name AS \"Sales Order:Link/Sales Order:150\",\r\n    transaction_date AS \"Order Date:Date:120\",\r\n    customer AS \"Customer:Link/Customer:150\",\r\n    grand_total AS \"Total Amount:Currency:120\",\r\n    status AS \"Status::100\"\r\nFROM `tabSales Order`\r\nWHERE docstatus = 1\r\n  AND company = 'Cotton Valley'\r\n  AND transaction_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')\r\n  AND transaction_date < DATE_FORMAT(CURDATE(), '%%Y-%%m-01')\r\nORDER BY transaction_date DESC\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Last Month Orders Summary CV V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Last Month Orders Summary CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:07:53.404855",
+  "module": "Cotton Valley",
+  "name": "Top Shipping Cities CV V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    A.city AS city,\r\n    COUNT(SO.name) AS total_orders,\r\n    SUM(SOI.base_rate * SOI.qty) AS total_order_value\r\nFROM\r\n    `tabSales Order` SO\r\nJOIN\r\n    `tabSales Order Item` SOI ON SOI.parent = SO.name\r\nJOIN\r\n    `tabAddress` A ON A.name = SO.shipping_address_name\r\n    AND company = 'Cotton Valley'\r\nGROUP BY\r\n    A.city\r\nORDER BY\r\n    total_orders DESC, total_order_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Shipping Cities CV V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Shipping Cities CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:21:06.117642",
+  "module": "Cotton Valley",
+  "name": "New Customers Last 7 Days UDC V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)\r\nAND register_company = 'UDC'\r\nORDER BY creation DESC\r\n",
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "New Customers Last 7 Days UDC V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "New Customers Last 7 Days UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 01:42:04.516229",
+  "module": "Cotton Valley",
+  "name": "Abandoned Carts Report CV V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    T1.item_name,\r\n    SUM(T1.qty) AS total_abandoned_quantity,\r\n    SUM(T1.base_rate * T1.qty) AS total_abandoned_value\r\nFROM\r\n    `tabSales Order Item` T1\r\nJOIN\r\n    `tabSales Order` T2 ON T1.parent = T2.name\r\nWHERE\r\n    T2.company = 'Cotton Valley'\r\nGROUP BY\r\n    T1.item_name\r\nORDER BY\r\n    total_abandoned_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Abandoned Carts Report CV V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Abandoned Carts Report CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:57:32.378665",
+  "module": "Cotton Valley",
+  "name": "Best Selling Products UDC V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    SOI.item_code AS item_code,\r\n    SOI.item_name AS item_name,\r\n    SUM(SOI.qty) AS total_quantity_sold,\r\n    SUM(SOI.qty * SOI.base_rate) AS total_sales_value\r\nFROM\r\n    `tabSales Order Item` SOI\r\nJOIN\r\n    `tabSales Order` SO ON SOI.parent = SO.name\r\nWHERE\r\n    SO.docstatus = 1  -- Only consider submitted/confirmed orders\r\n    AND SO.company = 'UDC'\r\nGROUP BY\r\n    SOI.item_code, SOI.item_name\r\nORDER BY\r\n    total_quantity_sold DESC, total_sales_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Best Selling Products UDC V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Best Selling Products UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:03:35.501539",
+  "module": "Cotton Valley",
+  "name": "Best Selling Products CV V1",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    SOI.item_code AS item_code,\r\n    SOI.item_name AS item_name,\r\n    SUM(SOI.qty) AS total_quantity_sold,\r\n    SUM(SOI.qty * SOI.base_rate) AS total_sales_value\r\nFROM\r\n    `tabSales Order Item` SOI\r\nJOIN\r\n    `tabSales Order` SO ON SOI.parent = SO.name\r\nWHERE\r\n    SO.docstatus = 1  -- Only consider submitted/confirmed orders\r\nAND SO.company = 'Cotton Valley'\r\nGROUP BY\r\n    SOI.item_code, SOI.item_name\r\nORDER BY\r\n    total_quantity_sold DESC, total_sales_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Best Selling Products CV V1",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Best Selling Products CV V1",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 03:53:55.145940",
+  "module": "Cotton Valley",
+  "name": "Top Shipping Cities CV V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    A.city AS city,\r\n    COUNT(SO.name) AS total_orders,\r\n    SUM(SOI.base_rate * SOI.qty) AS total_order_value\r\nFROM\r\n    `tabSales Order` SO\r\nJOIN\r\n    `tabSales Order Item` SOI ON SOI.parent = SO.name\r\nJOIN\r\n    `tabAddress` A ON A.name = SO.shipping_address_name\r\nWHERE\r\n    SO.company = 'Cotton Valley'\r\nGROUP BY\r\n    A.city\r\nORDER BY\r\n    total_orders DESC, total_order_value DESC\r\nLIMIT 5;\r\n",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Top Shipping Cities CV V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Top Shipping Cities CV V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2025-11-24 04:51:48.110980",
+  "module": "Cotton Valley",
+  "name": "Sales Person-wise Summary UDC V2",
+  "prepared_report": 0,
+  "query": "SELECT\r\n    COALESCE(so.custom_customer_sales_representative, 'Not Assigned') AS \"Sales Person:Link/Sales Person:150\",\r\n    COUNT(DISTINCT so.name) AS \"Total Orders:Int:100\",\r\n    SUM(so_item.qty) AS \"Total Quantity:Float:120\",\r\n    SUM(so_item.base_net_amount) AS \"Total Amount (PKR):Currency:150\"\r\nFROM\r\n    `tabSales Order` AS so\r\nLEFT JOIN\r\n    `tabSales Order Item` AS so_item ON so_item.parent = so.name\r\nWHERE\r\n    so.docstatus = 1\r\n    AND so.company = 'UDC'\r\nGROUP BY\r\n    so.custom_customer_sales_representative\r\nORDER BY\r\n    SUM(so_item.base_net_amount) DESC\r\nLIMIT 5;",
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Sales Person-wise Summary UDC V2",
+  "report_script": null,
+  "report_type": "Query Report",
+  "roles": [
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "Sales Person-wise Summary UDC V2",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
    }
   ],
   "timeout": 0
