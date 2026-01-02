@@ -3,7 +3,7 @@ from cotton_valley.api.website_theme_setting import get_file
 
 
 @frappe.whitelist(allow_guest=True)
-def get_category_list(category_id=None, company="Cotton Valley"):
+def get_category_list(category_id=None, company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     # apply filter only if category_id is passed
     filters = {}

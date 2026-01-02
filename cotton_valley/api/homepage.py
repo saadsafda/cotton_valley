@@ -2,11 +2,11 @@ import frappe # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
-def get_homepage_slides(company="Cotton Valley"):
+def get_homepage_slides(company=None):
     # Get the first (or active) Homepage Banner Setting doc
     doctype = "Homepage Banner Setting"
     company = "Cotton Valley" if not company or company == "null" else company
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC Home Page"
     doc = frappe.get_single(doctype)
     first_row_product_ids = [row.product for row in sorted(doc.product_row_1, key=lambda x: x.idx)]

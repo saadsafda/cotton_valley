@@ -3,10 +3,10 @@ from cotton_valley.api.website_theme_setting import get_file
 
 
 @frappe.whitelist(allow_guest=True)
-def get_privacy_policy_page(company="Cotton Valley"):
+def get_privacy_policy_page(company=None):
     doctype = "Privacy Policy Page"
     company = "Cotton Valley" if not company or company == "null" else company
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC Privacy Policy Page"
     privacy_page = frappe.get_single(doctype)
     return {
@@ -15,10 +15,10 @@ def get_privacy_policy_page(company="Cotton Valley"):
     }
 
 @frappe.whitelist(allow_guest=True)
-def get_terms_and_conditions_page(company="Cotton Valley"):
+def get_terms_and_conditions_page(company=None):
     doctype = "Terms and Condition Page"
     company = "Cotton Valley" if not company or company == "null" else company
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC Terms and Condition Page"
     terms_page = frappe.get_single(doctype)
     return {
@@ -27,10 +27,10 @@ def get_terms_and_conditions_page(company="Cotton Valley"):
     }
 
 @frappe.whitelist(allow_guest=True)
-def get_shipping_and_return_page(company="Cotton Valley"):
+def get_shipping_and_return_page(company=None):
     doctype = "Shipping and Return Page"
     company = "Cotton Valley" if not company or company == "null" else company
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC Shipping and Return Page"
     shipping_page = frappe.get_single(doctype)
     return {

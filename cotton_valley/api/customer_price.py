@@ -3,7 +3,7 @@ from cotton_valley.api.common import check_customer_token, get_customer_from_tok
 
 
 @frappe.whitelist(allow_guest=True)
-def get_price_filters(company="Cotton Valley"):
+def get_price_filters(company=None):
     """
     Get price filter ranges for product filtering based on actual product prices.
     Returns two sets of filters: filterPrice (for case prices) and filterPCSPrice (for piece prices).
@@ -25,6 +25,8 @@ def get_price_filters(company="Cotton Valley"):
                 price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
             elif company == "UDC":
                 price_list = frappe.get_value("Customer", customer, "price_list_for_udc") or "Retail"
+            else:
+                price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
 
             if not price_list:
                 price_list = "Retail"

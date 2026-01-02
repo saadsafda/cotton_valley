@@ -1,13 +1,13 @@
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
-from cotton_valley.api.products import get_product, get_all_products
+from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD
 import requests
 
 @frappe.whitelist(allow_guest=True)
-def get_submited_orders(company="Cotton Valley", page=None):
+def get_submited_orders(company=None, page=None):
     company = "Cotton Valley" if not company or company == "null" else company
     page = None if not page or page == "null" else int(page)
     # --- Pagination ---
@@ -116,7 +116,7 @@ def get_order_details(order_number):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_cart(company="Cotton Valley"):
+def get_cart(company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     customer = get_current_customer()
     if not customer or not customer.get("id"):
@@ -135,7 +135,6 @@ def get_cart(company="Cotton Valley"):
     so_doc = frappe.get_doc("Sales Order", so[0].name)
     items = []
     for item in so_doc.items:
-        # product = get_product(item.item_code)
         all_products = get_all_products(ids=item.item_code, company=company)["data"]
         product = all_products[0] if len(all_products) > 0 else {}
         items.append({
@@ -154,7 +153,7 @@ def get_cart(company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company="Cotton Valley", submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
@@ -317,7 +316,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
 
 
 @frappe.whitelist(allow_guest=True)
-def apply_coupon(code, company="Cotton Valley"):
+def apply_coupon(code, company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     if not code or code == "null":
         return {"success": False, "message": "Coupon code is required."}

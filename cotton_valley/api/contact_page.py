@@ -2,11 +2,11 @@ import frappe
 from cotton_valley.api.website_theme_setting import get_file
 
 @frappe.whitelist(allow_guest=True)
-def get_contact_page(company="Cotton Valley"):
+def get_contact_page(company=None):
     try:
         doctype = "Contact Page"
         company = "Cotton Valley" if not company or company == "null" else company
-        if company != "Cotton Valley":
+        if company == "UDC":
             doctype = f"UDC Contact Page"
         contact = frappe.get_single(doctype)
         
@@ -28,7 +28,7 @@ def get_contact_page(company="Cotton Valley"):
         return {"status": "error", "message": str(e)}
     
 @frappe.whitelist(allow_guest=True)
-def submit_contact_form(name, email, phone, subject, message, company="Cotton Valley"):
+def submit_contact_form(name, email, phone, subject, message, company=None):
     try:
         company = "Cotton Valley" if not company or company == "null" else company
         contact_form = frappe.get_doc({

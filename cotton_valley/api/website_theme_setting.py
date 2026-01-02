@@ -3,10 +3,10 @@ from cotton_valley.api.common import get_customer_from_token, check_customer_tok
 
 
 @frappe.whitelist(allow_guest=True)
-def settings(company="Cotton Valley"):
+def settings(company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     doctype = "Website Theme Settings"
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
     mode_of_payment = frappe.get_all("Mode of Payment", filters={"name": "COD", "enabled": 1}, fields=["name", "enabled as status"])
@@ -101,10 +101,10 @@ def settings(company="Cotton Valley"):
     return data
 
 @frappe.whitelist(allow_guest=True)
-def get_website_theme_settings(company="Cotton Valley"):
+def get_website_theme_settings(company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     doctype = "Website Theme Settings"
-    if company != "Cotton Valley":
+    if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
     all_category_ids = frappe.get_all("Product Category", pluck="name")

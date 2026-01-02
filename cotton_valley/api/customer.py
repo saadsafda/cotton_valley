@@ -142,7 +142,7 @@ def change_password(current_password, new_password):
 
 
 @frappe.whitelist(allow_guest=True)
-def forgot_password(email, company="Cotton Valley"):
+def forgot_password(email, company=None):
     """
     Send password reset token to customer email.
     

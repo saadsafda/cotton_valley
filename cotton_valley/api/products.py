@@ -30,7 +30,7 @@ def make_product_views(product_id):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_product_types_with_count(category=None, subcategory=None, company="Cotton Valley"):
+def get_product_types_with_count(category=None, subcategory=None, company=None):
     company = "Cotton Valley" if not company or company == "null" else company
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
@@ -63,7 +63,7 @@ def get_product_types_with_count(category=None, subcategory=None, company="Cotto
 
 
 @frappe.whitelist(allow_guest=True)
-def get_product_ids(search=None, company="Cotton Valley"):
+def get_product_ids(search=None, company=None):
     filters = {"disabled": 0}  # only active products
     company = "Cotton Valley" if not company or company == "null" else company
     if company:
@@ -88,7 +88,7 @@ def get_product_ids(search=None, company="Cotton Valley"):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company="Cotton Valley", price=None, pcs_price=None):
+def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcs_price=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
@@ -513,7 +513,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
 
 @frappe.whitelist(allow_guest=True)
-def get_product(product_id, company="Cotton Valley"):
+def get_product(product_id, company=None):
     company = "Cotton Valley" if not company or company == "null" else company
 
     # get main product info
@@ -578,6 +578,8 @@ def get_product(product_id, company="Cotton Valley"):
             price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
         elif company == "UDC":
             price_list = frappe.get_value("Customer", customer, "price_list_for_udc")
+        else:
+            price_list = frappe.get_value("Customer", customer, "price_list_for_cv")
 
         if not price_list:
             price_list = "Retail"
@@ -673,7 +675,7 @@ def get_product(product_id, company="Cotton Valley"):
 
 
 @frappe.whitelist()
-def get_prices(item_code, company="Cotton Valley"):
+def get_prices(item_code, company=None):
     url = ""
     username = ""
     password = ""
@@ -740,7 +742,7 @@ def get_prices(item_code, company="Cotton Valley"):
 
 
 @frappe.whitelist()
-def sync_item_from_api(item_code, company="Cotton Valley"):
+def sync_item_from_api(item_code, company=None):
     url = ""
     username = ""
     password = ""

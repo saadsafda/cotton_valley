@@ -7,7 +7,7 @@ def get_country_list():
     return frappe.get_all("Country", fields=["name as id", "country_name as name"])
 
 @frappe.whitelist(allow_guest=True)
-def register_customer(data, ip_address=None, lat_long=None, company="Cotton Valley"):
+def register_customer(data, ip_address=None, lat_long=None, company=None):
     try:
         company = "Cotton Valley" if not company or company == "null" else company
         lat_long = lat_long if lat_long and lat_long != "null" else None

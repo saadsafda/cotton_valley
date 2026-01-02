@@ -2,7 +2,7 @@ import frappe
 
 
 @frappe.whitelist(allow_guest=True)
-def create_lead(name, company_name, email, phone, square_footage, address, business_type, company="Cotton Valley"):
+def create_lead(name, company_name, email, phone, square_footage, address, business_type, company=None):
     try:
         company = "Cotton Valley" if not company or company == "null" else company
         lead = frappe.get_doc({
