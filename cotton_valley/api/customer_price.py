@@ -50,8 +50,8 @@ def get_price_filters(company=None):
                 AND i.disabled = 0
         """, (price_list, company), as_dict=True)
         
-        min_price = price_data[0].get('min_price', 0) if price_data else 0
-        max_price = price_data[0].get('max_price', 100) if price_data else 100
+        min_price = (price_data[0].get('min_price') or 0) if price_data else 0
+        max_price = (price_data[0].get('max_price') or 100) if price_data else 100
         
         # Calculate dynamic price ranges based on actual data
         # Divide the price range into 5 segments
@@ -118,8 +118,8 @@ def get_price_filters(company=None):
                 AND i.disabled = 0
         """, (price_list, company), as_dict=True)
         
-        pcs_min = pcs_price_data[0].get('min_price', 0.5) if pcs_price_data and pcs_price_data[0].get('min_price') else 0.5
-        pcs_max = pcs_price_data[0].get('max_price', 10) if pcs_price_data and pcs_price_data[0].get('max_price') else 10
+        pcs_min = (pcs_price_data[0].get('min_price') or 0.5) if pcs_price_data else 0.5
+        pcs_max = (pcs_price_data[0].get('max_price') or 10) if pcs_price_data else 10
         
         # Calculate PCS segments
         pcs_range = pcs_max - pcs_min
