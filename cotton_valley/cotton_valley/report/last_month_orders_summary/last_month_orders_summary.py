@@ -36,8 +36,7 @@ def execute(filters=None):
             `tabSales Order`
         WHERE
             {conditions}
-            AND transaction_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')
-            AND transaction_date < DATE_FORMAT(CURDATE(), '%%Y-%%m-01')
+            AND transaction_date = CURDATE()
         ORDER BY
             transaction_date DESC
     """
