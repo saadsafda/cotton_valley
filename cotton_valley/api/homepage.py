@@ -128,7 +128,7 @@ def get_homepage_slides(company=None):
             "news_letter": {
                 "title": doc.news_title,
                 "sub_title": doc.sub_title,
-                "image_url": doc.newsletter_background,
+                "image_url": frappe.utils.get_url(doc.newsletter_background),
                 "status": doc.show_newsletter
             },
             "products_ids": all_product_ids

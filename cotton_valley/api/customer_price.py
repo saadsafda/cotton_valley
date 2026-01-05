@@ -10,7 +10,6 @@ def get_price_filters(company=None):
     Filters by customer's price list if customer is provided.
     
     Args:
-        customer: Customer ID (optional)
         company: Company name (default: "Cotton Valley")
     """
     try:
