@@ -4,7 +4,7 @@
 import frappe
 
 def execute(filters=None):
-    # Ensure filters is not None to avoid errors
+    # Ensure filters is not None
     filters = filters or {}
     
     # 1. Define Columns
@@ -15,16 +15,21 @@ def execute(filters=None):
         {"label": "Total Order Value", "fieldname": "total_order_value", "fieldtype": "Currency", "width": 150}
     ]
 
-    # 2. Dynamic Company Filter
-    conditions = "" 
+    # 2. Dynamic Filtering & Grouping Logic
+    conditions = ""
+    select_company = "'' as company"  # Default: Agar filter nahi hai to Company column khali rakho taake rows merge ho sakein
+    group_by_company = ""           # Default: Company se group nahi karenge
 
+    # Agar Company filter user ne select kiya hai
     if filters.get("company"):
         conditions += " AND SO.company = %(company)s"
+        select_company = "SO.company as company" # Company ka naam dikhao
+        group_by_company = ", SO.company"        # Grouping mein company shamil karo
 
     # 3. SQL Query
     query = f"""
         SELECT
-            SO.company AS company,
+            {select_company},
             A.city AS city,
             COUNT(DISTINCT SO.name) AS total_orders,
             SUM(SOI.base_rate * SOI.qty) AS total_order_value
@@ -37,8 +42,7 @@ def execute(filters=None):
         WHERE
             1=1 {conditions}
         GROUP BY
-            A.city,
-            SO.company
+            A.city {group_by_company}
         ORDER BY
             total_orders DESC, total_order_value DESC
         LIMIT 5

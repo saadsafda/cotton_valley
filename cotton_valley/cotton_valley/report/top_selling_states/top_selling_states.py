@@ -4,7 +4,10 @@
 import frappe
 
 def execute(filters=None):
+    filters = filters or {}
+
     # 1. Define Columns
+    # (Maine columns wese hi rakhe hain, bas logic badal raha hoon)
     columns = [
         {"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 150},
         {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 150},
@@ -12,18 +15,23 @@ def execute(filters=None):
         {"label": "Total Revenue", "fieldname": "total_revenue", "fieldtype": "Currency", "width": 150}
     ]
 
-    # 2. Handle the Filter Logic
-    # We create a 'conditions' string. If the user selects a company, we add the SQL check.
-    # If they don't, 'conditions' remains empty, so it fetches ALL data.
+    # 2. Dynamic Filtering & Grouping Logic
     conditions = ""
+    
+    # Default: Agar filter nahi hai to Company column khali rakho aur Grouping mat karo
+    select_company = "'' as company"
+    group_by_company = ""
+
+    # Check if user selected a company
     if filters.get("company"):
         conditions += " AND so.company = %(company)s"
+        select_company = "so.company"       # Company ka naam dikhao
+        group_by_company = ", so.company"   # Company ke hisab se alag karo
 
-    # 3. The SQL Query
-    # Note: We use {conditions} f-string to inject the filter dynamically
+    # 3. SQL Query
     query = f"""
         SELECT
-            so.company,
+            {select_company},
             addr.state,
             COUNT(so.name) as total_orders,
             SUM(so.grand_total) as total_revenue
@@ -35,8 +43,7 @@ def execute(filters=None):
             so.docstatus = 1
             {conditions}
         GROUP BY
-            so.company,
-            addr.state
+            addr.state {group_by_company}
         ORDER BY
             total_revenue DESC
         LIMIT 5

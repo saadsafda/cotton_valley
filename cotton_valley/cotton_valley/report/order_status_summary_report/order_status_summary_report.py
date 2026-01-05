@@ -4,6 +4,8 @@
 import frappe
 
 def execute(filters=None):
+    filters = filters or {}
+
     # 1. Define Columns
     columns = [
         {"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 150},
@@ -12,20 +14,23 @@ def execute(filters=None):
         {"label": "Total Value", "fieldname": "total_value", "fieldtype": "Currency", "width": 150}
     ]
 
-    # 2. Build Conditions
-    # We start with an empty string because the base query already has a WHERE clause.
+    # 2. Dynamic Filtering & Grouping Logic
     conditions = ""
-    
+    # Default: Agar filter nahi hai to Company column khali rakho aur Grouping mat karo
+    select_company = "'' as company" 
+    group_by_company = ""           
+
     # Check if user selected a company
     if filters.get("company"):
         conditions += " AND company = %(company)s"
+        select_company = "company"         # Asli company ka naam uthao
+        group_by_company = ", company"     # Company ke hisab se group karo
 
     # 3. SQL Query
-    # We add {conditions} dynamically.
     query = f"""
         SELECT
             order_status,
-            company,
+            {select_company},
             COUNT(name) as total_orders,
             SUM(grand_total) as total_value
         FROM
@@ -34,8 +39,7 @@ def execute(filters=None):
             order_status IN ('Pending', 'Processing', 'Shipped')
             {conditions}
         GROUP BY
-            order_status,
-            company
+            order_status {group_by_company}
         ORDER BY
             order_status ASC
     """
