@@ -107,8 +107,8 @@ def get_website_theme_settings(company=None):
     if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
-    all_category_ids = frappe.get_all("Product Category", pluck="name")
-    all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0]], pluck="name")
+    all_category_ids = frappe.get_all("Product Category", filters=[["company", "=", company]], pluck="name")
+    all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0], ["company", "=", company]], pluck="name")
     
 
     result = {

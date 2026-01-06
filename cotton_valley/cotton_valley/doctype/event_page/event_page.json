@@ -9,6 +9,7 @@
   "banner_image_view",
   "banner_image",
   "internal_page",
+  "company",
   "details"
  ],
  "fields": [
@@ -38,12 +39,20 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Internal Page"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-06 00:14:35.801765",
+ "modified": "2026-01-06 00:32:24.113845",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Event Page",
