@@ -191,6 +191,7 @@ doc_events = {
         ],
 		"on_update_after_submit": "cotton_valley.server_scripts.sales_order.notify_customer_on_status_change",
         "before_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
+        "on_cancel": "cotton_valley.server_scripts.sales_order.increase_threshold_stock_on_cancel",
 	},
 	"Activity Log": {
         "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"

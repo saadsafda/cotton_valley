@@ -2,6 +2,23 @@ import frappe
 from frappe import _
 
 
+def increase_threshold_stock_on_cancel(doc, method):
+    """
+    Increase threshold_stock back when Sales Order is cancelled.
+    This restores the reserved stock.
+    """
+    try:
+        for item in doc.items:
+            current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
+            available_stock = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
+            # Don't exceed available stock
+            new_threshold = min(available_stock, current_threshold + item.qty)
+            frappe.db.set_value("Item", item.item_code, "threshold_stock", new_threshold)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(f"Error increasing threshold stock: {str(e)}", "Threshold Stock Error")
+
+
 def order_cancel(doc, method):
     if not doc.cancellation_reason:
         frappe.throw(_("Please enter a value in the *Cancellation Reason* field before cancelling this Sales Order."))
@@ -35,6 +52,7 @@ def update_customer_order_summary(doc, method):
     frappe.db.commit()
 
     make_delivery_note_on_submit(doc, method)
+    decrease_threshold_stock(doc, method)
     send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
 
@@ -157,6 +175,22 @@ def send_sales_order_confirmation_email(doc, method):
         
     except Exception as e:
         frappe.log_error("Sales Order Confirmation Email Error", frappe.get_traceback())
+
+
+
+def decrease_threshold_stock(doc, method):
+    """
+    Decrease threshold_stock for each item when Sales Order is submitted.
+    This reserves stock for website display.
+    """
+    try:
+        for item in doc.items:
+            current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
+            new_threshold = max(0, current_threshold - item.qty)  # Don't go below 0
+            frappe.db.set_value("Item", item.item_code, "threshold_stock", new_threshold)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(f"Error decreasing threshold stock: {str(e)}", "Threshold Stock Error")
 
 
 def make_delivery_note_on_submit(doc, method):
