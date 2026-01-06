@@ -108,6 +108,7 @@ def get_website_theme_settings(company=None):
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
     all_category_ids = frappe.get_all("Product Category", pluck="name")
+    all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0]], pluck="name")
     
 
     result = {
@@ -134,12 +135,6 @@ def get_website_theme_settings(company=None):
                 "top_bar_content": [
                     {
                         "content": settings.top_bar_content
-                    },
-                    {
-                        "content": "Something you love is now on sale <strong>Buy Now!</strong>"
-                    },
-                    {
-                        "content": "Your must-have item is calling – <strong>Buy Now!</strong>"
                     }
                 ],
                 "company_name": settings.other_company_name,
@@ -147,7 +142,8 @@ def get_website_theme_settings(company=None):
                 "page_top_bar_dark": False,
                 "support_number": settings.support_number,
                 "today_deals": [row.product for row in settings.products],
-                "category_ids": all_category_ids
+                "category_ids": all_category_ids,
+                "event_pages": all_event_pages
             },
             "footer": {
                 "footer_style": "light_mode",
