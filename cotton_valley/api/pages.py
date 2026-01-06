@@ -42,6 +42,7 @@ def get_shipping_and_return_page(company=None):
 def get_event_pages(name):
     try:
         page = frappe.get_doc("Event Page", name)
+        page.banner_image = get_file(page.banner_image)
         return page
     except frappe.DoesNotExistError:
         frappe.local.response["http_status_code"] = 404
