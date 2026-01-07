@@ -6,8 +6,8 @@ import frappe
 def execute(filters=None):
     columns = [
         {"label": "Company", "fieldname": "company", "fieldtype": "Link", "options": "Company", "width": 150},
-        {"label": "Item Code", "fieldname": "item_code", "fieldtype": "Link", "options": "Item", "width": 200},
-        {"label": "Item Name", "fieldname": "item_name", "fieldtype": "Data", "width": 200},
+        {"label": "Item Code", "fieldname": "item_code", "fieldtype": "Data", "options": "Item", "width": 150},
+        {"label": "Item Name", "fieldname": "item_name", "fieldtype": "Data", "width": 300},
         {"label": "Total Qty Sold", "fieldname": "total_quantity_sold", "fieldtype": "Float", "width": 120},
         {"label": "Total Sales Value", "fieldname": "total_sales_value", "fieldtype": "Currency", "width": 150}
     ]

@@ -10,7 +10,7 @@ def execute(filters=None):
         {"label": "Sales Person", "fieldname": "sales_person", "fieldtype": "Data", "width": 150},
         {"label": "Total Orders", "fieldname": "total_orders", "fieldtype": "Int", "width": 100},
         {"label": "Total Quantity", "fieldname": "total_quantity", "fieldtype": "Float", "width": 120},
-        {"label": "Total Amount (PKR)", "fieldname": "total_amount", "fieldtype": "Currency", "width": 150}
+        {"label": "Total Amount", "fieldname": "total_amount", "fieldtype": "Currency", "width": 150}
     ]
 
     # 2. Build Filter Conditions

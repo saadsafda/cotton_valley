@@ -17,6 +17,12 @@ frappe.query_reports["Items With Price level"] = {
             "options": "Price List"
         },
         {
+            "fieldname": "item_group", 
+            "label": __("Product Type"),
+            "fieldtype": "Link",
+            "options": "Item Group"
+        },
+        {
             "fieldname": "item_code",
             "label": __("Item Code"),
             "fieldtype": "Link",
