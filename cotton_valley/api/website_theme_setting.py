@@ -1,6 +1,6 @@
 import frappe # type: ignore
 from cotton_valley.api.common import get_customer_from_token, check_customer_token
-
+from cotton_valley.api.brand import get_brands
 
 @frappe.whitelist(allow_guest=True)
 def settings(company=None):
@@ -109,7 +109,7 @@ def get_website_theme_settings(company=None):
     settings = frappe.get_single(doctype)
     all_category_ids = frappe.get_all("Product Category", filters=[["company", "=", company]], pluck="name")
     all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0], ["company", "=", company]], pluck="name")
-    
+    brand_list = get_brands(company=company)
 
     result = {
         "id": 1,
@@ -142,6 +142,7 @@ def get_website_theme_settings(company=None):
                 "page_top_bar_dark": False,
                 "support_number": settings.support_number,
                 "today_deals": [row.product for row in settings.products],
+                "brands": brand_list.get("data", []),
                 "category_ids": all_category_ids,
                 "event_pages": all_event_pages
             },
