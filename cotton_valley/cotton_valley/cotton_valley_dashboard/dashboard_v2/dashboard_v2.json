@@ -1,0 +1,82 @@
+{
+ "cards": [
+  {
+   "card": "Orders"
+  },
+  {
+   "card": "Processing"
+  },
+  {
+   "card": "Income"
+  },
+  {
+   "card": "Pending"
+  },
+  {
+   "card": "Abandon Carts"
+  },
+  {
+   "card": "Customers"
+  },
+  {
+   "card": "New Customer"
+  },
+  {
+   "card": "Leads"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Orders",
+   "width": "Full"
+  },
+  {
+   "chart": "Order Status",
+   "width": "Half"
+  },
+  {
+   "chart": "Order Status Summary",
+   "width": "Half"
+  },
+  {
+   "chart": "Customers",
+   "width": "Full"
+  },
+  {
+   "chart": "Top 5 States",
+   "width": "Half"
+  },
+  {
+   "chart": "Excellent Sales Reps",
+   "width": "Half"
+  },
+  {
+   "chart": "Orders Amount",
+   "width": "Full"
+  },
+  {
+   "chart": "Abandoned Carts",
+   "width": "Half"
+  },
+  {
+   "chart": "Top 5 Cities",
+   "width": "Half"
+  },
+  {
+   "chart": "Best Selling",
+   "width": "Full"
+  }
+ ],
+ "creation": "2025-11-10 22:08:14.666166",
+ "dashboard_name": "Dashboard V2",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-01-07 05:20:52.865355",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Dashboard V2",
+ "owner": "saad@gmail.com"
+}

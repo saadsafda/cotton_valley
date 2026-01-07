@@ -1,0 +1,82 @@
+{
+ "cards": [
+  {
+   "card": "Orders UDC V2"
+  },
+  {
+   "card": "Processing UDC V2"
+  },
+  {
+   "card": "Income UDC V2"
+  },
+  {
+   "card": "Pending UDC V2"
+  },
+  {
+   "card": "Abandon Carts UDC V2"
+  },
+  {
+   "card": "Customers UDC V2"
+  },
+  {
+   "card": "New Customer UDC V2"
+  },
+  {
+   "card": "Lead CV V2-1"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Orders UDC V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Order Status UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Order Status Summary UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Customers UDC V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Top 5 States UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Excellent Sales Reps UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Orders Amount UDC V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Abandoned Carts UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Top Cities UDC V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Best Selling UDC V2",
+   "width": "Full"
+  }
+ ],
+ "creation": "2025-11-24 03:15:47.139696",
+ "dashboard_name": "UDC  Dashboard V2",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-01-07 05:06:30.009778",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "UDC  Dashboard V2",
+ "owner": "saad@gmail.com"
+}

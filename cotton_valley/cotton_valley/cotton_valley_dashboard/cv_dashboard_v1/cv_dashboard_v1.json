@@ -1,0 +1,50 @@
+{
+ "cards": [
+  {
+   "card": "Products CV V1"
+  },
+  {
+   "card": "Categories CV V1"
+  },
+  {
+   "card": "Customers CV V1"
+  },
+  {
+   "card": "Sales Reps"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Sales Over Time CV V1",
+   "width": "Full"
+  },
+  {
+   "chart": "Today Orders CV V1",
+   "width": "Full"
+  },
+  {
+   "chart": "Top 10 Customers CV V1",
+   "width": "Full"
+  },
+  {
+   "chart": "Top 5 Selling Items CV V1",
+   "width": "Half"
+  },
+  {
+   "chart": "Top 5 Cities CV V1",
+   "width": "Half"
+  }
+ ],
+ "creation": "2025-11-24 02:15:48.215160",
+ "dashboard_name": "CV Dashboard V1",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-01-07 05:25:08.758565",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "CV Dashboard V1",
+ "owner": "saad@gmail.com"
+}

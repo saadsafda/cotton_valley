@@ -1,0 +1,82 @@
+{
+ "cards": [
+  {
+   "card": "Orders CV V2"
+  },
+  {
+   "card": "Processing CV V2"
+  },
+  {
+   "card": "Income CV V2"
+  },
+  {
+   "card": "Pending CV V2"
+  },
+  {
+   "card": "Abandon Carts CV V2"
+  },
+  {
+   "card": "Customers CV V2"
+  },
+  {
+   "card": "New Customer CV V2"
+  },
+  {
+   "card": "Lead CV V2"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Orders CV V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Order Status CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Order Status Summary CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Customers CV V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Top 5 States CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Excellent Sales Reps CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Income CV V2",
+   "width": "Full"
+  },
+  {
+   "chart": "Abandoned Carts CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Top 5 Cities CV V2",
+   "width": "Half"
+  },
+  {
+   "chart": "Best Selling Products CV V2",
+   "width": "Full"
+  }
+ ],
+ "creation": "2025-11-24 00:52:16.812078",
+ "dashboard_name": "CV Dashboard V2",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-01-07 05:14:10.985693",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "CV Dashboard V2",
+ "owner": "saad@gmail.com"
+}

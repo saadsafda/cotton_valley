@@ -1,0 +1,37 @@
+{
+ "chart_name": "Abandoned Carts UDC V2",
+ "chart_type": "Report",
+ "creation": "2025-11-24 03:52:04.887741",
+ "currency": "USD",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{}",
+ "group_by_type": "Count",
+ "idx": 1,
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2026-01-07 05:03:21.390405",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Abandoned Carts UDC V2",
+ "number_of_groups": 0,
+ "owner": "saad@gmail.com",
+ "report_name": "Abandoned Carts Report UDC V2",
+ "roles": [],
+ "show_values_over_chart": 0,
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Bar",
+ "use_report_chart": 0,
+ "x_field": "sku",
+ "y_axis": [
+  {
+   "y_field": "total_abandoned_quantity"
+  },
+  {
+   "y_field": "total_abandoned_value"
+  }
+ ]
+}
