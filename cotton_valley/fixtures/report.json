@@ -715,68 +715,6 @@
   "docstatus": 0,
   "doctype": "Report",
   "filters": [],
-  "is_standard": "Yes",
-  "javascript": null,
-  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Sales Order\"],[\"docstatus\",\"Sales Order\"],[\"customer_name\",\"Sales Order\"],[\"customer_company_name\",\"Sales Order\"],[\"customer_account_number\",\"Sales Order\"],[\"customer_sales_representative\",\"Sales Order\"],[\"push_to_erp\",\"Sales Order\"],[\"po_no\",\"Sales Order\"],[\"transaction_date\",\"Sales Order\"],[\"company\",\"Sales Order\"],[\"grand_total\",\"Sales Order\"],[\"currency\",\"Sales Order\"],[\"discount_amount\",\"Sales Order\"],[\"custom_mode_of_payment\",\"Sales Order\"],[\"order_status\",\"Sales Order\"],[\"custom_last_order_date\",\"Sales Order\"],[\"customer_ip\",\"Sales Order\"],[\"customer_lat__long\",\"Sales Order\"]],\"order_by\":\"`tabSales Order`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"customer_name\":176,\"customer_company_name\":214,\"customer_account_number\":232,\"customer_sales_representative\":277,\"push_to_erp\":120,\"po_no\":280,\"transaction_date\":160,\"company\":150,\"grand_total\":150,\"currency\":100,\"discount_amount\":218,\"custom_mode_of_payment\":219,\"order_status\":120,\"custom_last_order_date\":190,\"customer_ip\":154,\"customer_lat__long\":177},\"group_by\":null}",
-  "letter_head": null,
-  "modified": "2025-10-07 02:28:16.939715",
-  "module": "Cotton Valley",
-  "name": "Sales Order Report",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Sales Order",
-  "reference_report": null,
-  "report_name": "Sales Order Report",
-  "report_script": null,
-  "report_type": "Report Builder",
-  "roles": [
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales User"
-   },
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts User"
-   },
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Stock User"
-   },
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Maintenance User"
-   },
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales Manager"
-   },
-   {
-    "parent": "Sales Order Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "System Manager"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [],
   "is_standard": "No",
   "javascript": null,
   "json": null,
@@ -3390,11 +3328,11 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-11-24 01:05:04.929992",
+  "modified": "2026-01-07 01:34:04.626926",
   "module": "Cotton Valley",
   "name": "New Customers Last 7 Days CV V2",
   "prepared_report": 0,
-  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)\r\nAND register_company = 'Cotton Valley'\r\nORDER BY creation DESC\r\n",
+  "query": "SELECT\r\n    name AS \"Customer:Link/Customer:150\",\r\n    customer_name AS \"Customer Name::200\",\r\n    creation AS \"Created On:Date:150\",\r\n    1 AS \"New Customers:Float:100\"\r\nFROM `tabCustomer`\r\nWHERE creation >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)\r\nAND register_company = 'Cotton Valley'\r\nORDER BY creation DESC\r\n",
   "ref_doctype": "Customer",
   "reference_report": null,
   "report_name": "New Customers Last 7 Days CV V2",
@@ -4432,6 +4370,68 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "Sales Person"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Sales Order\"],[\"customer_name\",\"Sales Order\"],[\"customer_company_name\",\"Sales Order\"],[\"customer_account_number\",\"Sales Order\"],[\"push_to_erp\",\"Sales Order\"],[\"po_no\",\"Sales Order\"],[\"transaction_date\",\"Sales Order\"],[\"company\",\"Sales Order\"],[\"grand_total\",\"Sales Order\"],[\"currency\",\"Sales Order\"],[\"discount_amount\",\"Sales Order\"],[\"custom_mode_of_payment\",\"Sales Order\"],[\"order_status\",\"Sales Order\"],[\"custom_last_order_date\",\"Sales Order\"],[\"customer_ip\",\"Sales Order\"],[\"customer_lat__long\",\"Sales Order\"],[\"from_app\",\"Sales Order\"]],\"order_by\":\"`tabSales Order`.`modified` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"customer_name\":176,\"customer_company_name\":214,\"customer_account_number\":232,\"push_to_erp\":120,\"po_no\":280,\"transaction_date\":160,\"company\":150,\"grand_total\":150,\"currency\":100,\"discount_amount\":218,\"custom_mode_of_payment\":219,\"order_status\":120,\"custom_last_order_date\":190,\"customer_ip\":154,\"customer_lat__long\":177,\"from_app\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2026-01-07 03:57:39.858300",
+  "module": "Cotton Valley",
+  "name": "Sales Order Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "Sales Order Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
    }
   ],
   "timeout": 0
