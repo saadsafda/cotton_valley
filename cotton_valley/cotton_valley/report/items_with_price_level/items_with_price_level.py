@@ -27,7 +27,7 @@ def get_columns(price_lists):
         {
             "fieldname": "item_code",
             "label": "Item Code",
-            "fieldtype": "Data",
+            "fieldtype": "Link",
             "options": "Item",
             "width": 150
         },
@@ -36,6 +36,13 @@ def get_columns(price_lists):
             "label": "Item Name",
             "fieldtype": "Data",
             "width": 200
+        },
+        {
+            "fieldname": "item_group", 
+            "label": "Product Type",
+            "fieldtype": "Link",
+            "options": "Item Group",
+            "width": 150
         },
         {
             "fieldname": "company",  
@@ -65,7 +72,8 @@ def get_data(filters, price_lists):
     if filters.get("company"):
         conditions += f" AND id.company = '{filters.get('company')}' "
     
-    # NOTE: Item Group ka filter yahan se hata diya gaya hai
+    if filters.get("item_group"):
+        conditions += f" AND i.item_group = '{filters.get('item_group')}' "
     
     if filters.get("item_code"):
         conditions += f" AND i.name = '{filters.get('item_code')}' "
@@ -74,6 +82,7 @@ def get_data(filters, price_lists):
         SELECT
             i.name as item_code,
             i.item_name,
+            i.item_group,
             GROUP_CONCAT(DISTINCT id.company SEPARATOR ', ') as company_list
         FROM
             `tabItem` i
@@ -113,6 +122,7 @@ def get_data(filters, price_lists):
         row = {
             "item_code": item.item_code,
             "item_name": item.item_name,
+            "item_group": item.item_group,
             "company": item.company_list
         }
 
