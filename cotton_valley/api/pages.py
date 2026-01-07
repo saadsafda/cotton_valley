@@ -37,3 +37,16 @@ def get_shipping_and_return_page(company=None):
         "banner_image": get_file(shipping_page.banner_image),
         "details": shipping_page.details
     }
+
+@frappe.whitelist(allow_guest=True)
+def get_event_pages(name):
+    try:
+        page = frappe.get_doc("Event Page", name)
+        page.banner_image = get_file(page.banner_image)
+        return page
+    except frappe.DoesNotExistError:
+        frappe.local.response["http_status_code"] = 404
+        return {"error": f"Event Page with name '{name}' not found."}
+    except Exception as e:
+        frappe.local.response["http_status_code"] = 500
+        return {"error": f"An error occurred: {str(e)}"}

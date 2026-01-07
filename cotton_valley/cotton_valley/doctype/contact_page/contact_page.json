@@ -15,7 +15,9 @@
   "column_break_uxda",
   "email",
   "office_title",
-  "office_address"
+  "office_address",
+  "section_break_dyzq",
+  "contact_info"
  ],
  "fields": [
   {
@@ -73,13 +75,22 @@
    "fieldname": "office_address",
    "fieldtype": "Data",
    "label": "Office Address"
+  },
+  {
+   "fieldname": "section_break_dyzq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "contact_info",
+   "fieldtype": "Text Editor",
+   "label": "Contact Info"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-09 04:50:00.393998",
+ "modified": "2026-01-07 00:02:04.402689",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Contact Page",
