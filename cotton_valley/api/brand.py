@@ -16,7 +16,7 @@ def get_brands(company=None):
             order_by="name asc"
         )
         for brand in brands:
-            brand["image"] = frappe.utils.get_full_url(brand["image"]) if brand["image"] else ""
+            brand["image"] = frappe.utils.get_url(brand["image"]) if brand["image"] else ""
 
         return {"status": "success", "data": brands}
     except Exception as e:
