@@ -88,7 +88,7 @@ def get_product_ids(search=None, company=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcs_price=None):
+def get_all_products(ids=None, category=None, subcategory=None, brand=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcs_price=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
@@ -98,6 +98,7 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
     page = None if not page or page == "null" else int(page)
     ids = None if not ids or ids == "null" else get_categories_from_string(ids)
     company = "Cotton Valley" if not company or company == "null" else company
+    brand = None if not brand or brand == "null" else get_categories_from_string(brand)
     price = None if not price or price == "null" else get_categories_from_string(price)
     pcs_price = None if not pcs_price or pcs_price == "null" else get_categories_from_string(pcs_price)
 
@@ -111,6 +112,9 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
 
     if producttype:
         filters["item_group"] = ["in", producttype]
+
+    if brand:
+        filters["brand"] = ["in", brand]
 
     # --- Category Filter ---
     if category:
@@ -274,6 +278,10 @@ def get_all_products(ids=None, category=None, subcategory=None, sortBy=None, sea
         if subcategory:
             filter_conditions.append("custom_sub_category IN %s")
             filter_values.append(subcategory)
+
+        if brand:
+            filter_conditions.append("brand IN %s")
+            filter_values.append(brand)
 
         if attribute:
             if attribute == ["in_stock"]:
