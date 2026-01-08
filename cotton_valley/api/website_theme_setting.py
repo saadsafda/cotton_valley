@@ -9,7 +9,7 @@ def settings(company=None):
     if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
-    mode_of_payment = frappe.get_all("Mode of Payment", filters={"name": "COD", "enabled": 1}, fields=["name", "enabled as status"])
+    mode_of_payment = frappe.get_all("Mode of Payment", filters={"enabled": 1}, fields=["name", "enabled as status"])
     if check_customer_token():
         current_customer = get_customer_from_token()
         if current_customer:
