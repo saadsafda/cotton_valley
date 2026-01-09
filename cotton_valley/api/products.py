@@ -934,7 +934,7 @@ def sync_item_from_api(item_code, company=None):
             # item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
             # item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
             # if item_available_qty == item_threshold_stock:
-            frappe.db.set_value("Item", item_code, "threshold_stock", stock_qty)
+            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl or 0)
             frappe.db.set_value("Item", item_code, "available_stock", stock_qty)
         except Exception as e:
             frappe.log_error(f"Failed to update Item stock fields for {item_code}: {str(e)}", "Item Stock Update Error")
