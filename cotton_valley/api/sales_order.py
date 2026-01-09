@@ -178,6 +178,12 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
 
     customer_id = customer["id"]
 
+    price_level = ""
+    if company == "UDC":
+        price_level = frappe.db.get_value("Customer", customer_id, "price_list_for_udc")
+    else:
+        price_level = frappe.db.get_value("Customer", customer_id, "price_list_for_cv")
+
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
             "Sales Order",
@@ -208,6 +214,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
             so_doc.company = company
             so_doc.product_type = so_type
             so_doc.custom_notes = notes
+            so_doc.selling_price_list = price_level
             if client_ip:
                 so_doc.customer_ip = client_ip
             if client_latitude and client_longitude:
@@ -268,6 +275,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
         so_doc.order_type = "Shopping Cart"
+        so_doc.selling_price_list = price_level
 
     so_doc.delivery_date = nowdate()
     so_doc.submit_datetime = submit_datetime
