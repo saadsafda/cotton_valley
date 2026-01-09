@@ -858,10 +858,13 @@ def sync_item_from_api(item_code, company=None):
             
             if not existing_category:
                 # Add category to item
-                item_doc.append("product_categoris", {
-                    "product_category": category.get("name")
-                })
-                updated = True
+                try:
+                    item_doc.append("product_categoris", {
+                        "product_category": category.get("name")
+                    })
+                    updated = True
+                except AttributeError as e:
+                    frappe.log_error(f"Failed to append category for item {item_code}: {str(e)}. Field 'product_categoris' may not exist.", "Category Append Error")
         else:
             # Category doesn't exist - show the error
             frappe.msgprint(f"Category with ERP ID {itmclsid} not found. Please create it first.")
@@ -886,9 +889,12 @@ def sync_item_from_api(item_code, company=None):
                 updated = True
             
             # Update item's subcategory field
-            if item_doc.custom_sub_category != subcategory.get("name"):
-                item_doc.custom_sub_category = subcategory.get("name")
-                updated = True
+            try:
+                if item_doc.custom_sub_category != subcategory.get("name"):
+                    item_doc.custom_sub_category = subcategory.get("name")
+                    updated = True
+            except AttributeError as e:
+                frappe.log_error(f"Failed to set subcategory for item {item_code}: {str(e)}. Field 'custom_sub_category' may not exist.", "Subcategory Update Error")
         else:
             # Subcategory doesn't exist - show the error
             frappe.msgprint(f"Subcategory with ERP ID {itmctgid} not found. Please create it first.")
