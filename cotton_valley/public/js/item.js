@@ -33,6 +33,26 @@ frappe.ui.form.on('Item', {
                     }
                 });
             });
+            frm.add_custom_button(__('View Item'), function() {
+                
+                let base_url = "";
+                let company_name = frm.doc.company;
+
+                if (company_name == "UDC") {
+                    base_url = "https://universal.destrotechnologies.website/en/product/"; 
+                } else {
+                    base_url = "https://cottonvalley.destrotechnologies.website/en/product/";
+                }
+
+                if (base_url) {
+                    
+                    let full_url = base_url + encodeURIComponent(frm.doc.item_code);
+                    
+                    window.open(full_url, '_blank');
+                } else {
+                    frappe.msgprint("No website URL configured for company: " + company_name);
+                }
+            }).addClass('btn-primary');
         }
     }
 });
