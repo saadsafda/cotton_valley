@@ -897,30 +897,47 @@ def sync_item_from_api(item_code, company=None):
         item_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-    # Update warehouse stock quantity
+    # Update warehouse stock quantity - prefer stk_qty, fallback to qty_avlbl
+    stk_qty = item_data.get("stk_qty")
     qty_avlbl = item_data.get("qty_avlbl")
-    if qty_avlbl not in [None, "", "null"]:
-        qty_avlbl = int(float(item_data.get("qty_avlbl") or 0))
+    
+    # Use stk_qty if available, otherwise use qty_avlbl
+    stock_qty = stk_qty if stk_qty not in [None, "", "null"] else qty_avlbl
+    
+    if stock_qty not in [None, "", "null"]:
+        try:
+            stock_qty = stock_qty or 0
+        except (ValueError, TypeError) as e:
+            frappe.log_error(f"Invalid stock quantity value '{stock_qty}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
+            stock_qty = 0
+        
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
 
-        # Check if Bin exists for item and warehouse
-        bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-        if bin_exists:
-            bin_doc = frappe.get_doc("Bin", bin_exists)
-            bin_doc.actual_qty = qty_avlbl
-            bin_doc.save(ignore_permissions=True)
-        else:
-            frappe.get_doc({
-                "doctype": "Bin",
-                "item_code": item_code,
-                "warehouse": warehouse,
-                "actual_qty": qty_avlbl
-            }).insert(ignore_permissions=True)
-        item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-        item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-        if item_available_qty == item_threshold_stock:
-            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-        frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
+        try:
+            # Check if Bin exists for item and warehouse
+            bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
+            if bin_exists:
+                bin_doc = frappe.get_doc("Bin", bin_exists)
+                bin_doc.actual_qty = stock_qty
+                bin_doc.save(ignore_permissions=True)
+            else:
+                frappe.get_doc({
+                    "doctype": "Bin",
+                    "item_code": item_code,
+                    "warehouse": warehouse,
+                    "actual_qty": stock_qty
+                }).insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Bin for item {item_code}, warehouse {warehouse}: {str(e)}", "Bin Update Error")
+        
+        try:
+            # item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
+            # item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
+            # if item_available_qty == item_threshold_stock:
+            frappe.db.set_value("Item", item_code, "threshold_stock", stock_qty)
+            frappe.db.set_value("Item", item_code, "available_stock", stock_qty)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Item stock fields for {item_code}: {str(e)}", "Item Stock Update Error")
 
     frappe.db.commit()
 
