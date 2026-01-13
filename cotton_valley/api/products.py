@@ -151,14 +151,17 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         }
 
     # --- Sort Options ---
+    # Note: "low-high" and "high-low" require special handling as price is in Item Price table
     sort_clause = {
         "asc": "creation asc",
         "desc": "creation desc",
         "a-z": "item_name asc",
         "z-a": "item_name desc",
-        "low-high": "price asc",
-        "high-low": "price desc"
     }.get(sortBy, None)  # default sort handled separately
+    
+    # Flag to indicate price-based sorting
+    price_sort = sortBy in ["low-high", "high-low"]
+    price_sort_direction = "ASC" if sortBy == "low-high" else "DESC" if sortBy == "high-low" else None
 
     # --- Total Count ---
     total_count = 0
@@ -199,153 +202,242 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
-    # get all items - use different query for default sort
+    
+    # --- Common field definitions (reusable) ---
+    ITEM_FIELDS = """
+        name as id,
+        item_name as name,
+        description,
+        item_group as type,
+        name as sku,
+        name as slug,
+        stock_uom as unit,
+        weight_uom as weight,
+        custom_case_pack as case_pack,
+        image as product_thumbnail_id,
+        disabled as status,
+        brand,
+        custom_sub_category as sub_category,
+        custom_carton_upc as carton_upc,
+        custom_case_per_pallet as case_per_pallet,
+        custom_cbm as cbm,
+        custom_upc as upc_code,
+        custom_pallet_hi as pallet_hi,
+        custom_pallet_ti as pallet_ti,
+        custom_package_width_inch as package_width,
+        custom_package_length_inch as package_length,
+        custom_package_height_inch as package_height,
+        custom_weight_lbs as package_weight,
+        custom_item_width_inch as item_width,
+        custom_item_length_inch as item_length,
+        custom_item_height_inch as item_height,
+        custom_item_weight_lbs as item_weight,
+        custom_coming_soon as coming_soon,
+        custom_new_arrivals as new_arrivals,
+        tag_color,
+        tag_name,
+        threshold_stock as stock
+    """.strip()
+    
+    ITEM_FIELDS_LIST = [
+        "name as id",
+        "item_name as name",
+        "description",
+        "item_group as type",
+        "name as sku",
+        "name as slug",
+        "stock_uom as unit",
+        "weight_uom as weight",
+        "custom_case_pack as case_pack",
+        "image as product_thumbnail_id",
+        "disabled as status",
+        "brand",
+        "custom_sub_category as sub_category",
+        "custom_carton_upc as carton_upc",
+        "custom_case_per_pallet as case_per_pallet",
+        "custom_cbm as cbm",
+        "custom_upc as upc_code",
+        "custom_pallet_hi as pallet_hi",
+        "custom_pallet_ti as pallet_ti",
+        "custom_package_width_inch as package_width",
+        "custom_package_length_inch as package_length",
+        "custom_package_height_inch as package_height",
+        "custom_weight_lbs as package_weight",
+        "custom_item_width_inch as item_width",
+        "custom_item_length_inch as item_length",
+        "custom_item_height_inch as item_height",
+        "custom_item_weight_lbs as item_weight",
+        "custom_coming_soon as coming_soon",
+        "custom_new_arrivals as new_arrivals",
+        "tag_color",
+        "tag_name",
+        "threshold_stock as stock"
+    ]
+    
+    # --- Helper function to build filter conditions ---
+    def build_filter_conditions(table_alias=""):
+        """Build SQL filter conditions and values."""
+        prefix = f"{table_alias}." if table_alias else ""
+        conditions = []
+        values = []
+        
+        if ids:
+            conditions.append(f"{prefix}name IN %s")
+            values.append(ids)
+        
+        if company:
+            conditions.append(f"{prefix}company = %s")
+            values.append(company)
+        
+        if producttype:
+            conditions.append(f"{prefix}item_group IN %s")
+            values.append(producttype)
+
+        if category:
+            cat_product_ids = frappe.db.sql("""
+                SELECT DISTINCT it.name
+                FROM `tabItem` it
+                INNER JOIN `tabProduct Categoris` c ON c.parent = it.name
+                WHERE c.product_category IN %s
+            """, (category,), as_dict=True)
+            cat_product_ids = [p["name"] for p in cat_product_ids]
+            if not cat_product_ids:
+                return None, None  # Signal no products found
+            conditions.append(f"{prefix}name IN %s")
+            values.append(cat_product_ids)
+
+        if subcategory:
+            conditions.append(f"{prefix}custom_sub_category IN %s")
+            values.append(subcategory)
+
+        if brand:
+            conditions.append(f"{prefix}brand IN %s")
+            values.append(brand)
+
+        if attribute:
+            if attribute == ["in_stock"]:
+                conditions.append(f"{prefix}threshold_stock > 0")
+            elif attribute == ["out_stock"]:
+                conditions.append(f"{prefix}threshold_stock <= 0")
+        
+        conditions.append(f"{prefix}disabled = 0")
+        
+        return conditions, values
+    
+    # --- Helper function to build limit clause ---
+    def build_limit_clause():
+        if limit_start is not None and limit_page_length:
+            return f"LIMIT {limit_start}, {limit_page_length}"
+        elif limit_page_length:
+            return f"LIMIT {limit_page_length}"
+        return ""
+    
+    # --- Determine price list for price-based sorting ---
+    sort_price_list = "Retail"
+    if price_sort and check_customer_token():
+        customer = get_customer_from_token()
+        if company == "Cotton Valley":
+            sort_price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
+        elif company == "UDC":
+            sort_price_list = frappe.get_value("Customer", customer, "price_list_for_udc") or "Retail"
+    
+    # --- Fetch items based on sort type ---
+    items = []
+    
     if sort_clause:
+        # Standard sorting (asc, desc, a-z, z-a)
         items = frappe.get_all(
             "Item",
             filters=filters,
             or_filters=or_filters,
-            fields=[
-                "name as id",
-                "item_name as name",
-                "custom_short_description as short_description",
-                "description",
-                "item_group as type",
-                "name as sku",
-                "name as slug",
-                "stock_uom as unit",
-                "weight_uom as weight",
-                "custom_case_pack as case_pack",
-                "image as product_thumbnail_id",
-                "disabled as status",
-                "brand",
-                "custom_sub_category as sub_category",
-                "custom_carton_upc as carton_upc",
-                "custom_case_per_pallet as case_per_pallet",
-                "custom_cbm as cbm",
-                "custom_upc as upc_code",
-                "custom_pallet_hi as pallet_hi",
-                "custom_pallet_ti as pallet_ti",
-                "custom_package_width_inch as package_width",
-                "custom_package_length_inch as package_length",
-                "custom_package_height_inch as package_height",
-                "custom_weight_lbs as package_weight",
-                "custom_item_width_inch as item_width",
-                "custom_item_length_inch as item_length",
-                "custom_item_height_inch as item_height",
-                "custom_item_weight_lbs as item_weight",
-                "custom_coming_soon as coming_soon",
-                "custom_new_arrivals as new_arrivals",
-                "tag_color",
-                "tag_name",
-                "threshold_stock as stock"
-            ],
+            fields=ITEM_FIELDS_LIST,
             order_by=sort_clause,
             limit_start=limit_start,
             limit_page_length=limit_page_length
         )
     else:
-        # Default sort with custom_web_ranking - null/0 values last
-        filter_conditions = []
-        filter_values = []
+        # Build conditions for raw SQL queries (price sort or default sort)
+        table_alias = "i" if price_sort else ""
+        filter_conditions, filter_values = build_filter_conditions(table_alias)
         
-        if ids:
-            filter_conditions.append("name IN %s")
-            filter_values.append(ids)
+        # Check if category filter returned no products
+        if filter_conditions is None:
+            return {"data": [], "total": 0}
         
-        if company:
-            filter_conditions.append("company = %s")
-            filter_values.append(company)
-        
-        if producttype:
-            filter_conditions.append("item_group IN %s")
-            filter_values.append(producttype)
-
-        if category:
-            # get all product IDs linked to this category
-            product_ids = frappe.db.sql("""
-                SELECT DISTINCT i.name
-                FROM `tabItem` i
-                INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-                WHERE c.product_category in %s
-            """, (category,), as_dict=True)
-            product_ids = [p["name"] for p in product_ids]
-            if not product_ids:
-                return {"data": [], "total": 0}  # no products found for this category
-            filter_conditions.append("name IN %s")
-            filter_values.append(product_ids)
-
-        if subcategory:
-            filter_conditions.append("custom_sub_category IN %s")
-            filter_values.append(subcategory)
-
-        if brand:
-            filter_conditions.append("brand IN %s")
-            filter_values.append(brand)
-
-        if attribute:
-            if attribute == ["in_stock"]:
-                filter_conditions.append("threshold_stock > 0")
-            if attribute == ["out_stock"]:
-                filter_conditions.append("threshold_stock <= 0")
-        
-        filter_conditions.append("disabled = 0")
-        
+        # Add search condition
         search_condition = ""
         if search:
-            search_condition = "AND (item_name LIKE %s OR name LIKE %s)"
+            prefix = "i." if price_sort else ""
+            search_condition = f"AND ({prefix}item_name LIKE %s OR {prefix}name LIKE %s)"
             filter_values.extend([f"%{search}%", f"%{search}%"])
         
         where_clause = " AND ".join(filter_conditions)
+        limit_clause = build_limit_clause()
         
-        limit_clause = ""
-        if limit_start is not None and limit_page_length:
-            limit_clause = f"LIMIT {limit_start}, {limit_page_length}"
-        elif limit_page_length:
-            limit_clause = f"LIMIT {limit_page_length}"
-        
-        query = f"""
-            SELECT 
-                name as id,
-                item_name as name,
-                custom_short_description as short_description,
-                description,
-                item_group as type,
-                name as sku,
-                name as slug,
-                stock_uom as unit,
-                weight_uom as weight,
-                custom_case_pack as case_pack,
-                image as product_thumbnail_id,
-                disabled as status,
-                brand,
-                custom_sub_category as sub_category,
-                custom_carton_upc as carton_upc,
-                custom_case_per_pallet as case_per_pallet,
-                custom_cbm as cbm,
-                custom_upc as upc_code,
-                custom_pallet_hi as pallet_hi,
-                custom_pallet_ti as pallet_ti,
-                custom_package_width_inch as package_width,
-                custom_package_length_inch as package_length,
-                custom_package_height_inch as package_height,
-                custom_weight_lbs as package_weight,
-                custom_item_width_inch as item_width,
-                custom_item_length_inch as item_length,
-                custom_item_height_inch as item_height,
-                custom_item_weight_lbs as item_weight,
-                custom_coming_soon as coming_soon,
-                custom_new_arrivals as new_arrivals,
-                tag_color,
-                tag_name,
-                threshold_stock as stock
-            FROM `tabItem`
-            WHERE {where_clause} {search_condition}
-            ORDER BY 
-                CASE WHEN website_ranking IS NULL OR website_ranking = 0 THEN 1 ELSE 0 END,
-                website_ranking ASC
-            {limit_clause}
-        """
+        if price_sort:
+            # Price-based sorting - requires JOIN with Item Price table
+            # Insert price_list at the beginning since it's used in the JOIN clause (before WHERE)
+            filter_values.insert(0, sort_price_list)
+            
+            # Use table alias for all fields
+            fields_with_alias = ", ".join([f"i.{f.split(' as ')[0].strip()} as {f.split(' as ')[1].strip()}" 
+                                           if ' as ' in f else f"i.{f}" 
+                                           for f in ITEM_FIELDS.split(",\n")])
+            
+            query = f"""
+                SELECT 
+                    i.name as id,
+                    i.item_name as name,
+                    i.description,
+                    i.item_group as type,
+                    i.name as sku,
+                    i.name as slug,
+                    i.stock_uom as unit,
+                    i.weight_uom as weight,
+                    i.custom_case_pack as case_pack,
+                    i.image as product_thumbnail_id,
+                    i.disabled as status,
+                    i.brand,
+                    i.custom_sub_category as sub_category,
+                    i.custom_carton_upc as carton_upc,
+                    i.custom_case_per_pallet as case_per_pallet,
+                    i.custom_cbm as cbm,
+                    i.custom_upc as upc_code,
+                    i.custom_pallet_hi as pallet_hi,
+                    i.custom_pallet_ti as pallet_ti,
+                    i.custom_package_width_inch as package_width,
+                    i.custom_package_length_inch as package_length,
+                    i.custom_package_height_inch as package_height,
+                    i.custom_weight_lbs as package_weight,
+                    i.custom_item_width_inch as item_width,
+                    i.custom_item_length_inch as item_length,
+                    i.custom_item_height_inch as item_height,
+                    i.custom_item_weight_lbs as item_weight,
+                    i.custom_coming_soon as coming_soon,
+                    i.custom_new_arrivals as new_arrivals,
+                    i.tag_color,
+                    i.tag_name,
+                    i.threshold_stock as stock,
+                    COALESCE(ip.price_list_rate, 0) as sort_price
+                FROM `tabItem` i
+                LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name AND ip.price_list = %s
+                WHERE {where_clause} {search_condition}
+                ORDER BY 
+                    CASE WHEN ip.price_list_rate IS NULL OR ip.price_list_rate = 0 THEN 1 ELSE 0 END,
+                    ip.price_list_rate {price_sort_direction}
+                {limit_clause}
+            """
+        else:
+            # Default sort with website_ranking - null/0 values last
+            query = f"""
+                SELECT {ITEM_FIELDS}
+                FROM `tabItem`
+                WHERE {where_clause} {search_condition}
+                ORDER BY 
+                    CASE WHEN website_ranking IS NULL OR website_ranking = 0 THEN 1 ELSE 0 END,
+                    website_ranking ASC
+                {limit_clause}
+            """
         
         items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
 
