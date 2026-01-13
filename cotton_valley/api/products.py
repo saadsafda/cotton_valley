@@ -151,14 +151,17 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         }
 
     # --- Sort Options ---
+    # Note: "low-high" and "high-low" require special handling as price is in Item Price table
     sort_clause = {
         "asc": "creation asc",
         "desc": "creation desc",
         "a-z": "item_name asc",
         "z-a": "item_name desc",
-        "low-high": "price asc",
-        "high-low": "price desc"
     }.get(sortBy, None)  # default sort handled separately
+    
+    # Flag to indicate price-based sorting
+    price_sort = sortBy in ["low-high", "high-low"]
+    price_sort_direction = "ASC" if sortBy == "low-high" else "DESC" if sortBy == "high-low" else None
 
     # --- Total Count ---
     total_count = 0
@@ -199,153 +202,242 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     # --- Pagination ---
     limit_start = (page - 1) * 30 if page and page > 0 else None
     limit_page_length = 30 if page else None
-    # get all items - use different query for default sort
+    
+    # --- Common field definitions (reusable) ---
+    ITEM_FIELDS = """
+        name as id,
+        item_name as name,
+        description,
+        item_group as type,
+        name as sku,
+        name as slug,
+        stock_uom as unit,
+        weight_uom as weight,
+        custom_case_pack as case_pack,
+        image as product_thumbnail_id,
+        disabled as status,
+        brand,
+        custom_sub_category as sub_category,
+        custom_carton_upc as carton_upc,
+        custom_case_per_pallet as case_per_pallet,
+        custom_cbm as cbm,
+        custom_upc as upc_code,
+        custom_pallet_hi as pallet_hi,
+        custom_pallet_ti as pallet_ti,
+        custom_package_width_inch as package_width,
+        custom_package_length_inch as package_length,
+        custom_package_height_inch as package_height,
+        custom_weight_lbs as package_weight,
+        custom_item_width_inch as item_width,
+        custom_item_length_inch as item_length,
+        custom_item_height_inch as item_height,
+        custom_item_weight_lbs as item_weight,
+        custom_coming_soon as coming_soon,
+        custom_new_arrivals as new_arrivals,
+        tag_color,
+        tag_name,
+        threshold_stock as stock
+    """.strip()
+    
+    ITEM_FIELDS_LIST = [
+        "name as id",
+        "item_name as name",
+        "description",
+        "item_group as type",
+        "name as sku",
+        "name as slug",
+        "stock_uom as unit",
+        "weight_uom as weight",
+        "custom_case_pack as case_pack",
+        "image as product_thumbnail_id",
+        "disabled as status",
+        "brand",
+        "custom_sub_category as sub_category",
+        "custom_carton_upc as carton_upc",
+        "custom_case_per_pallet as case_per_pallet",
+        "custom_cbm as cbm",
+        "custom_upc as upc_code",
+        "custom_pallet_hi as pallet_hi",
+        "custom_pallet_ti as pallet_ti",
+        "custom_package_width_inch as package_width",
+        "custom_package_length_inch as package_length",
+        "custom_package_height_inch as package_height",
+        "custom_weight_lbs as package_weight",
+        "custom_item_width_inch as item_width",
+        "custom_item_length_inch as item_length",
+        "custom_item_height_inch as item_height",
+        "custom_item_weight_lbs as item_weight",
+        "custom_coming_soon as coming_soon",
+        "custom_new_arrivals as new_arrivals",
+        "tag_color",
+        "tag_name",
+        "threshold_stock as stock"
+    ]
+    
+    # --- Helper function to build filter conditions ---
+    def build_filter_conditions(table_alias=""):
+        """Build SQL filter conditions and values."""
+        prefix = f"{table_alias}." if table_alias else ""
+        conditions = []
+        values = []
+        
+        if ids:
+            conditions.append(f"{prefix}name IN %s")
+            values.append(ids)
+        
+        if company:
+            conditions.append(f"{prefix}company = %s")
+            values.append(company)
+        
+        if producttype:
+            conditions.append(f"{prefix}item_group IN %s")
+            values.append(producttype)
+
+        if category:
+            cat_product_ids = frappe.db.sql("""
+                SELECT DISTINCT it.name
+                FROM `tabItem` it
+                INNER JOIN `tabProduct Categoris` c ON c.parent = it.name
+                WHERE c.product_category IN %s
+            """, (category,), as_dict=True)
+            cat_product_ids = [p["name"] for p in cat_product_ids]
+            if not cat_product_ids:
+                return None, None  # Signal no products found
+            conditions.append(f"{prefix}name IN %s")
+            values.append(cat_product_ids)
+
+        if subcategory:
+            conditions.append(f"{prefix}custom_sub_category IN %s")
+            values.append(subcategory)
+
+        if brand:
+            conditions.append(f"{prefix}brand IN %s")
+            values.append(brand)
+
+        if attribute:
+            if attribute == ["in_stock"]:
+                conditions.append(f"{prefix}threshold_stock > 0")
+            elif attribute == ["out_stock"]:
+                conditions.append(f"{prefix}threshold_stock <= 0")
+        
+        conditions.append(f"{prefix}disabled = 0")
+        
+        return conditions, values
+    
+    # --- Helper function to build limit clause ---
+    def build_limit_clause():
+        if limit_start is not None and limit_page_length:
+            return f"LIMIT {limit_start}, {limit_page_length}"
+        elif limit_page_length:
+            return f"LIMIT {limit_page_length}"
+        return ""
+    
+    # --- Determine price list for price-based sorting ---
+    sort_price_list = "Retail"
+    if price_sort and check_customer_token():
+        customer = get_customer_from_token()
+        if company == "Cotton Valley":
+            sort_price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
+        elif company == "UDC":
+            sort_price_list = frappe.get_value("Customer", customer, "price_list_for_udc") or "Retail"
+    
+    # --- Fetch items based on sort type ---
+    items = []
+    
     if sort_clause:
+        # Standard sorting (asc, desc, a-z, z-a)
         items = frappe.get_all(
             "Item",
             filters=filters,
             or_filters=or_filters,
-            fields=[
-                "name as id",
-                "item_name as name",
-                "custom_short_description as short_description",
-                "description",
-                "item_group as type",
-                "name as sku",
-                "name as slug",
-                "stock_uom as unit",
-                "weight_uom as weight",
-                "custom_case_pack as case_pack",
-                "image as product_thumbnail_id",
-                "disabled as status",
-                "brand",
-                "custom_sub_category as sub_category",
-                "custom_carton_upc as carton_upc",
-                "custom_case_per_pallet as case_per_pallet",
-                "custom_cbm as cbm",
-                "custom_upc as upc_code",
-                "custom_pallet_hi as pallet_hi",
-                "custom_pallet_ti as pallet_ti",
-                "custom_package_width_inch as package_width",
-                "custom_package_length_inch as package_length",
-                "custom_package_height_inch as package_height",
-                "custom_weight_lbs as package_weight",
-                "custom_item_width_inch as item_width",
-                "custom_item_length_inch as item_length",
-                "custom_item_height_inch as item_height",
-                "custom_item_weight_lbs as item_weight",
-                "custom_coming_soon as coming_soon",
-                "custom_new_arrivals as new_arrivals",
-                "tag_color",
-                "tag_name",
-                "threshold_stock as stock"
-            ],
+            fields=ITEM_FIELDS_LIST,
             order_by=sort_clause,
             limit_start=limit_start,
             limit_page_length=limit_page_length
         )
     else:
-        # Default sort with custom_web_ranking - null/0 values last
-        filter_conditions = []
-        filter_values = []
+        # Build conditions for raw SQL queries (price sort or default sort)
+        table_alias = "i" if price_sort else ""
+        filter_conditions, filter_values = build_filter_conditions(table_alias)
         
-        if ids:
-            filter_conditions.append("name IN %s")
-            filter_values.append(ids)
+        # Check if category filter returned no products
+        if filter_conditions is None:
+            return {"data": [], "total": 0}
         
-        if company:
-            filter_conditions.append("company = %s")
-            filter_values.append(company)
-        
-        if producttype:
-            filter_conditions.append("item_group IN %s")
-            filter_values.append(producttype)
-
-        if category:
-            # get all product IDs linked to this category
-            product_ids = frappe.db.sql("""
-                SELECT DISTINCT i.name
-                FROM `tabItem` i
-                INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
-                WHERE c.product_category in %s
-            """, (category,), as_dict=True)
-            product_ids = [p["name"] for p in product_ids]
-            if not product_ids:
-                return {"data": [], "total": 0}  # no products found for this category
-            filter_conditions.append("name IN %s")
-            filter_values.append(product_ids)
-
-        if subcategory:
-            filter_conditions.append("custom_sub_category IN %s")
-            filter_values.append(subcategory)
-
-        if brand:
-            filter_conditions.append("brand IN %s")
-            filter_values.append(brand)
-
-        if attribute:
-            if attribute == ["in_stock"]:
-                filter_conditions.append("threshold_stock > 0")
-            if attribute == ["out_stock"]:
-                filter_conditions.append("threshold_stock <= 0")
-        
-        filter_conditions.append("disabled = 0")
-        
+        # Add search condition
         search_condition = ""
         if search:
-            search_condition = "AND (item_name LIKE %s OR name LIKE %s)"
+            prefix = "i." if price_sort else ""
+            search_condition = f"AND ({prefix}item_name LIKE %s OR {prefix}name LIKE %s)"
             filter_values.extend([f"%{search}%", f"%{search}%"])
         
         where_clause = " AND ".join(filter_conditions)
+        limit_clause = build_limit_clause()
         
-        limit_clause = ""
-        if limit_start is not None and limit_page_length:
-            limit_clause = f"LIMIT {limit_start}, {limit_page_length}"
-        elif limit_page_length:
-            limit_clause = f"LIMIT {limit_page_length}"
-        
-        query = f"""
-            SELECT 
-                name as id,
-                item_name as name,
-                custom_short_description as short_description,
-                description,
-                item_group as type,
-                name as sku,
-                name as slug,
-                stock_uom as unit,
-                weight_uom as weight,
-                custom_case_pack as case_pack,
-                image as product_thumbnail_id,
-                disabled as status,
-                brand,
-                custom_sub_category as sub_category,
-                custom_carton_upc as carton_upc,
-                custom_case_per_pallet as case_per_pallet,
-                custom_cbm as cbm,
-                custom_upc as upc_code,
-                custom_pallet_hi as pallet_hi,
-                custom_pallet_ti as pallet_ti,
-                custom_package_width_inch as package_width,
-                custom_package_length_inch as package_length,
-                custom_package_height_inch as package_height,
-                custom_weight_lbs as package_weight,
-                custom_item_width_inch as item_width,
-                custom_item_length_inch as item_length,
-                custom_item_height_inch as item_height,
-                custom_item_weight_lbs as item_weight,
-                custom_coming_soon as coming_soon,
-                custom_new_arrivals as new_arrivals,
-                tag_color,
-                tag_name,
-                threshold_stock as stock
-            FROM `tabItem`
-            WHERE {where_clause} {search_condition}
-            ORDER BY 
-                CASE WHEN website_ranking IS NULL OR website_ranking = 0 THEN 1 ELSE 0 END,
-                website_ranking ASC
-            {limit_clause}
-        """
+        if price_sort:
+            # Price-based sorting - requires JOIN with Item Price table
+            # Insert price_list at the beginning since it's used in the JOIN clause (before WHERE)
+            filter_values.insert(0, sort_price_list)
+            
+            # Use table alias for all fields
+            fields_with_alias = ", ".join([f"i.{f.split(' as ')[0].strip()} as {f.split(' as ')[1].strip()}" 
+                                           if ' as ' in f else f"i.{f}" 
+                                           for f in ITEM_FIELDS.split(",\n")])
+            
+            query = f"""
+                SELECT 
+                    i.name as id,
+                    i.item_name as name,
+                    i.description,
+                    i.item_group as type,
+                    i.name as sku,
+                    i.name as slug,
+                    i.stock_uom as unit,
+                    i.weight_uom as weight,
+                    i.custom_case_pack as case_pack,
+                    i.image as product_thumbnail_id,
+                    i.disabled as status,
+                    i.brand,
+                    i.custom_sub_category as sub_category,
+                    i.custom_carton_upc as carton_upc,
+                    i.custom_case_per_pallet as case_per_pallet,
+                    i.custom_cbm as cbm,
+                    i.custom_upc as upc_code,
+                    i.custom_pallet_hi as pallet_hi,
+                    i.custom_pallet_ti as pallet_ti,
+                    i.custom_package_width_inch as package_width,
+                    i.custom_package_length_inch as package_length,
+                    i.custom_package_height_inch as package_height,
+                    i.custom_weight_lbs as package_weight,
+                    i.custom_item_width_inch as item_width,
+                    i.custom_item_length_inch as item_length,
+                    i.custom_item_height_inch as item_height,
+                    i.custom_item_weight_lbs as item_weight,
+                    i.custom_coming_soon as coming_soon,
+                    i.custom_new_arrivals as new_arrivals,
+                    i.tag_color,
+                    i.tag_name,
+                    i.threshold_stock as stock,
+                    COALESCE(ip.price_list_rate, 0) as sort_price
+                FROM `tabItem` i
+                LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name AND ip.price_list = %s
+                WHERE {where_clause} {search_condition}
+                ORDER BY 
+                    CASE WHEN ip.price_list_rate IS NULL OR ip.price_list_rate = 0 THEN 1 ELSE 0 END,
+                    ip.price_list_rate {price_sort_direction}
+                {limit_clause}
+            """
+        else:
+            # Default sort with website_ranking - null/0 values last
+            query = f"""
+                SELECT {ITEM_FIELDS}
+                FROM `tabItem`
+                WHERE {where_clause} {search_condition}
+                ORDER BY 
+                    CASE WHEN website_ranking IS NULL OR website_ranking = 0 THEN 1 ELSE 0 END,
+                    website_ranking ASC
+                {limit_clause}
+            """
         
         items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
 
@@ -685,69 +777,154 @@ def get_product(product_id, company=None):
 
 @frappe.whitelist()
 def get_prices(item_code, company=None):
-    url = ""
-    username = ""
-    password = ""
-    company = "Cotton Valley" if not company or company == "null" else company
-    if company == "Cotton Valley":
-        url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-        username = CV_USER
-        password = CV_PASSWORD
-    elif company == "UDC":
-        url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-        username = UDC_USER
-        password = UDC_PASSWORD
-    response = requests.get(url, auth=(username, password))
-    # Check if API responded successfully
-    if response.status_code != 200:
-        frappe.throw(f"API Error {response.status_code}: {response.text}")
-
-    # Check if response is not empty and is JSON
-    if not response.text.strip():
-        frappe.throw("Empty response from API")
-
+    """
+    Fetch and update item prices from external API.
+    Returns success message or raises exception on critical errors.
+    """
     try:
-        data = response.json()
-    except Exception:
-        frappe.throw(f"Invalid JSON response: {response.text[:500]}")
-
-    # print(data, "Data from API \n\n\n\n\n")  # Debugging line
-
-    if not data.get("items"):
-        return "No prices found"
-
-    for item in data["items"]:
-        region_name = item.get("rgnname")
-        rate = item.get("rate")
-
-        if not region_name or not rate or float(rate) <= 0:
-            continue
-
-        price_list = frappe.db.exists("Price List", region_name)
-        if not price_list:
-            continue
-
-
-        existing = frappe.db.exists("Item Price", {
-            "item_code": item_code,
-            "price_list": price_list
-        })
-
-        if existing:
-            ip = frappe.get_doc("Item Price", existing)
-            ip.price_list_rate = float(rate)
-            ip.save()
+        # Validate inputs
+        if not item_code:
+            frappe.throw("Item code is required")
+        
+        company = "Cotton Valley" if not company or company == "null" else company
+        
+        # Configure API endpoint based on company
+        url = ""
+        username = ""
+        password = ""
+        
+        if company == "Cotton Valley":
+            url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+            username = CV_USER
+            password = CV_PASSWORD
+        elif company == "UDC":
+            url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
+            username = UDC_USER
+            password = UDC_PASSWORD
         else:
-            frappe.get_doc({
-                "doctype": "Item Price",
-                "item_code": item_code,
-                "price_list": price_list,
-                "price_list_rate": float(rate),
-                "currency": "USD"   # or your default currency
-            }).insert()
+            frappe.throw(f"Invalid company: {company}")
+        
+        # Make API request with timeout
+        try:
+            response = requests.get(url, auth=(username, password), timeout=30)
+        except requests.exceptions.Timeout:
+            frappe.throw(f"API request timed out for item {item_code}")
+        except requests.exceptions.ConnectionError:
+            frappe.throw(f"Failed to connect to API for item {item_code}")
+        except requests.exceptions.RequestException as e:
+            frappe.throw(f"API request failed: {str(e)}")
+        
+        # Check if API responded successfully
+        if response.status_code != 200:
+            frappe.throw(f"API Error {response.status_code}: {response.text}")
 
-    frappe.db.commit()
-    return "Prices updated"
+        # Check if response is not empty and is JSON
+        if not response.text.strip():
+            frappe.throw("Empty response from API")
+
+        try:
+            data = response.json()
+        except Exception as e:
+            frappe.throw(f"Invalid JSON response: {response.text[:500]}")
+
+        if not data.get("items"):
+            return "No prices found"
+
+        # Track processing results
+        updated_count = 0
+        created_count = 0
+        skipped_count = 0
+        errors = []
+
+        for item in data["items"]:
+            try:
+                region_name = item.get("rgnname")
+                rate = item.get("rate")
+
+                # Validate item data
+                if not region_name or not rate:
+                    skipped_count += 1
+                    continue
+                
+                try:
+                    rate_float = float(rate)
+                    if rate_float <= 0:
+                        skipped_count += 1
+                        continue
+                except (ValueError, TypeError):
+                    errors.append(f"Invalid rate value for region {region_name}: {rate}")
+                    skipped_count += 1
+                    continue
+
+                # Check if price list exists
+                price_list = frappe.db.exists("Price List", region_name)
+                if not price_list:
+                    skipped_count += 1
+                    continue
+
+                # Check if Item Price already exists
+                existing = frappe.db.exists("Item Price", {
+                    "item_code": item_code,
+                    "price_list": price_list
+                })
+
+                try:
+                    if existing:
+                        # Update existing price
+                        ip = frappe.get_doc("Item Price", existing)
+                        ip.price_list_rate = rate_float
+                        ip.save(ignore_permissions=True)
+                        updated_count += 1
+                    else:
+                        # Create new price
+                        frappe.get_doc({
+                            "doctype": "Item Price",
+                            "item_code": item_code,
+                            "price_list": price_list,
+                            "price_list_rate": rate_float,
+                            "currency": "USD"
+                        }).insert(ignore_permissions=True)
+                        created_count += 1
+                except Exception as e:
+                    error_msg = f"Failed to save price for {region_name}: {str(e)}"
+                    errors.append(error_msg)
+                    frappe.log_error(error_msg, f"Price Update Error - {item_code}")
+                    continue
+
+            except Exception as e:
+                error_msg = f"Error processing item in loop: {str(e)}"
+                errors.append(error_msg)
+                frappe.log_error(error_msg, f"Price Processing Error - {item_code}")
+                continue
+
+        # Commit all changes
+        try:
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(f"Failed to commit price changes for {item_code}: {str(e)}", "Price Commit Error")
+            frappe.throw(f"Failed to save price changes: {str(e)}")
+
+        # Build response message
+        message_parts = []
+        if updated_count > 0:
+            message_parts.append(f"{updated_count} updated")
+        if created_count > 0:
+            message_parts.append(f"{created_count} created")
+        if skipped_count > 0:
+            message_parts.append(f"{skipped_count} skipped")
+        
+        result = f"Prices: {', '.join(message_parts)}" if message_parts else "No prices updated"
+        
+        if errors:
+            frappe.log_error("\n".join(errors), f"Price Update Warnings - {item_code}")
+            result += f" ({len(errors)} errors logged)"
+        
+        return result
+
+    except Exception as e:
+        # Log unexpected errors
+        frappe.log_error(f"Unexpected error in get_prices for {item_code}: {str(e)}", "Price Update Critical Error")
+        raise
 
 
 @frappe.whitelist()
@@ -858,10 +1035,13 @@ def sync_item_from_api(item_code, company=None):
             
             if not existing_category:
                 # Add category to item
-                item_doc.append("product_categoris", {
-                    "product_category": category.get("name")
-                })
-                updated = True
+                try:
+                    item_doc.append("product_categoris", {
+                        "product_category": category.get("name")
+                    })
+                    updated = True
+                except AttributeError as e:
+                    frappe.log_error("Category Append Error", f"Failed to append category for item {item_code}: {str(e)}. Field 'product_categoris' may not exist.")
         else:
             # Category doesn't exist - show the error
             frappe.msgprint(f"Category with ERP ID {itmclsid} not found. Please create it first.")
@@ -886,9 +1066,12 @@ def sync_item_from_api(item_code, company=None):
                 updated = True
             
             # Update item's subcategory field
-            if item_doc.custom_sub_category != subcategory.get("name"):
-                item_doc.custom_sub_category = subcategory.get("name")
-                updated = True
+            try:
+                if item_doc.custom_sub_category != subcategory.get("name"):
+                    item_doc.custom_sub_category = subcategory.get("name")
+                    updated = True
+            except AttributeError as e:
+                frappe.log_error(f"Failed to set subcategory for item {item_code}: {str(e)}. Field 'custom_sub_category' may not exist.", "Subcategory Update Error")
         else:
             # Subcategory doesn't exist - show the error
             frappe.msgprint(f"Subcategory with ERP ID {itmctgid} not found. Please create it first.")
@@ -897,30 +1080,47 @@ def sync_item_from_api(item_code, company=None):
         item_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-    # Update warehouse stock quantity
+    # Update warehouse stock quantity - prefer stk_qty, fallback to qty_avlbl
+    stk_qty = item_data.get("stk_qty")
     qty_avlbl = item_data.get("qty_avlbl")
-    if qty_avlbl not in [None, "", "null"]:
-        qty_avlbl = int(float(item_data.get("qty_avlbl") or 0))
+    
+    # Use stk_qty if available, otherwise use qty_avlbl
+    stock_qty = stk_qty if stk_qty not in [None, "", "null"] else qty_avlbl
+    
+    if stock_qty not in [None, "", "null"]:
+        try:
+            stock_qty = stock_qty or 0
+        except (ValueError, TypeError) as e:
+            frappe.log_error(f"Invalid stock quantity value '{stock_qty}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
+            stock_qty = 0
+        
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
 
-        # Check if Bin exists for item and warehouse
-        bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-        if bin_exists:
-            bin_doc = frappe.get_doc("Bin", bin_exists)
-            bin_doc.actual_qty = qty_avlbl
-            bin_doc.save(ignore_permissions=True)
-        else:
-            frappe.get_doc({
-                "doctype": "Bin",
-                "item_code": item_code,
-                "warehouse": warehouse,
-                "actual_qty": qty_avlbl
-            }).insert(ignore_permissions=True)
-        item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-        item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-        if item_available_qty == item_threshold_stock:
-            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-        frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
+        try:
+            # Check if Bin exists for item and warehouse
+            bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
+            if bin_exists:
+                bin_doc = frappe.get_doc("Bin", bin_exists)
+                bin_doc.actual_qty = stock_qty
+                bin_doc.save(ignore_permissions=True)
+            else:
+                frappe.get_doc({
+                    "doctype": "Bin",
+                    "item_code": item_code,
+                    "warehouse": warehouse,
+                    "actual_qty": stock_qty
+                }).insert(ignore_permissions=True)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Bin for item {item_code}, warehouse {warehouse}: {str(e)}", "Bin Update Error")
+        
+        try:
+            # item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
+            # item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
+            # if item_available_qty == item_threshold_stock:
+            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl or 0)
+            frappe.db.set_value("Item", item_code, "available_stock", stock_qty)
+        except Exception as e:
+            frappe.log_error(f"Failed to update Item stock fields for {item_code}: {str(e)}", "Item Stock Update Error")
 
     frappe.db.commit()
 

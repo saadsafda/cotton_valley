@@ -98,7 +98,7 @@ def register_customer(data, ip_address=None, lat_long=None, company=None):
 
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error(frappe.get_traceback(), "Customer Registration Failed")
+        frappe.log_error("Customer Registration Failed", frappe.get_traceback())
         return {"status": "error", "message": str(e)}
 
 
@@ -135,7 +135,7 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
 
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error(frappe.get_traceback(), "Customer Address Creation Failed")
+        frappe.log_error("Customer Address Creation Failed", frappe.get_traceback())
         return {"status": "error", "message": str(e)}
 
 # Register Email For Customer

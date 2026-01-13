@@ -12,7 +12,7 @@ frappe.ui.form.on('Item', {
                     },
                     callback: function(r) {
                         if(r.message) {
-                            frappe.msgprint("Prices updated successfully");
+                            frappe.msgprint(__(r.message));
                             frm.reload_doc();
                         }
                     }
@@ -27,7 +27,7 @@ frappe.ui.form.on('Item', {
                     },
                     callback: function(r) {
                         if(r.message) {
-                            frappe.msgprint("Product Data updated successfully");
+                            frappe.msgprint(__(r.message));
                             frm.reload_doc();
                         }
                     }
