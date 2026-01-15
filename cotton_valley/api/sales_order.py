@@ -18,13 +18,21 @@ def get_submited_orders(company=None, page=None):
         return {"data": [], "total": 0, "from": 0, "to": 0, "current_page": 0, "per_page": 0}
 
     customer_id = customer["id"]
-    total_count = frappe.db.count("Sales Order", filters={"customer": customer_id, "company": company, "docstatus": 1})
-    
     number_of_month = 0
     if company == "UDC":
         number_of_month = frappe.db.get_single_value("UDC Website Theme Settings", "month_invoice") or 0
     else:
         number_of_month = frappe.db.get_single_value("Website Theme Settings", "month_invoice") or 0
+    total_count = frappe.db.count(
+        "Sales Order", 
+        filters={
+            "customer": customer_id, 
+            "company": company, 
+            "docstatus": 1,
+            "submit_datetime": (">=", frappe.utils.add_months(frappe.utils.nowdate(), -number_of_month)) if number_of_month > 0 else (">=", "1970-01-01")
+        }
+    )
+    
 
     orders = frappe.get_all(
         "Sales Order",
