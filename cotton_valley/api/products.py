@@ -1040,6 +1040,7 @@ def sync_item_from_api(item_code, company=None):
             if not existing_category:
                 # Add category to item
                 try:
+                    item_doc.custom_product_categories = []
                     item_doc.append("custom_product_categories", {
                         "product_category": category.get("name")
                     })
