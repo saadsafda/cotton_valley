@@ -981,6 +981,10 @@ def sync_item_from_api(item_code, company=None):
         "custom_case_per_pallet": int(item_data.get("pall_case") or 0),
         "custom_case_trucking": int(item_data.get("pall_case_tr") or 0),
         "custom_short_description": item_data.get("itmdscpur"),
+        "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
+        "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
+        "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
+        "custom_weight_lbs": float(item_data.get("casewt") or 0),
     }
 
     updated = False
@@ -1036,12 +1040,13 @@ def sync_item_from_api(item_code, company=None):
             if not existing_category:
                 # Add category to item
                 try:
-                    item_doc.append("product_categoris", {
+                    item_doc.custom_product_categories = []
+                    item_doc.append("custom_product_categories", {
                         "product_category": category.get("name")
                     })
                     updated = True
                 except AttributeError as e:
-                    frappe.log_error("Category Append Error", f"Failed to append category for item {item_code}: {str(e)}. Field 'product_categoris' may not exist.")
+                    frappe.log_error("Category Append Error", f"Failed to append category for item {item_code}: {str(e)}. Field 'custom_product_categories' may not exist.")
         else:
             # Category doesn't exist - show the error
             frappe.msgprint(f"Category with ERP ID {itmclsid} not found. Please create it first.")
@@ -1081,18 +1086,17 @@ def sync_item_from_api(item_code, company=None):
         frappe.db.commit()
 
     # Update warehouse stock quantity - prefer stk_qty, fallback to qty_avlbl
-    stk_qty = item_data.get("stk_qty")
     qty_avlbl = item_data.get("qty_avlbl")
     
     # Use stk_qty if available, otherwise use qty_avlbl
-    stock_qty = stk_qty if stk_qty not in [None, "", "null"] else qty_avlbl
+    qty_avlbl = qty_avlbl if qty_avlbl not in [None, "", "null"] else 0
     
-    if stock_qty not in [None, "", "null"]:
+    if qty_avlbl not in [None, "", "null"]:
         try:
-            stock_qty = stock_qty or 0
+            qty_avlbl = qty_avlbl or 0
         except (ValueError, TypeError) as e:
-            frappe.log_error(f"Invalid stock quantity value '{stock_qty}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
-            stock_qty = 0
+            frappe.log_error(f"Invalid stock quantity value '{qty_avlbl}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
+            qty_avlbl = 0
         
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
 
@@ -1101,24 +1105,24 @@ def sync_item_from_api(item_code, company=None):
             bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
             if bin_exists:
                 bin_doc = frappe.get_doc("Bin", bin_exists)
-                bin_doc.actual_qty = stock_qty
+                bin_doc.actual_qty = qty_avlbl
                 bin_doc.save(ignore_permissions=True)
             else:
                 frappe.get_doc({
                     "doctype": "Bin",
                     "item_code": item_code,
                     "warehouse": warehouse,
-                    "actual_qty": stock_qty
+                    "actual_qty": qty_avlbl
                 }).insert(ignore_permissions=True)
         except Exception as e:
             frappe.log_error(f"Failed to update Bin for item {item_code}, warehouse {warehouse}: {str(e)}", "Bin Update Error")
         
         try:
-            # item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-            # item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-            # if item_available_qty == item_threshold_stock:
-            frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl or 0)
-            frappe.db.set_value("Item", item_code, "available_stock", stock_qty)
+            item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
+            item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
+            if item_available_qty == item_threshold_stock:
+                frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl or 0)
+            frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
         except Exception as e:
             frappe.log_error(f"Failed to update Item stock fields for {item_code}: {str(e)}", "Item Stock Update Error")
 

@@ -7,6 +7,7 @@
  "field_order": [
   "general_settings_section",
   "site_title",
+  "month_invoice",
   "column_break_ymrq",
   "site_tagline",
   "primary_color",
@@ -394,13 +395,20 @@
   {
    "fieldname": "section_break_olso",
    "fieldtype": "Section Break"
+  },
+  {
+   "description": "Previous Month Invoice for Customer",
+   "fieldname": "month_invoice",
+   "fieldtype": "Int",
+   "label": "Month Invoice ",
+   "non_negative": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-12-15 00:11:41.418381",
+ "modified": "2026-01-15 00:38:40.171009",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "UDC Website Theme Settings",
