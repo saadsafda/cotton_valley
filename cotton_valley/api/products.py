@@ -1135,40 +1135,35 @@ CHUNK_SIZE = 10  # adjust as needed
 
 
 @frappe.whitelist()
-def scheduler_sync_item_from_api():
-    items = frappe.get_all("Item", pluck="name")
+def scheduler_sync_cv_items_from_api():
+    """Sync items from Cotton Valley API"""
+    company = "Cotton Valley"
+    items = frappe.get_all("Item", filters={"company": company}, pluck="name")
     total = len(items)
-    url = ""
-    username = ""
-    password = ""
+    url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID="
+    username = CV_USER
+    password = CV_PASSWORD
+    warehouse = "Stores - CV"
     error_list = []
     processed_count = 0
+
     for start in range(0, total, CHUNK_SIZE):
         batch = items[start:start + CHUNK_SIZE]
-        frappe.log_error("Processing", f"Processing items {start + 1} to {start + len(batch)}...")
+        frappe.log_error("Processing CV", f"Processing CV items {start + 1} to {start + len(batch)}...")
 
         for item_code in batch:
             try:
-                company = frappe.get_value("Item", item_code, "company")
-                if company == "Cotton Valley":
-                    url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID={item_code}"
-                    username = CV_USER
-                    password = CV_PASSWORD
-                elif company == "UDC":
-                    url = f"https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID={item_code}"
-                    username = UDC_USER
-                    password = UDC_PASSWORD
-
+                url = f"{url_base}{item_code}"
                 response = requests.get(url, auth=(username, password), timeout=30)
                 if response.status_code != 200:
                     error_msg = f"API Error {response.status_code}: {response.text}"
-                    frappe.log_error(error_msg, f"Item: {item_code}")
+                    frappe.log_error(error_msg, f"CV Item: {item_code}")
                     error_list.append({"item_code": item_code, "error": error_msg})
                     continue
 
                 if not response.text.strip():
                     error_msg = "Empty response from API"
-                    frappe.log_error(error_msg, f"Item: {item_code}")
+                    frappe.log_error(error_msg, f"CV Item: {item_code}")
                     error_list.append({"item_code": item_code, "error": error_msg})
                     continue
 
@@ -1176,13 +1171,13 @@ def scheduler_sync_item_from_api():
                     data = response.json()
                 except Exception as e:
                     error_msg = f"Invalid JSON response: {response.text[:500]}"
-                    frappe.log_error(error_msg, f"Item: {item_code}")
+                    frappe.log_error(error_msg, f"CV Item: {item_code}")
                     error_list.append({"item_code": item_code, "error": error_msg})
                     continue
 
                 if not data.get("items"):
                     error_msg = "No item found in API response"
-                    frappe.log_error(error_msg, f"Item: {item_code}")
+                    frappe.log_error(error_msg, f"CV Item: {item_code}")
                     error_list.append({"item_code": item_code, "error": error_msg})
                     continue
 
@@ -1190,7 +1185,7 @@ def scheduler_sync_item_from_api():
 
                 if not frappe.db.exists("Item", item_code):
                     error_msg = f"Item {item_code} not found in ERPNext"
-                    frappe.log_error(error_msg, f"Item: {item_code}")
+                    frappe.log_error(error_msg, f"CV Item: {item_code}")
                     error_list.append({"item_code": item_code, "error": error_msg})
                     continue
 
@@ -1198,7 +1193,6 @@ def scheduler_sync_item_from_api():
 
                 field_mapping = {
                     "item_name": item_data.get("itmdsc"),
-                    # "item_group": item_data.get("itmgrpdsc") or "COD",
                     "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
                     "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
                     "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
@@ -1209,6 +1203,10 @@ def scheduler_sync_item_from_api():
                     "custom_case_per_pallet": int(item_data.get("pall_case") or 0),
                     "custom_case_trucking": int(item_data.get("pall_case_tr") or 0),
                     "custom_short_description": item_data.get("itmdscpur"),
+                    "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
+                    "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
+                    "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
+                    "custom_weight_lbs": float(item_data.get("casewt") or 0),
                 }
 
                 updated = False
@@ -1218,7 +1216,6 @@ def scheduler_sync_item_from_api():
                             item_doc.set(field, value)
                             updated = True
                         else:
-                            # Log to Item Value Updates if value is not set
                             frappe.get_doc({
                                 "doctype": "Item Value Updates",
                                 "item_code": item_code,
@@ -1227,7 +1224,6 @@ def scheduler_sync_item_from_api():
                                 "message": f"Value not updated: {value!r} is invalid or empty"
                             }).insert(ignore_permissions=True)
                     except Exception as e:
-                        # Log to Item Value Updates if set fails
                         frappe.get_doc({
                             "doctype": "Item Value Updates",
                             "item_code": item_code,
@@ -1254,13 +1250,14 @@ def scheduler_sync_item_from_api():
                             "product_category": category.get("name")
                         })
                         if not existing_category:
-                            item_doc.append("product_categoris", {
+                            item_doc.custom_product_categories = []
+                            item_doc.append("custom_product_categories", {
                                 "product_category": category.get("name")
                             })
                             updated = True
                     else:
                         error_msg = f"Category with ERP ID {itmclsid} not found. Please create it first."
-                        frappe.log_error(error_msg, f"Item: {item_code}")
+                        frappe.log_error(error_msg, f"CV Item: {item_code}")
                         error_list.append({"item_code": item_code, "error": error_msg})
 
                 itmctgid = item_data.get("itmctgid")
@@ -1281,7 +1278,7 @@ def scheduler_sync_item_from_api():
                             updated = True
                     else:
                         error_msg = f"Subcategory with ERP ID {itmctgid} not found. Please create it first."
-                        frappe.log_error(error_msg, f"Item: {item_code}")
+                        frappe.log_error(error_msg, f"CV Item: {item_code}")
                         error_list.append({"item_code": item_code, "error": error_msg})
 
                 if updated:
@@ -1291,7 +1288,6 @@ def scheduler_sync_item_from_api():
                 qty_avlbl = item_data.get("qty_avlbl")
                 if qty_avlbl not in [None, "", "null"]:
                     qty_avlbl = int(float(item_data.get("qty_avlbl") or 0))
-                    warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
                     bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
                     if bin_exists:
                         bin_doc = frappe.get_doc("Bin", bin_exists)
@@ -1314,59 +1310,235 @@ def scheduler_sync_item_from_api():
                 processed_count += 1
             except Exception as e:
                 error_msg = f"Unhandled error for item {item_code}: {str(e)}"
-                frappe.log_error(error_msg, f"Item: {item_code}")
+                frappe.log_error(error_msg, f"CV Item: {item_code}")
                 error_list.append({"item_code": item_code, "error": error_msg})
                 continue
 
-    summary = f"Processed: {processed_count}, Errors: {len(error_list)}"
+    summary = f"CV Sync - Processed: {processed_count}, Errors: {len(error_list)}"
     if error_list:
-        frappe.log_error(str(error_list), "sync_item_from_api error details")
+        frappe.log_error(str(error_list), "sync_cv_items_from_api error details")
+    return summary
+
+
+@frappe.whitelist()
+def scheduler_sync_udc_items_from_api():
+    """Sync items from UDC API"""
+    items = frappe.get_all("Item", filters={"company": "UDC"}, pluck="name")
+    total = len(items)
+    company = "UDC"
+    url_base = "https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID="
+    username = UDC_USER
+    password = UDC_PASSWORD
+    warehouse = "Stores - U"
+    error_list = []
+    processed_count = 0
+
+    for start in range(0, total, CHUNK_SIZE):
+        batch = items[start:start + CHUNK_SIZE]
+        frappe.log_error("Processing UDC", f"Processing UDC items {start + 1} to {start + len(batch)}...")
+
+        for item_code in batch:
+            try:
+                url = f"{url_base}{item_code}"
+                response = requests.get(url, auth=(username, password), timeout=30)
+                if response.status_code != 200:
+                    error_msg = f"API Error {response.status_code}: {response.text}"
+                    frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                    error_list.append({"item_code": item_code, "error": error_msg})
+                    continue
+
+                if not response.text.strip():
+                    error_msg = "Empty response from API"
+                    frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                    error_list.append({"item_code": item_code, "error": error_msg})
+                    continue
+
+                try:
+                    data = response.json()
+                except Exception as e:
+                    error_msg = f"Invalid JSON response: {response.text[:500]}"
+                    frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                    error_list.append({"item_code": item_code, "error": error_msg})
+                    continue
+
+                if not data.get("items"):
+                    error_msg = "No item found in API response"
+                    frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                    error_list.append({"item_code": item_code, "error": error_msg})
+                    continue
+
+                item_data = data["items"][0]
+
+                if not frappe.db.exists("Item", item_code):
+                    error_msg = f"Item {item_code} not found in ERPNext"
+                    frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                    error_list.append({"item_code": item_code, "error": error_msg})
+                    continue
+
+                item_doc = frappe.get_doc("Item", item_code)
+
+                field_mapping = {
+                    "item_name": item_data.get("itmdsc"),
+                    "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
+                    "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
+                    "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
+                    "custom_carton_upc": item_data.get("cart_upc"),
+                    "custom_upc": item_data.get("itm_chr2"),
+                    "custom_cbm": float(item_data.get("casecbm") or 0),
+                    "custom_case_pack": int(item_data.get("itmpack") or 0),
+                    "custom_case_per_pallet": int(item_data.get("pall_case") or 0),
+                    "custom_case_trucking": int(item_data.get("pall_case_tr") or 0),
+                    "custom_short_description": item_data.get("itmdscpur"),
+                    "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
+                    "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
+                    "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
+                    "custom_weight_lbs": float(item_data.get("casewt") or 0),
+                }
+
+                updated = False
+                for field, value in field_mapping.items():
+                    try:
+                        if value not in [None, "", 0, "0", "null"]:
+                            item_doc.set(field, value)
+                            updated = True
+                        else:
+                            frappe.get_doc({
+                                "doctype": "Item Value Updates",
+                                "item_code": item_code,
+                                "company": company,
+                                "title": f"{item_code} - {field}",
+                                "message": f"Value not updated: {value!r} is invalid or empty"
+                            }).insert(ignore_permissions=True)
+                    except Exception as e:
+                        frappe.get_doc({
+                            "doctype": "Item Value Updates",
+                            "item_code": item_code,
+                            "company": company,
+                            "title": f"{item_code} - {field}",
+                            "message": f"Failed to update: {str(e)}"
+                        }).insert(ignore_permissions=True)
+
+                itmclsid = item_data.get("itmclsid")
+                itmclsdsc = item_data.get("itmclsdsc")
+                if itmclsid:
+                    category = frappe.db.get_value(
+                        "Product Category",
+                        {"erp_id": itmclsid, "company": company},
+                        ["name", "title"],
+                        as_dict=True
+                    )
+                    if category:
+                        if itmclsdsc and itmclsdsc != category.get("title"):
+                            frappe.db.set_value("Product Category", category.get("name"), "title", itmclsdsc)
+                            updated = True
+                        existing_category = frappe.db.exists("Product Categoris", {
+                            "parent": item_code,
+                            "product_category": category.get("name")
+                        })
+                        if not existing_category:
+                            item_doc.custom_product_categories = []
+                            item_doc.append("custom_product_categories", {
+                                "product_category": category.get("name")
+                            })
+                            updated = True
+                    else:
+                        error_msg = f"Category with ERP ID {itmclsid} not found. Please create it first."
+                        frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                        error_list.append({"item_code": item_code, "error": error_msg})
+
+                itmctgid = item_data.get("itmctgid")
+                itmctgdsc = item_data.get("itmctgdsc")
+                if itmctgid:
+                    subcategory = frappe.db.get_value(
+                        "Product Subcategory",
+                        {"erp_id": itmctgid, "company": company},
+                        ["name", "title"],
+                        as_dict=True
+                    )
+                    if subcategory:
+                        if itmctgdsc and itmctgdsc != subcategory.get("title"):
+                            frappe.db.set_value("Product Subcategory", subcategory.get("name"), "title", itmctgdsc)
+                            updated = True
+                        if item_doc.custom_sub_category != subcategory.get("name"):
+                            item_doc.custom_sub_category = subcategory.get("name")
+                            updated = True
+                    else:
+                        error_msg = f"Subcategory with ERP ID {itmctgid} not found. Please create it first."
+                        frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                        error_list.append({"item_code": item_code, "error": error_msg})
+
+                if updated:
+                    item_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
+
+                qty_avlbl = item_data.get("qty_avlbl")
+                if qty_avlbl not in [None, "", "null"]:
+                    qty_avlbl = int(float(item_data.get("qty_avlbl") or 0))
+                    bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
+                    if bin_exists:
+                        bin_doc = frappe.get_doc("Bin", bin_exists)
+                        bin_doc.actual_qty = qty_avlbl
+                        bin_doc.save(ignore_permissions=True)
+                    else:
+                        frappe.get_doc({
+                            "doctype": "Bin",
+                            "item_code": item_code,
+                            "warehouse": warehouse,
+                            "actual_qty": qty_avlbl
+                        }).insert(ignore_permissions=True)
+                    item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
+                    item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
+                    if item_available_qty == item_threshold_stock:
+                        frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
+                    frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
+
+                frappe.db.commit()
+                processed_count += 1
+            except Exception as e:
+                error_msg = f"Unhandled error for item {item_code}: {str(e)}"
+                frappe.log_error(error_msg, f"UDC Item: {item_code}")
+                error_list.append({"item_code": item_code, "error": error_msg})
+                continue
+
+    summary = f"UDC Sync - Processed: {processed_count}, Errors: {len(error_list)}"
+    if error_list:
+        frappe.log_error(str(error_list), "sync_udc_items_from_api error details")
     return summary
 
 @frappe.whitelist()
-def get_product_prices():
-    items = frappe.get_all("Item", pluck="name")
+def get_cv_product_prices():
+    """Fetch and update prices for Cotton Valley items"""
+    items = frappe.get_all("Item", filters={"company": "Cotton Valley"}, pluck="name")
     total = len(items)
-    frappe.log_error("Starting", f"Starting price update for {total} items...")
-    username = ""
-    password = ""
+    frappe.log_error("Starting CV", f"Starting CV price update for {total} items...")
+    url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID="
+    username = CV_USER
+    password = CV_PASSWORD
     error_count = 0
     processed_count = 0
     try:
-        # Process in chunks
         for start in range(0, total, CHUNK_SIZE):
             batch = items[start:start + CHUNK_SIZE]
-            frappe.log_error("Processing", f"Processing items {start + 1} to {start + len(batch)}...")
+            frappe.log_error("Processing CV", f"Processing CV items {start + 1} to {start + len(batch)}...")
 
             for item_code in batch:
-                company = frappe.get_value("Item", item_code, "company")
-                if company == "Cotton Valley":
-                    url = f"https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-                    username = CV_USER
-                    password = CV_PASSWORD
-                elif company == "UDC":
-                    url = f"https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID={item_code}&INACTIVE_YN=N"
-                    username = UDC_USER
-                    password = UDC_PASSWORD
-                else:
-                    continue  # skip if company is not recognized
                 try:
+                    url = f"{url_base}{item_code}&INACTIVE_YN=N"
                     response = requests.get(url, auth=(username, password), timeout=30)
                     if response.status_code != 200:
-                        frappe.log_error("API Error", f"{item_code}: API Error {response.status_code}")
+                        frappe.log_error("API Error", f"CV {item_code}: API Error {response.status_code}")
                         error_count += 1
                         continue
 
-                    # Check if response is not empty and is JSON
                     if not response.text.strip():
-                        frappe.log_error("Empty Response", f"{item_code}: Empty response")
+                        frappe.log_error("Empty Response", f"CV {item_code}: Empty response")
                         error_count += 1
                         continue
 
                     try:
                         data = response.json()
                     except Exception as e:
-                        frappe.log_error("JSON Decode Error", f"{item_code}: JSON decode error: {str(e)}")
+                        frappe.log_error("JSON Decode Error", f"CV {item_code}: JSON decode error: {str(e)}")
                         error_count += 1
                         continue
 
@@ -1400,27 +1572,117 @@ def get_product_prices():
                                     "item_code": item_code,
                                     "price_list": price_list,
                                     "price_list_rate": float(rate),
-                                    "currency": "USD"   # or your default currency
+                                    "currency": "USD"
                                 }).insert()
                         except Exception as e:
-                            frappe.log_error(frappe.get_traceback(), f"{item_code}: Error saving price: {str(e)}")
+                            frappe.log_error(frappe.get_traceback(), f"CV {item_code}: Error saving price: {str(e)}")
                             error_count += 1
                             continue
 
                 except Exception as e:
-                    frappe.log_error(frappe.get_traceback(), f"Error for {item_code}: {str(e)}")
+                    frappe.log_error(frappe.get_traceback(), f"CV Error for {item_code}: {str(e)}")
                     error_count += 1
                 finally:
                     frappe.db.commit()
                 processed_count += 1
 
-            frappe.log_error(f"Batch {start // CHUNK_SIZE + 1} completed.", "Batch Completed")
+            frappe.log_error(f"CV Batch {start // CHUNK_SIZE + 1} completed.", "CV Batch Completed")
     except Exception as e:
-        frappe.log_error(f"Critical error in get_product_prices: {str(e)}", "Critical Error")
+        frappe.log_error(f"Critical error in get_cv_product_prices: {str(e)}", "CV Critical Error")
         error_count += 1
     finally:
-        frappe.log_error(f"Price update job completed. Processed: {processed_count}, Errors: {error_count}", "Job Completed")
-    return f"All item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
+        frappe.log_error(f"CV Price update job completed. Processed: {processed_count}, Errors: {error_count}", "CV Job Completed")
+    return f"CV item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
+
+
+@frappe.whitelist()
+def get_udc_product_prices():
+    """Fetch and update prices for UDC items"""
+    items = frappe.get_all("Item", filters={"company": "UDC"}, pluck="name")
+    total = len(items)
+    frappe.log_error("Starting UDC", f"Starting UDC price update for {total} items...")
+    url_base = "https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID="
+    username = UDC_USER
+    password = UDC_PASSWORD
+    error_count = 0
+    processed_count = 0
+    try:
+        for start in range(0, total, CHUNK_SIZE):
+            batch = items[start:start + CHUNK_SIZE]
+            frappe.log_error("Processing UDC", f"Processing UDC items {start + 1} to {start + len(batch)}...")
+
+            for item_code in batch:
+                try:
+                    url = f"{url_base}{item_code}&INACTIVE_YN=N"
+                    response = requests.get(url, auth=(username, password), timeout=30)
+                    if response.status_code != 200:
+                        frappe.log_error("API Error", f"UDC {item_code}: API Error {response.status_code}")
+                        error_count += 1
+                        continue
+
+                    if not response.text.strip():
+                        frappe.log_error("Empty Response", f"UDC {item_code}: Empty response")
+                        error_count += 1
+                        continue
+
+                    try:
+                        data = response.json()
+                    except Exception as e:
+                        frappe.log_error("JSON Decode Error", f"UDC {item_code}: JSON decode error: {str(e)}")
+                        error_count += 1
+                        continue
+
+                    if not data.get("items"):
+                        continue
+
+                    for item in data["items"]:
+                        region_name = item.get("rgnname")
+                        rate = item.get("rate")
+
+                        if not region_name or not rate or float(rate) <= 0:
+                            continue
+
+                        price_list = frappe.db.exists("Price List", region_name)
+                        if not price_list:
+                            continue
+
+                        existing = frappe.db.exists("Item Price", {
+                            "item_code": item_code,
+                            "price_list": price_list
+                        })
+
+                        try:
+                            if existing:
+                                ip = frappe.get_doc("Item Price", existing)
+                                ip.price_list_rate = float(rate)
+                                ip.save()
+                            else:
+                                frappe.get_doc({
+                                    "doctype": "Item Price",
+                                    "item_code": item_code,
+                                    "price_list": price_list,
+                                    "price_list_rate": float(rate),
+                                    "currency": "USD"
+                                }).insert()
+                        except Exception as e:
+                            frappe.log_error(frappe.get_traceback(), f"UDC {item_code}: Error saving price: {str(e)}")
+                            error_count += 1
+                            continue
+
+                except Exception as e:
+                    frappe.log_error(frappe.get_traceback(), f"UDC Error for {item_code}: {str(e)}")
+                    error_count += 1
+                finally:
+                    frappe.db.commit()
+                processed_count += 1
+
+            frappe.log_error(f"UDC Batch {start // CHUNK_SIZE + 1} completed.", "UDC Batch Completed")
+    except Exception as e:
+        frappe.log_error(f"Critical error in get_udc_product_prices: {str(e)}", "UDC Critical Error")
+        error_count += 1
+    finally:
+        frappe.log_error(f"UDC Price update job completed. Processed: {processed_count}, Errors: {error_count}", "UDC Job Completed")
+    return f"UDC item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
 

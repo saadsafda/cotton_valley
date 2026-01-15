@@ -212,8 +212,10 @@ scheduler_events = {
 # 		"cotton_valley.tasks.all"
 # 	],
 	"daily": [
-		"cotton_valley.api.products.get_product_prices",
-        "cotton_valley.api.products.scheduler_sync_item_from_api",
+		"cotton_valley.api.products.get_cv_product_prices",
+		"cotton_valley.api.products.get_udc_product_prices",
+        "cotton_valley.api.products.scheduler_sync_cv_items_from_api",
+        "cotton_valley.api.products.scheduler_sync_udc_items_from_api",
 		"cotton_valley.server_scripts.sales_order.send_abandoned_cart_emails",
 		"cotton_valley.api.sales_order.mark_orders_as_invoiced"
 	],
