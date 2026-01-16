@@ -1131,7 +1131,7 @@ def sync_item_from_api(item_code, company=None):
     return f"Item {item_code} and warehouse quantity updated successfully"
 
 
-CHUNK_SIZE = 10  # adjust as needed
+CHUNK_SIZE = 200  # adjust as needed
 
 
 @frappe.whitelist()
