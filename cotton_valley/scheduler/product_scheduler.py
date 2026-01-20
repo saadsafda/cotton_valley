@@ -171,3 +171,140 @@ def scheduler_dispatch_udc_item_sync():
 
     finally:
         _release_lock()
+
+
+# ============ PRODUCT PRICES SCHEDULER ============
+
+PRICE_LOCK_KEY_CV = "cv_sync_prices_lock"
+PRICE_LOCK_KEY_UDC = "udc_sync_prices_lock"
+
+
+def _acquire_price_lock(lock_key: str, ttl_seconds: int = 60 * 60) -> bool:
+    """Prevents overlapping runs. Uses Redis."""
+    cache = frappe.cache()
+    if cache.get_value(lock_key):
+        return False
+    cache.set_value(lock_key, "1", expires_in_sec=ttl_seconds)
+    return True
+
+
+def _release_price_lock(lock_key: str):
+    frappe.cache().delete_value(lock_key)
+
+
+@frappe.whitelist()
+def scheduler_dispatch_cv_price_sync():
+    """
+    Scheduler-safe dispatcher for Cotton Valley prices:
+    - Acquires a lock
+    - Reads cursor
+    - Enqueues N batches
+    - Releases lock
+    """
+    if not _get_cv_setting("is_enabled", 1):
+        return "CV Price Sync is disabled."
+
+    if not _acquire_price_lock(PRICE_LOCK_KEY_CV, ttl_seconds=60 * 60):
+        return "CV Price Sync already running (lock exists)."
+
+    try:
+        batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
+        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
+
+        company = "Cotton Valley"
+        last_price_item_code = _get_cv_setting("last_price_item_code_cv", "") or ""
+
+        filters = {"company": company}
+        if last_price_item_code:
+            filters["name"] = (">", last_price_item_code)
+
+        items = frappe.get_all(
+            "Item",
+            filters=filters,
+            fields=["name"],
+            order_by="name asc",
+            limit=batch_size * max_batches
+        )
+
+        if not items:
+            _set_cv_setting("last_price_item_code_cv", "")
+            return "CV Price Sync: reached end, cursor reset."
+
+        names = [d["name"] for d in items]
+        batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+
+        for idx, batch in enumerate(batches, start=1):
+            frappe.enqueue(
+                "cotton_valley.api.products.sync_cv_price_batch",
+                queue="long",
+                timeout=1800,
+                now=False,
+                batch=batch,
+                company=company
+            )
+
+        _set_cv_setting("last_price_item_code_cv", names[-1])
+
+        return f"CV Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+
+    finally:
+        _release_price_lock(PRICE_LOCK_KEY_CV)
+
+
+@frappe.whitelist()
+def scheduler_dispatch_udc_price_sync():
+    """
+    Scheduler-safe dispatcher for UDC prices:
+    - Acquires a lock
+    - Reads cursor
+    - Enqueues N batches
+    - Releases lock
+    """
+    if not _get_cv_setting("is_enabled", 1):
+        return "UDC Price Sync is disabled."
+
+    if not _acquire_price_lock(PRICE_LOCK_KEY_UDC, ttl_seconds=60 * 60):
+        return "UDC Price Sync already running (lock exists)."
+
+    try:
+        batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
+        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
+
+        company = "UDC"
+        last_price_item_code = _get_cv_setting("last_price_item_code_udc", "") or ""
+
+        filters = {"company": company}
+        if last_price_item_code:
+            filters["name"] = (">", last_price_item_code)
+
+        items = frappe.get_all(
+            "Item",
+            filters=filters,
+            fields=["name"],
+            order_by="name asc",
+            limit=batch_size * max_batches
+        )
+
+        if not items:
+            _set_cv_setting("last_price_item_code_udc", "")
+            return "UDC Price Sync: reached end, cursor reset."
+
+        names = [d["name"] for d in items]
+        batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+
+        for idx, batch in enumerate(batches, start=1):
+            frappe.enqueue(
+                "cotton_valley.api.products.sync_udc_price_batch",
+                queue="long",
+                timeout=1800,
+                now=False,
+                batch=batch,
+                company=company
+            )
+
+        _set_cv_setting("last_price_item_code_udc", names[-1])
+
+        return f"UDC Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+
+    finally:
+        _release_price_lock(PRICE_LOCK_KEY_UDC)

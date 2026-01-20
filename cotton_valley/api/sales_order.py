@@ -171,6 +171,7 @@ def get_cart(company=None):
             "product": product,
         })
     return {
+        "name": so_doc.name,
         "items": items,
         "total": so_doc.grand_total,
         "discount": so_doc.discount_amount,
