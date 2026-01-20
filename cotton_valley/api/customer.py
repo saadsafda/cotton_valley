@@ -403,9 +403,12 @@ def get_current_customer():
         customer_data = {
             "id": customer.name,
             "name": customer.customer_name,
+            "first_name": customer.customer_name,
+            "last_name": customer.custom_last_name,
             "email": customer.custom_email_address,
             "country_code": customer.custom_phone_number[:1] if customer.custom_phone_number else None,
             "phone": customer.custom_phone_number,
+            "cell_phone": customer.custom_cell_phone,
             "profile_image_id": customer.image,
             "status": 1 if not customer.disabled else 0,
             "mode_of_payment": customer.mode_of_payment,
