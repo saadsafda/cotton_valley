@@ -153,8 +153,8 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     # --- Sort Options ---
     # Note: "low-high" and "high-low" require special handling as price is in Item Price table
     sort_clause = {
-        "asc": "creation asc",
-        "desc": "creation desc",
+        "asc": "website_ranking asc",
+        "desc": "website_ranking desc",
         "a-z": "item_name asc",
         "z-a": "item_name desc",
     }.get(sortBy, None)  # default sort handled separately
