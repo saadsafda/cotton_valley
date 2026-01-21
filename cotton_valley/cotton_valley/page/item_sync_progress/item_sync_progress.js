@@ -191,6 +191,28 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
     let cvPriceTaskId = null;
     let udcPriceTaskId = null;
 
+    // Function to disable/enable all sync buttons
+    function setAllButtonsDisabled(disabled, exceptButtonId = null) {
+        const buttons = ['start-cv-sync', 'start-udc-sync', 'start-cv-price-sync', 'start-udc-price-sync'];
+        buttons.forEach(btnId => {
+            if (btnId !== exceptButtonId) {
+                document.getElementById(btnId).disabled = disabled;
+            }
+        });
+    }
+
+    // Check if any sync is running
+    function isAnySyncRunning() {
+        return cvTaskId || udcTaskId || cvPriceTaskId || udcPriceTaskId;
+    }
+
+    // Re-enable all buttons if no sync is running
+    function enableButtonsIfNoSync() {
+        if (!isAnySyncRunning()) {
+            setAllButtonsDisabled(false);
+        }
+    }
+
     function addLog(message, type = 'info') {
         const logDiv = document.getElementById('sync-log');
         const timestamp = new Date().toLocaleTimeString();
@@ -262,8 +284,9 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('cv-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`CV Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
                 document.getElementById('start-cv-sync').disabled = false;
-                document.getElementById('start-cv-sync').textContent = 'Start CV Sync';
+                document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
                 cvTaskId = null;
+                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 // Batch completed but more batches to process
                 document.getElementById('cv-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
@@ -303,8 +326,9 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('udc-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`UDC Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
                 document.getElementById('start-udc-sync').disabled = false;
-                document.getElementById('start-udc-sync').textContent = 'Start UDC Sync';
+                document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
                 udcTaskId = null;
+                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 // Batch completed but more batches to process
                 document.getElementById('udc-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
@@ -331,6 +355,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
         const limit = document.getElementById('cv-limit').value || null;
         this.disabled = true;
         this.textContent = 'Starting...';
+        setAllButtonsDisabled(true, 'start-cv-sync');
         
         frappe.call({
             method: 'cotton_valley.api.products.start_cv_item_sync',
@@ -354,12 +379,14 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                     addLog(`CV Item Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
                     document.getElementById('start-cv-sync').disabled = false;
                     document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
+                    setAllButtonsDisabled(false);
                 }
             },
             error: function(err) {
                 addLog(`CV Item Sync error: ${err}`, 'error');
                 document.getElementById('start-cv-sync').disabled = false;
                 document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
+                setAllButtonsDisabled(false);
             }
         });
     });
@@ -369,6 +396,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
         const limit = document.getElementById('udc-limit').value || null;
         this.disabled = true;
         this.textContent = 'Starting...';
+        setAllButtonsDisabled(true, 'start-udc-sync');
         
         frappe.call({
             method: 'cotton_valley.api.products.start_udc_item_sync',
@@ -392,12 +420,14 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                     addLog(`UDC Item Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
                     document.getElementById('start-udc-sync').disabled = false;
                     document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
+                    setAllButtonsDisabled(false);
                 }
             },
             error: function(err) {
                 addLog(`UDC Item Sync error: ${err}`, 'error');
                 document.getElementById('start-udc-sync').disabled = false;
                 document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
+                setAllButtonsDisabled(false);
             }
         });
     });
@@ -437,6 +467,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('start-cv-price-sync').disabled = false;
                 document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
                 cvPriceTaskId = null;
+                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 document.getElementById('cv-price-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
                 document.getElementById('cv-price-status').className = 'badge bg-info';
@@ -476,6 +507,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('start-udc-price-sync').disabled = false;
                 document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
                 udcPriceTaskId = null;
+                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 document.getElementById('udc-price-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
                 document.getElementById('udc-price-status').className = 'badge bg-info';
@@ -496,6 +528,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
         const limit = document.getElementById('cv-price-limit').value || null;
         this.disabled = true;
         this.textContent = 'Starting...';
+        setAllButtonsDisabled(true, 'start-cv-price-sync');
         
         frappe.call({
             method: 'cotton_valley.api.products.start_cv_price_sync',
@@ -519,12 +552,14 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                     addLog(`💰 CV Price Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
                     document.getElementById('start-cv-price-sync').disabled = false;
                     document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
+                    setAllButtonsDisabled(false);
                 }
             },
             error: function(err) {
                 addLog(`💰 CV Price Sync error: ${err}`, 'error');
                 document.getElementById('start-cv-price-sync').disabled = false;
                 document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
+                setAllButtonsDisabled(false);
             }
         });
     });
@@ -534,6 +569,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
         const limit = document.getElementById('udc-price-limit').value || null;
         this.disabled = true;
         this.textContent = 'Starting...';
+        setAllButtonsDisabled(true, 'start-udc-price-sync');
         
         frappe.call({
             method: 'cotton_valley.api.products.start_udc_price_sync',
@@ -557,12 +593,14 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                     addLog(`💰 UDC Price Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
                     document.getElementById('start-udc-price-sync').disabled = false;
                     document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
+                    setAllButtonsDisabled(false);
                 }
             },
             error: function(err) {
                 addLog(`💰 UDC Price Sync error: ${err}`, 'error');
                 document.getElementById('start-udc-price-sync').disabled = false;
                 document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
+                setAllButtonsDisabled(false);
             }
         });
     });
