@@ -1191,7 +1191,7 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                     "status": "running",
                     "company": company
                 },
-                user=frappe.session.user
+                broadcast=True
             )
         
         try:
@@ -1363,7 +1363,7 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                 "batch_number": batch_number,
                 "total_batches": total_batches
             },
-            user=frappe.session.user
+            broadcast=True
         )
 
     # Log summary once
@@ -1504,7 +1504,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                     "status": "running",
                     "company": company
                 },
-                user=frappe.session.user
+                broadcast=True
             )
         
         try:
@@ -1676,7 +1676,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                 "batch_number": batch_number,
                 "total_batches": total_batches
             },
-            user=frappe.session.user
+            broadcast=True
         )
 
     # Log summary once
@@ -1924,7 +1924,7 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
                     "status": "running",
                     "company": company
                 },
-                user=frappe.session.user
+                broadcast=True
             )
         
         try:
@@ -2014,7 +2014,7 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
                 "batch_number": batch_number,
                 "total_batches": total_batches
             },
-            user=frappe.session.user
+            broadcast=True
         )
 
     frappe.log_error(f"CV Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "CV Price Batch Completed")
@@ -2071,7 +2071,7 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
                     "status": "running",
                     "company": company
                 },
-                user=frappe.session.user
+                broadcast=True
             )
         
         try:
@@ -2161,7 +2161,7 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
                 "batch_number": batch_number,
                 "total_batches": total_batches
             },
-            user=frappe.session.user
+            broadcast=True
         )
 
     frappe.log_error(f"UDC Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "UDC Price Batch Completed")
