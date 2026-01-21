@@ -1,0 +1,209 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Item Sync Progress{% endblock %}
+
+{% block page_content %}
+<div class="container py-5">
+    <h1 class="mb-4">Item Sync Progress</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cotton Valley Sync</h5>
+                </div>
+                <div class="card-body">
+                    <div id="cv-progress-container" style="display: none;">
+                        <p><strong>Task ID:</strong> <span id="cv-task-id">-</span></p>
+                        <p><strong>Status:</strong> <span id="cv-status">-</span></p>
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div id="cv-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <p id="cv-description" class="text-muted">-</p>
+                    </div>
+                    <div id="cv-no-task" class="text-center py-3">
+                        <p class="text-muted">No sync in progress</p>
+                    </div>
+                    <button id="start-cv-sync" class="btn btn-primary mt-3">
+                        <i class="fa fa-play"></i> Start CV Sync
+                    </button>
+                    <input type="number" id="cv-limit" class="form-control mt-2" placeholder="Limit (optional)" min="1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">UDC Sync</h5>
+                </div>
+                <div class="card-body">
+                    <div id="udc-progress-container" style="display: none;">
+                        <p><strong>Task ID:</strong> <span id="udc-task-id">-</span></p>
+                        <p><strong>Status:</strong> <span id="udc-status">-</span></p>
+                        <div class="progress mb-3" style="height: 25px;">
+                            <div id="udc-progress-bar" class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <p id="udc-description" class="text-muted">-</p>
+                    </div>
+                    <div id="udc-no-task" class="text-center py-3">
+                        <p class="text-muted">No sync in progress</p>
+                    </div>
+                    <button id="start-udc-sync" class="btn btn-success mt-3">
+                        <i class="fa fa-play"></i> Start UDC Sync
+                    </button>
+                    <input type="number" id="udc-limit" class="form-control mt-2" placeholder="Limit (optional)" min="1">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Sync Log</h5>
+        </div>
+        <div class="card-body">
+            <div id="sync-log" style="max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                <p class="text-muted">Logs will appear here...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let cvTaskId = null;
+    let udcTaskId = null;
+    
+    function addLog(message, type = 'info') {
+        const logDiv = document.getElementById('sync-log');
+        const timestamp = new Date().toLocaleTimeString();
+        const colorClass = type === 'error' ? 'text-danger' : (type === 'success' ? 'text-success' : 'text-info');
+        logDiv.innerHTML = `<p class="${colorClass}">[${timestamp}] ${message}</p>` + logDiv.innerHTML;
+    }
+    
+    // Listen for progress updates from Frappe
+    frappe.realtime.on('progress', function(data) {
+        // CV Progress
+        if (cvTaskId && data.task_id === cvTaskId) {
+            document.getElementById('cv-progress-container').style.display = 'block';
+            document.getElementById('cv-no-task').style.display = 'none';
+            document.getElementById('cv-progress-bar').style.width = data.percent + '%';
+            document.getElementById('cv-progress-bar').textContent = data.percent + '%';
+            document.getElementById('cv-description').textContent = data.description || '';
+            document.getElementById('cv-status').textContent = data.percent >= 100 ? 'Complete' : 'Running';
+            
+            if (data.percent >= 100) {
+                document.getElementById('cv-progress-bar').classList.remove('progress-bar-animated');
+                addLog(`CV Sync completed: ${data.description}`, 'success');
+            }
+        }
+        
+        // UDC Progress
+        if (udcTaskId && data.task_id === udcTaskId) {
+            document.getElementById('udc-progress-container').style.display = 'block';
+            document.getElementById('udc-no-task').style.display = 'none';
+            document.getElementById('udc-progress-bar').style.width = data.percent + '%';
+            document.getElementById('udc-progress-bar').textContent = data.percent + '%';
+            document.getElementById('udc-description').textContent = data.description || '';
+            document.getElementById('udc-status').textContent = data.percent >= 100 ? 'Complete' : 'Running';
+            
+            if (data.percent >= 100) {
+                document.getElementById('udc-progress-bar').classList.remove('progress-bar-animated');
+                addLog(`UDC Sync completed: ${data.description}`, 'success');
+            }
+        }
+    });
+    
+    // Start CV Sync
+    document.getElementById('start-cv-sync').addEventListener('click', function() {
+        const limit = document.getElementById('cv-limit').value || null;
+        this.disabled = true;
+        this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Starting...';
+        
+        frappe.call({
+            method: 'cotton_valley.api.products.start_cv_item_sync',
+            args: { limit: limit },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    cvTaskId = r.message.task_id;
+                    document.getElementById('cv-task-id').textContent = cvTaskId;
+                    document.getElementById('cv-progress-container').style.display = 'block';
+                    document.getElementById('cv-no-task').style.display = 'none';
+                    document.getElementById('cv-status').textContent = 'Starting';
+                    document.getElementById('cv-progress-bar').style.width = '0%';
+                    document.getElementById('cv-progress-bar').textContent = '0%';
+                    document.getElementById('cv-progress-bar').classList.add('progress-bar-animated');
+                    addLog(`CV Sync started: ${r.message.message}`, 'info');
+                } else {
+                    addLog(`CV Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
+                }
+                document.getElementById('start-cv-sync').disabled = false;
+                document.getElementById('start-cv-sync').innerHTML = '<i class="fa fa-play"></i> Start CV Sync';
+            },
+            error: function(err) {
+                addLog(`CV Sync error: ${err}`, 'error');
+                document.getElementById('start-cv-sync').disabled = false;
+                document.getElementById('start-cv-sync').innerHTML = '<i class="fa fa-play"></i> Start CV Sync';
+            }
+        });
+    });
+    
+    // Start UDC Sync
+    document.getElementById('start-udc-sync').addEventListener('click', function() {
+        const limit = document.getElementById('udc-limit').value || null;
+        this.disabled = true;
+        this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Starting...';
+        
+        frappe.call({
+            method: 'cotton_valley.api.products.start_udc_item_sync',
+            args: { limit: limit },
+            callback: function(r) {
+                if (r.message && r.message.success) {
+                    udcTaskId = r.message.task_id;
+                    document.getElementById('udc-task-id').textContent = udcTaskId;
+                    document.getElementById('udc-progress-container').style.display = 'block';
+                    document.getElementById('udc-no-task').style.display = 'none';
+                    document.getElementById('udc-status').textContent = 'Starting';
+                    document.getElementById('udc-progress-bar').style.width = '0%';
+                    document.getElementById('udc-progress-bar').textContent = '0%';
+                    document.getElementById('udc-progress-bar').classList.add('progress-bar-animated');
+                    addLog(`UDC Sync started: ${r.message.message}`, 'info');
+                } else {
+                    addLog(`UDC Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
+                }
+                document.getElementById('start-udc-sync').disabled = false;
+                document.getElementById('start-udc-sync').innerHTML = '<i class="fa fa-play"></i> Start UDC Sync';
+            },
+            error: function(err) {
+                addLog(`UDC Sync error: ${err}`, 'error');
+                document.getElementById('start-udc-sync').disabled = false;
+                document.getElementById('start-udc-sync').innerHTML = '<i class="fa fa-play"></i> Start UDC Sync';
+            }
+        });
+    });
+    
+    addLog('Page loaded. Ready to start sync.', 'info');
+});
+</script>
+
+<style>
+.progress {
+    border-radius: 10px;
+}
+.progress-bar {
+    border-radius: 10px;
+    font-weight: bold;
+}
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+#sync-log p {
+    margin: 2px 0;
+    padding: 2px 5px;
+    border-bottom: 1px solid #eee;
+}
+</style>
+{% endblock %}

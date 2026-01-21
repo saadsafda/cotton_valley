@@ -1,6 +1,7 @@
 import frappe
 import time
 import requests
+import uuid
 from typing import List, Optional
 
 LOCK_KEY = "cv_sync_items_lock"
@@ -46,7 +47,7 @@ def scheduler_dispatch_cv_item_sync():
     Scheduler-safe dispatcher:
     - Acquires a lock
     - Reads cursor
-    - Enqueues N batches
+    - Enqueues N batches with progress tracking
     - Releases lock
     """
     if not _get_cv_setting("is_enabled", 1):
@@ -86,6 +87,25 @@ def scheduler_dispatch_cv_item_sync():
 
         # Split into batches and enqueue each batch
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+        
+        # Generate a task_id for progress tracking
+        task_id = f"cv_scheduler_{uuid.uuid4().hex[:8]}"
+        total_items = len(names)
+        total_batches = len(batches)
+        
+        # Store task info in cache for progress page
+        frappe.cache().set_value(
+            f"sync_task_{task_id}",
+            {
+                "task_id": task_id,
+                "company": company,
+                "total_items": total_items,
+                "total_batches": total_batches,
+                "status": "running",
+                "started_at": frappe.utils.now()
+            },
+            expires_in_sec=3600 * 2  # 2 hours
+        )
 
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
@@ -94,13 +114,23 @@ def scheduler_dispatch_cv_item_sync():
                 timeout=1800,  # 30 minutes per batch (tune as needed)
                 now=False,
                 batch=batch,
-                company=company
+                company=company,
+                task_id=task_id,
+                batch_number=idx,
+                total_batches=total_batches,
+                total_items=total_items
             )
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
         _set_cv_setting("last_item_code", names[-1])
 
-        return f"CV Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": f"CV Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "total_batches": total_batches,
+            "total_items": total_items
+        }
 
     finally:
         _release_lock()
@@ -113,7 +143,7 @@ def scheduler_dispatch_udc_item_sync():
     Scheduler-safe dispatcher:
     - Acquires a lock
     - Reads cursor
-    - Enqueues N batches
+    - Enqueues N batches with progress tracking
     - Releases lock
     """
     if not _get_cv_setting("is_enabled", 1):
@@ -153,6 +183,25 @@ def scheduler_dispatch_udc_item_sync():
 
         # Split into batches and enqueue each batch
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+        
+        # Generate a task_id for progress tracking
+        task_id = f"udc_scheduler_{uuid.uuid4().hex[:8]}"
+        total_items = len(names)
+        total_batches = len(batches)
+        
+        # Store task info in cache for progress page
+        frappe.cache().set_value(
+            f"sync_task_{task_id}",
+            {
+                "task_id": task_id,
+                "company": company,
+                "total_items": total_items,
+                "total_batches": total_batches,
+                "status": "running",
+                "started_at": frappe.utils.now()
+            },
+            expires_in_sec=3600 * 2  # 2 hours
+        )
 
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
@@ -161,13 +210,23 @@ def scheduler_dispatch_udc_item_sync():
                 timeout=1800,  # 30 minutes per batch (tune as needed)
                 now=False,
                 batch=batch,
-                company=company
+                company=company,
+                task_id=task_id,
+                batch_number=idx,
+                total_batches=total_batches,
+                total_items=total_items
             )
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
         _set_cv_setting("last_item_code", names[-1])
 
-        return f"UDC Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": f"UDC Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "total_batches": total_batches,
+            "total_items": total_items
+        }
 
     finally:
         _release_lock()
@@ -232,6 +291,26 @@ def scheduler_dispatch_cv_price_sync():
 
         names = [d["name"] for d in items]
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+        
+        # Generate a task_id for progress tracking
+        task_id = f"cv_price_scheduler_{uuid.uuid4().hex[:8]}"
+        total_items = len(names)
+        total_batches = len(batches)
+        
+        # Store task info in cache for progress page
+        frappe.cache().set_value(
+            f"sync_task_{task_id}",
+            {
+                "task_id": task_id,
+                "company": company,
+                "sync_type": "price",
+                "total_items": total_items,
+                "total_batches": total_batches,
+                "status": "running",
+                "started_at": frappe.utils.now()
+            },
+            expires_in_sec=3600 * 2
+        )
 
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
@@ -240,12 +319,22 @@ def scheduler_dispatch_cv_price_sync():
                 timeout=1800,
                 now=False,
                 batch=batch,
-                company=company
+                company=company,
+                task_id=task_id,
+                batch_number=idx,
+                total_batches=total_batches,
+                total_items=total_items
             )
 
         _set_cv_setting("last_price_item_code_cv", names[-1])
 
-        return f"CV Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": f"CV Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "total_batches": total_batches,
+            "total_items": total_items
+        }
 
     finally:
         _release_price_lock(PRICE_LOCK_KEY_CV)
@@ -291,6 +380,26 @@ def scheduler_dispatch_udc_price_sync():
 
         names = [d["name"] for d in items]
         batches = [names[i:i + batch_size] for i in range(0, len(names), batch_size)]
+        
+        # Generate a task_id for progress tracking
+        task_id = f"udc_price_scheduler_{uuid.uuid4().hex[:8]}"
+        total_items = len(names)
+        total_batches = len(batches)
+        
+        # Store task info in cache for progress page
+        frappe.cache().set_value(
+            f"sync_task_{task_id}",
+            {
+                "task_id": task_id,
+                "company": company,
+                "sync_type": "price",
+                "total_items": total_items,
+                "total_batches": total_batches,
+                "status": "running",
+                "started_at": frappe.utils.now()
+            },
+            expires_in_sec=3600 * 2
+        )
 
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
@@ -299,12 +408,22 @@ def scheduler_dispatch_udc_price_sync():
                 timeout=1800,
                 now=False,
                 batch=batch,
-                company=company
+                company=company,
+                task_id=task_id,
+                batch_number=idx,
+                total_batches=total_batches,
+                total_items=total_items
             )
 
         _set_cv_setting("last_price_item_code_udc", names[-1])
 
-        return f"UDC Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}"
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": f"UDC Price Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "total_batches": total_batches,
+            "total_items": total_items
+        }
 
     finally:
         _release_price_lock(PRICE_LOCK_KEY_UDC)

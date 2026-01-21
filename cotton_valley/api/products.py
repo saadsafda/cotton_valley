@@ -1136,13 +1136,28 @@ CHUNK_SIZE = 200  # adjust as needed
 def _is_valid_value(val):
     return val not in (None, "", "0", 0, "null")
 
-def sync_cv_item_batch(batch, company="Cotton Valley"):
+def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
+    Publishes progress if task_id is provided.
+    
+    Args:
+        batch: List of item codes to process
+        company: Company name
+        task_id: Unique task identifier for progress tracking
+        batch_number: Current batch number (for scheduler multi-batch runs)
+        total_batches: Total number of batches (for scheduler multi-batch runs)
+        total_items: Total items across all batches (for scheduler multi-batch runs)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID="
     warehouse = "Stores - CV"
+    batch_item_count = len(batch)
+    
+    # For scheduler runs with multiple batches, calculate overall progress
+    is_scheduler_run = batch_number is not None and total_batches is not None
+    if not total_items:
+        total_items = batch_item_count
 
     session = requests.Session()
     session.auth = (CV_USER, CV_PASSWORD)
@@ -1150,7 +1165,35 @@ def sync_cv_item_batch(batch, company="Cotton Valley"):
     processed = 0
     errors = []
 
-    for item_code in batch:
+    for idx, item_code in enumerate(batch):
+        # Calculate progress
+        if is_scheduler_run:
+            # Overall progress across all batches
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+            overall_current = items_before_this_batch + idx + 1
+            overall_percent = int((overall_current / total_items) * 100)
+        else:
+            overall_current = idx + 1
+            overall_percent = int((idx / batch_item_count) * 100)
+        
+        # Publish progress via realtime
+        if task_id:
+            frappe.publish_realtime(
+                "item_sync_progress",
+                {
+                    "task_id": task_id,
+                    "percent": overall_percent,
+                    "current": overall_current,
+                    "total": total_items,
+                    "item_code": item_code,
+                    "batch_number": batch_number,
+                    "total_batches": total_batches,
+                    "status": "running",
+                    "company": company
+                },
+                user=frappe.session.user
+            )
+        
         try:
             url = f"{url_base}{item_code}"
             resp = session.get(url, timeout=30)
@@ -1295,6 +1338,34 @@ def sync_cv_item_batch(batch, company="Cotton Valley"):
     # ✅ Commit once per batch
     frappe.db.commit()
 
+    # Publish completion via realtime
+    if task_id:
+        # For scheduler runs, only publish 100% complete on the last batch
+        if is_scheduler_run:
+            is_last_batch = batch_number == total_batches
+            final_percent = 100 if is_last_batch else overall_percent
+            final_status = "complete" if is_last_batch else "batch_complete"
+        else:
+            final_percent = 100
+            final_status = "complete"
+        
+        frappe.publish_realtime(
+            "item_sync_progress",
+            {
+                "task_id": task_id,
+                "percent": final_percent,
+                "current": overall_current if is_scheduler_run else batch_item_count,
+                "total": total_items,
+                "processed": processed,
+                "error_count": len(errors),
+                "status": final_status,
+                "company": company,
+                "batch_number": batch_number,
+                "total_batches": total_batches
+            },
+            user=frappe.session.user
+        )
+
     # Log summary once
     if errors:
         frappe.log_error(title="CV Batch Sync Errors", message=str(errors[:200]))
@@ -1305,18 +1376,101 @@ def sync_cv_item_batch(batch, company="Cotton Valley"):
                 "message": str(errors[:200])
             }).insert(ignore_permissions=True)
 
-    return {"processed": processed, "errors": len(errors)}
+    return {"processed": processed, "errors": len(errors), "task_id": task_id}
 
 
 
 
-def sync_udc_item_batch(batch, company="UDC"):
+@frappe.whitelist()
+def start_cv_item_sync(limit=None):
+    """
+    Start CV item sync with progress tracking.
+    Returns task_id for monitoring progress.
+    """
+    import uuid
+    task_id = f"cv_sync_{uuid.uuid4().hex[:8]}"
+    
+    # Get items to sync
+    filters = {"company": "Cotton Valley"}
+    items = frappe.get_all("Item", filters=filters, pluck="name", limit=int(limit) if limit else None)
+    
+    if not items:
+        return {"success": False, "message": "No items found to sync"}
+    
+    # Start background job with progress
+    frappe.enqueue(
+        "cotton_valley.api.products.sync_cv_item_batch",
+        queue="long",
+        timeout=3600,
+        batch=items,
+        company="Cotton Valley",
+        task_id=task_id
+    )
+    
+    return {
+        "success": True,
+        "task_id": task_id,
+        "total_items": len(items),
+        "message": f"Sync started for {len(items)} items. Task ID: {task_id}"
+    }
+
+
+@frappe.whitelist()
+def start_udc_item_sync(limit=None):
+    """
+    Start UDC item sync with progress tracking.
+    Returns task_id for monitoring progress.
+    """
+    import uuid
+    task_id = f"udc_sync_{uuid.uuid4().hex[:8]}"
+    
+    # Get items to sync
+    filters = {"company": "UDC"}
+    items = frappe.get_all("Item", filters=filters, pluck="name", limit=int(limit) if limit else None)
+    
+    if not items:
+        return {"success": False, "message": "No items found to sync"}
+    
+    # Start background job with progress
+    frappe.enqueue(
+        "cotton_valley.api.products.sync_udc_item_batch",
+        queue="long",
+        timeout=3600,
+        batch=items,
+        company="UDC",
+        task_id=task_id
+    )
+    
+    return {
+        "success": True,
+        "task_id": task_id,
+        "total_items": len(items),
+        "message": f"Sync started for {len(items)} items. Task ID: {task_id}"
+    }
+
+
+def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
+    Publishes progress if task_id is provided.
+    
+    Args:
+        batch: List of item codes to process
+        company: Company name
+        task_id: Unique task identifier for progress tracking
+        batch_number: Current batch number (for scheduler multi-batch runs)
+        total_batches: Total number of batches (for scheduler multi-batch runs)
+        total_items: Total items across all batches (for scheduler multi-batch runs)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID="
     warehouse = "Stores - U"
+    batch_item_count = len(batch)
+    
+    # For scheduler runs with multiple batches, calculate overall progress
+    is_scheduler_run = batch_number is not None and total_batches is not None
+    if not total_items:
+        total_items = batch_item_count
 
     session = requests.Session()
     session.auth = (UDC_USER, UDC_PASSWORD)
@@ -1324,7 +1478,35 @@ def sync_udc_item_batch(batch, company="UDC"):
     processed = 0
     errors = []
 
-    for item_code in batch:
+    for idx, item_code in enumerate(batch):
+        # Calculate progress
+        if is_scheduler_run:
+            # Overall progress across all batches
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+            overall_current = items_before_this_batch + idx + 1
+            overall_percent = int((overall_current / total_items) * 100)
+        else:
+            overall_current = idx + 1
+            overall_percent = int((idx / batch_item_count) * 100)
+        
+        # Publish progress via realtime
+        if task_id:
+            frappe.publish_realtime(
+                "item_sync_progress",
+                {
+                    "task_id": task_id,
+                    "percent": overall_percent,
+                    "current": overall_current,
+                    "total": total_items,
+                    "item_code": item_code,
+                    "batch_number": batch_number,
+                    "total_batches": total_batches,
+                    "status": "running",
+                    "company": company
+                },
+                user=frappe.session.user
+            )
+        
         try:
             url = f"{url_base}{item_code}"
             resp = session.get(url, timeout=30)
@@ -1469,6 +1651,34 @@ def sync_udc_item_batch(batch, company="UDC"):
     # ✅ Commit once per batch
     frappe.db.commit()
 
+    # Publish completion via realtime
+    if task_id:
+        # For scheduler runs, only publish 100% complete on the last batch
+        if is_scheduler_run:
+            is_last_batch = batch_number == total_batches
+            final_percent = 100 if is_last_batch else overall_percent
+            final_status = "complete" if is_last_batch else "batch_complete"
+        else:
+            final_percent = 100
+            final_status = "complete"
+        
+        frappe.publish_realtime(
+            "item_sync_progress",
+            {
+                "task_id": task_id,
+                "percent": final_percent,
+                "current": overall_current if is_scheduler_run else batch_item_count,
+                "total": total_items,
+                "processed": processed,
+                "error_count": len(errors),
+                "status": final_status,
+                "company": company,
+                "batch_number": batch_number,
+                "total_batches": total_batches
+            },
+            user=frappe.session.user
+        )
+
     # Log summary once
     if errors:
         frappe.log_error(title=" UDC Batch Sync Errors", message=str(errors[:200]))
@@ -1479,7 +1689,7 @@ def sync_udc_item_batch(batch, company="UDC"):
                 "message": str(errors[:200])
             }).insert(ignore_permissions=True)
 
-    return {"processed": processed, "errors": len(errors)}
+    return {"processed": processed, "errors": len(errors), "task_id": task_id}
 
 
 
@@ -1664,18 +1874,59 @@ def sync_udc_item_batch(batch, company="UDC"):
 #     return f"UDC item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
-def sync_cv_price_batch(batch, company="Cotton Valley"):
+def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
     """
     Process a batch of Cotton Valley item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
+    
+    Args:
+        batch: List of item codes to process
+        company: Company name
+        task_id: Unique task identifier for progress tracking
+        batch_number: Current batch number (for scheduler multi-batch runs)
+        total_batches: Total number of batches (for scheduler multi-batch runs)
+        total_items: Total items across all batches (for scheduler multi-batch runs)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID="
     username = CV_USER
     password = CV_PASSWORD
     error_count = 0
     processed_count = 0
+    batch_item_count = len(batch)
+    
+    # For scheduler runs with multiple batches, calculate overall progress
+    is_scheduler_run = batch_number is not None and total_batches is not None
+    if not total_items:
+        total_items = batch_item_count
 
-    for item_code in batch:
+    for idx, item_code in enumerate(batch):
+        # Calculate progress
+        if is_scheduler_run:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+            overall_current = items_before_this_batch + idx + 1
+            overall_percent = int((overall_current / total_items) * 100)
+        else:
+            overall_current = idx + 1
+            overall_percent = int((idx / batch_item_count) * 100)
+        
+        # Publish progress via realtime
+        if task_id:
+            frappe.publish_realtime(
+                "price_sync_progress",
+                {
+                    "task_id": task_id,
+                    "percent": overall_percent,
+                    "current": overall_current,
+                    "total": total_items,
+                    "item_code": item_code,
+                    "batch_number": batch_number,
+                    "total_batches": total_batches,
+                    "status": "running",
+                    "company": company
+                },
+                user=frappe.session.user
+            )
+        
         try:
             url = f"{url_base}{item_code}&INACTIVE_YN=N"
             response = requests.get(url, auth=(username, password), timeout=30)
@@ -1739,22 +1990,90 @@ def sync_cv_price_batch(batch, company="Cotton Valley"):
             frappe.db.commit()
         processed_count += 1
 
+    # Publish completion via realtime
+    if task_id:
+        if is_scheduler_run:
+            is_last_batch = batch_number == total_batches
+            final_percent = 100 if is_last_batch else overall_percent
+            final_status = "complete" if is_last_batch else "batch_complete"
+        else:
+            final_percent = 100
+            final_status = "complete"
+        
+        frappe.publish_realtime(
+            "price_sync_progress",
+            {
+                "task_id": task_id,
+                "percent": final_percent,
+                "current": overall_current if is_scheduler_run else batch_item_count,
+                "total": total_items,
+                "processed": processed_count,
+                "error_count": error_count,
+                "status": final_status,
+                "company": company,
+                "batch_number": batch_number,
+                "total_batches": total_batches
+            },
+            user=frappe.session.user
+        )
+
     frappe.log_error(f"CV Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "CV Price Batch Completed")
-    return f"CV Price batch completed. Processed: {processed_count}, Errors: {error_count}"
+    return {"processed": processed_count, "errors": error_count, "task_id": task_id}
 
 
-def sync_udc_price_batch(batch, company="UDC"):
+def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
     """
     Process a batch of UDC item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
+    
+    Args:
+        batch: List of item codes to process
+        company: Company name
+        task_id: Unique task identifier for progress tracking
+        batch_number: Current batch number (for scheduler multi-batch runs)
+        total_batches: Total number of batches (for scheduler multi-batch runs)
+        total_items: Total items across all batches (for scheduler multi-batch runs)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID="
     username = UDC_USER
     password = UDC_PASSWORD
     error_count = 0
     processed_count = 0
+    batch_item_count = len(batch)
+    
+    # For scheduler runs with multiple batches, calculate overall progress
+    is_scheduler_run = batch_number is not None and total_batches is not None
+    if not total_items:
+        total_items = batch_item_count
 
-    for item_code in batch:
+    for idx, item_code in enumerate(batch):
+        # Calculate progress
+        if is_scheduler_run:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+            overall_current = items_before_this_batch + idx + 1
+            overall_percent = int((overall_current / total_items) * 100)
+        else:
+            overall_current = idx + 1
+            overall_percent = int((idx / batch_item_count) * 100)
+        
+        # Publish progress via realtime
+        if task_id:
+            frappe.publish_realtime(
+                "price_sync_progress",
+                {
+                    "task_id": task_id,
+                    "percent": overall_percent,
+                    "current": overall_current,
+                    "total": total_items,
+                    "item_code": item_code,
+                    "batch_number": batch_number,
+                    "total_batches": total_batches,
+                    "status": "running",
+                    "company": company
+                },
+                user=frappe.session.user
+            )
+        
         try:
             url = f"{url_base}{item_code}&INACTIVE_YN=N"
             response = requests.get(url, auth=(username, password), timeout=30)
@@ -1818,9 +2137,99 @@ def sync_udc_price_batch(batch, company="UDC"):
             frappe.db.commit()
         processed_count += 1
 
-    frappe.log_error(f"UDC Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "UDC Price Batch Completed")
-    return f"UDC Price batch completed. Processed: {processed_count}, Errors: {error_count}"
+    # Publish completion via realtime
+    if task_id:
+        if is_scheduler_run:
+            is_last_batch = batch_number == total_batches
+            final_percent = 100 if is_last_batch else overall_percent
+            final_status = "complete" if is_last_batch else "batch_complete"
+        else:
+            final_percent = 100
+            final_status = "complete"
+        
+        frappe.publish_realtime(
+            "price_sync_progress",
+            {
+                "task_id": task_id,
+                "percent": final_percent,
+                "current": overall_current if is_scheduler_run else batch_item_count,
+                "total": total_items,
+                "processed": processed_count,
+                "error_count": error_count,
+                "status": final_status,
+                "company": company,
+                "batch_number": batch_number,
+                "total_batches": total_batches
+            },
+            user=frappe.session.user
+        )
 
+    frappe.log_error(f"UDC Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "UDC Price Batch Completed")
+    return {"processed": processed_count, "errors": error_count, "task_id": task_id}
+
+
+@frappe.whitelist()
+def start_cv_price_sync(limit=None):
+    """
+    Start CV price sync with progress tracking.
+    Returns task_id for monitoring progress.
+    """
+    import uuid
+    task_id = f"cv_price_{uuid.uuid4().hex[:8]}"
+    
+    filters = {"company": "Cotton Valley"}
+    items = frappe.get_all("Item", filters=filters, pluck="name", limit=int(limit) if limit else None)
+    
+    if not items:
+        return {"success": False, "message": "No items found to sync"}
+    
+    frappe.enqueue(
+        "cotton_valley.api.products.sync_cv_price_batch",
+        queue="long",
+        timeout=3600,
+        batch=items,
+        company="Cotton Valley",
+        task_id=task_id
+    )
+    
+    return {
+        "success": True,
+        "task_id": task_id,
+        "total_items": len(items),
+        "message": f"Price sync started for {len(items)} items. Task ID: {task_id}"
+    }
+
+
+@frappe.whitelist()
+def start_udc_price_sync(limit=None):
+    """
+    Start UDC price sync with progress tracking.
+    Returns task_id for monitoring progress.
+    """
+    import uuid
+    task_id = f"udc_price_{uuid.uuid4().hex[:8]}"
+    
+    filters = {"company": "UDC"}
+    items = frappe.get_all("Item", filters=filters, pluck="name", limit=int(limit) if limit else None)
+    
+    if not items:
+        return {"success": False, "message": "No items found to sync"}
+    
+    frappe.enqueue(
+        "cotton_valley.api.products.sync_udc_price_batch",
+        queue="long",
+        timeout=3600,
+        batch=items,
+        company="UDC",
+        task_id=task_id
+    )
+    
+    return {
+        "success": True,
+        "task_id": task_id,
+        "total_items": len(items),
+        "message": f"Price sync started for {len(items)} items. Task ID: {task_id}"
+    }
 
 
 @frappe.whitelist()
