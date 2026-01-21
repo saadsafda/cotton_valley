@@ -200,8 +200,8 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
 
     # --- Pagination ---
-    limit_start = (page - 1) * 30 if page and page > 0 else None
-    limit_page_length = 30 if page else None
+    limit_start = (page - 1) * 100 if page and page > 0 else None
+    limit_page_length = 100 if page else None
     
     # --- Common field definitions (reusable) ---
     ITEM_FIELDS = """
@@ -442,7 +442,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
 
     if not items:
-        return {"data": [], "total": total_count, "current_page": page or 1, "per_page": 30}
+        return {"data": [], "total": total_count, "current_page": page or 1, "per_page": 100}
 
     item_ids = [p["id"] for p in items]
 
@@ -598,8 +598,8 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
 
         products.append(product)
 
-    product_showing = page * 30 if page and page > 0 else total_count
-    from_showing = (product_showing - 30) + 1 if page and page > 0 else 1
+    product_showing = page * 100 if page and page > 0 else total_count
+    from_showing = (product_showing - 100) + 1 if page and page > 0 else 1
     return {
         "data": products, 
         "total": total_count, 
