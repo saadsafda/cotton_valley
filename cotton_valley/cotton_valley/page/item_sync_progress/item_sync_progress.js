@@ -28,15 +28,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                                 <p id="cv-description" class="text-muted small">-</p>
                             </div>
                             <div id="cv-no-task" class="text-center py-3">
-                                <p class="text-muted">No sync in progress</p>
-                            </div>
-                            <div class="mt-3">
-                                <div class="input-group">
-                                    <input type="number" id="cv-limit" class="form-control" placeholder="Limit items (optional)" min="1">
-                                    <button id="start-cv-sync" class="btn btn-primary">
-                                        Start CV Item Sync
-                                    </button>
-                                </div>
+                                <p class="text-muted">No sync in progress. Sync is managed by scheduler.</p>
                             </div>
                         </div>
                     </div>
@@ -60,15 +52,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                                 <p id="udc-description" class="text-muted small">-</p>
                             </div>
                             <div id="udc-no-task" class="text-center py-3">
-                                <p class="text-muted">No sync in progress</p>
-                            </div>
-                            <div class="mt-3">
-                                <div class="input-group">
-                                    <input type="number" id="udc-limit" class="form-control" placeholder="Limit items (optional)" min="1">
-                                    <button id="start-udc-sync" class="btn btn-success">
-                                        Start UDC Item Sync
-                                    </button>
-                                </div>
+                                <p class="text-muted">No sync in progress. Sync is managed by scheduler.</p>
                             </div>
                         </div>
                     </div>
@@ -96,15 +80,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                                 <p id="cv-price-description" class="text-muted small">-</p>
                             </div>
                             <div id="cv-price-no-task" class="text-center py-3">
-                                <p class="text-muted">No price sync in progress</p>
-                            </div>
-                            <div class="mt-3">
-                                <div class="input-group">
-                                    <input type="number" id="cv-price-limit" class="form-control" placeholder="Limit items (optional)" min="1">
-                                    <button id="start-cv-price-sync" class="btn btn-info">
-                                        Start CV Price Sync
-                                    </button>
-                                </div>
+                                <p class="text-muted">No price sync in progress. Sync is managed by scheduler.</p>
                             </div>
                         </div>
                     </div>
@@ -128,15 +104,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                                 <p id="udc-price-description" class="text-muted small">-</p>
                             </div>
                             <div id="udc-price-no-task" class="text-center py-3">
-                                <p class="text-muted">No price sync in progress</p>
-                            </div>
-                            <div class="mt-3">
-                                <div class="input-group">
-                                    <input type="number" id="udc-price-limit" class="form-control" placeholder="Limit items (optional)" min="1">
-                                    <button id="start-udc-price-sync" class="btn btn-warning">
-                                        Start UDC Price Sync
-                                    </button>
-                                </div>
+                                <p class="text-muted">No price sync in progress. Sync is managed by scheduler.</p>
                             </div>
                         </div>
                     </div>
@@ -190,28 +158,6 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
     let udcTaskId = null;
     let cvPriceTaskId = null;
     let udcPriceTaskId = null;
-
-    // Function to disable/enable all sync buttons
-    function setAllButtonsDisabled(disabled, exceptButtonId = null) {
-        const buttons = ['start-cv-sync', 'start-udc-sync', 'start-cv-price-sync', 'start-udc-price-sync'];
-        buttons.forEach(btnId => {
-            if (btnId !== exceptButtonId) {
-                document.getElementById(btnId).disabled = disabled;
-            }
-        });
-    }
-
-    // Check if any sync is running
-    function isAnySyncRunning() {
-        return cvTaskId || udcTaskId || cvPriceTaskId || udcPriceTaskId;
-    }
-
-    // Re-enable all buttons if no sync is running
-    function enableButtonsIfNoSync() {
-        if (!isAnySyncRunning()) {
-            setAllButtonsDisabled(false);
-        }
-    }
 
     function addLog(message, type = 'info') {
         const logDiv = document.getElementById('sync-log');
@@ -283,10 +229,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('cv-progress-bar').classList.remove('progress-bar-animated');
                 document.getElementById('cv-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`CV Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
-                document.getElementById('start-cv-sync').disabled = false;
-                document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
                 cvTaskId = null;
-                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 // Batch completed but more batches to process
                 document.getElementById('cv-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
@@ -325,10 +268,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('udc-progress-bar').classList.remove('progress-bar-animated');
                 document.getElementById('udc-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`UDC Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
-                document.getElementById('start-udc-sync').disabled = false;
-                document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
                 udcTaskId = null;
-                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 // Batch completed but more batches to process
                 document.getElementById('udc-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
@@ -348,88 +288,6 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
     // Clear log button
     document.getElementById('clear-log').addEventListener('click', function() {
         document.getElementById('sync-log').innerHTML = '<p class="text-muted">Logs cleared...</p>';
-    });
-
-    // Start CV Sync
-    document.getElementById('start-cv-sync').addEventListener('click', function() {
-        const limit = document.getElementById('cv-limit').value || null;
-        this.disabled = true;
-        this.textContent = 'Starting...';
-        setAllButtonsDisabled(true, 'start-cv-sync');
-        
-        frappe.call({
-            method: 'cotton_valley.api.products.start_cv_item_sync',
-            args: { limit: limit },
-            callback: function(r) {
-                if (r.message && r.message.success) {
-                    cvTaskId = r.message.task_id;
-                    document.getElementById('cv-task-id').textContent = cvTaskId;
-                    document.getElementById('cv-progress-container').style.display = 'block';
-                    document.getElementById('cv-no-task').style.display = 'none';
-                    document.getElementById('cv-status').textContent = 'Starting';
-                    document.getElementById('cv-status').className = 'badge bg-info';
-                    document.getElementById('cv-progress-bar').style.width = '0%';
-                    document.getElementById('cv-progress-bar').textContent = '0%';
-                    document.getElementById('cv-current').textContent = '0';
-                    document.getElementById('cv-total').textContent = r.message.total_items;
-                    document.getElementById('cv-progress-bar').classList.add('progress-bar-animated');
-                    addLog(`CV Item Sync started for ${r.message.total_items} items (Task: ${cvTaskId})`, 'info');
-                    document.getElementById('start-cv-sync').textContent = 'Running...';
-                } else {
-                    addLog(`CV Item Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
-                    document.getElementById('start-cv-sync').disabled = false;
-                    document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
-                    setAllButtonsDisabled(false);
-                }
-            },
-            error: function(err) {
-                addLog(`CV Item Sync error: ${err}`, 'error');
-                document.getElementById('start-cv-sync').disabled = false;
-                document.getElementById('start-cv-sync').textContent = 'Start CV Item Sync';
-                setAllButtonsDisabled(false);
-            }
-        });
-    });
-
-    // Start UDC Sync
-    document.getElementById('start-udc-sync').addEventListener('click', function() {
-        const limit = document.getElementById('udc-limit').value || null;
-        this.disabled = true;
-        this.textContent = 'Starting...';
-        setAllButtonsDisabled(true, 'start-udc-sync');
-        
-        frappe.call({
-            method: 'cotton_valley.api.products.start_udc_item_sync',
-            args: { limit: limit },
-            callback: function(r) {
-                if (r.message && r.message.success) {
-                    udcTaskId = r.message.task_id;
-                    document.getElementById('udc-task-id').textContent = udcTaskId;
-                    document.getElementById('udc-progress-container').style.display = 'block';
-                    document.getElementById('udc-no-task').style.display = 'none';
-                    document.getElementById('udc-status').textContent = 'Starting';
-                    document.getElementById('udc-status').className = 'badge bg-info';
-                    document.getElementById('udc-progress-bar').style.width = '0%';
-                    document.getElementById('udc-progress-bar').textContent = '0%';
-                    document.getElementById('udc-current').textContent = '0';
-                    document.getElementById('udc-total').textContent = r.message.total_items;
-                    document.getElementById('udc-progress-bar').classList.add('progress-bar-animated');
-                    addLog(`UDC Item Sync started for ${r.message.total_items} items (Task: ${udcTaskId})`, 'info');
-                    document.getElementById('start-udc-sync').textContent = 'Running...';
-                } else {
-                    addLog(`UDC Item Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
-                    document.getElementById('start-udc-sync').disabled = false;
-                    document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
-                    setAllButtonsDisabled(false);
-                }
-            },
-            error: function(err) {
-                addLog(`UDC Item Sync error: ${err}`, 'error');
-                document.getElementById('start-udc-sync').disabled = false;
-                document.getElementById('start-udc-sync').textContent = 'Start UDC Item Sync';
-                setAllButtonsDisabled(false);
-            }
-        });
     });
 
     // Listen for price sync progress updates
@@ -464,10 +322,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('cv-price-progress-bar').classList.remove('progress-bar-animated');
                 document.getElementById('cv-price-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`💰 CV Price Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
-                document.getElementById('start-cv-price-sync').disabled = false;
-                document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
                 cvPriceTaskId = null;
-                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 document.getElementById('cv-price-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
                 document.getElementById('cv-price-status').className = 'badge bg-info';
@@ -504,10 +359,7 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
                 document.getElementById('udc-price-progress-bar').classList.remove('progress-bar-animated');
                 document.getElementById('udc-price-description').textContent = `Done! Processed: ${data.processed}, Errors: ${data.error_count}`;
                 addLog(`💰 UDC Price Sync completed! Processed: ${data.processed}, Errors: ${data.error_count}`, 'success');
-                document.getElementById('start-udc-price-sync').disabled = false;
-                document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
                 udcPriceTaskId = null;
-                enableButtonsIfNoSync();
             } else if (data.status === 'batch_complete') {
                 document.getElementById('udc-price-status').textContent = `Batch ${data.batch_number}/${data.total_batches}`;
                 document.getElementById('udc-price-status').className = 'badge bg-info';
@@ -523,87 +375,5 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
         }
     });
 
-    // Start CV Price Sync
-    document.getElementById('start-cv-price-sync').addEventListener('click', function() {
-        const limit = document.getElementById('cv-price-limit').value || null;
-        this.disabled = true;
-        this.textContent = 'Starting...';
-        setAllButtonsDisabled(true, 'start-cv-price-sync');
-        
-        frappe.call({
-            method: 'cotton_valley.api.products.start_cv_price_sync',
-            args: { limit: limit },
-            callback: function(r) {
-                if (r.message && r.message.success) {
-                    cvPriceTaskId = r.message.task_id;
-                    document.getElementById('cv-price-task-id').textContent = cvPriceTaskId;
-                    document.getElementById('cv-price-progress-container').style.display = 'block';
-                    document.getElementById('cv-price-no-task').style.display = 'none';
-                    document.getElementById('cv-price-status').textContent = 'Starting';
-                    document.getElementById('cv-price-status').className = 'badge bg-info';
-                    document.getElementById('cv-price-progress-bar').style.width = '0%';
-                    document.getElementById('cv-price-progress-bar').textContent = '0%';
-                    document.getElementById('cv-price-current').textContent = '0';
-                    document.getElementById('cv-price-total').textContent = r.message.total_items;
-                    document.getElementById('cv-price-progress-bar').classList.add('progress-bar-animated');
-                    addLog(`💰 CV Price Sync started for ${r.message.total_items} items (Task: ${cvPriceTaskId})`, 'info');
-                    document.getElementById('start-cv-price-sync').textContent = 'Running...';
-                } else {
-                    addLog(`💰 CV Price Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
-                    document.getElementById('start-cv-price-sync').disabled = false;
-                    document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
-                    setAllButtonsDisabled(false);
-                }
-            },
-            error: function(err) {
-                addLog(`💰 CV Price Sync error: ${err}`, 'error');
-                document.getElementById('start-cv-price-sync').disabled = false;
-                document.getElementById('start-cv-price-sync').textContent = 'Start CV Price Sync';
-                setAllButtonsDisabled(false);
-            }
-        });
-    });
-
-    // Start UDC Price Sync
-    document.getElementById('start-udc-price-sync').addEventListener('click', function() {
-        const limit = document.getElementById('udc-price-limit').value || null;
-        this.disabled = true;
-        this.textContent = 'Starting...';
-        setAllButtonsDisabled(true, 'start-udc-price-sync');
-        
-        frappe.call({
-            method: 'cotton_valley.api.products.start_udc_price_sync',
-            args: { limit: limit },
-            callback: function(r) {
-                if (r.message && r.message.success) {
-                    udcPriceTaskId = r.message.task_id;
-                    document.getElementById('udc-price-task-id').textContent = udcPriceTaskId;
-                    document.getElementById('udc-price-progress-container').style.display = 'block';
-                    document.getElementById('udc-price-no-task').style.display = 'none';
-                    document.getElementById('udc-price-status').textContent = 'Starting';
-                    document.getElementById('udc-price-status').className = 'badge bg-info';
-                    document.getElementById('udc-price-progress-bar').style.width = '0%';
-                    document.getElementById('udc-price-progress-bar').textContent = '0%';
-                    document.getElementById('udc-price-current').textContent = '0';
-                    document.getElementById('udc-price-total').textContent = r.message.total_items;
-                    document.getElementById('udc-price-progress-bar').classList.add('progress-bar-animated');
-                    addLog(`💰 UDC Price Sync started for ${r.message.total_items} items (Task: ${udcPriceTaskId})`, 'info');
-                    document.getElementById('start-udc-price-sync').textContent = 'Running...';
-                } else {
-                    addLog(`💰 UDC Price Sync failed: ${r.message ? r.message.message : 'Unknown error'}`, 'error');
-                    document.getElementById('start-udc-price-sync').disabled = false;
-                    document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
-                    setAllButtonsDisabled(false);
-                }
-            },
-            error: function(err) {
-                addLog(`💰 UDC Price Sync error: ${err}`, 'error');
-                document.getElementById('start-udc-price-sync').disabled = false;
-                document.getElementById('start-udc-price-sync').textContent = 'Start UDC Price Sync';
-                setAllButtonsDisabled(false);
-            }
-        });
-    });
-
-    addLog('Page loaded. Ready to start sync.', 'info');
+    addLog('Page loaded. Sync is managed by scheduler.', 'info');
 };

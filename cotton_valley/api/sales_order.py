@@ -458,6 +458,9 @@ def push_to_erp(sales_orders):
                     "qty": str(int(item.qty)),
                     "rate": str(float(item.rate))
                 }
+
+                if so_doc.company == "UDC":
+                    payload["udc_special_instructions"] = so_doc.get("custom_notes") or ""
                 
                 # Make API call using curl (more reliable for problematic connections)
                 max_attempts = 3
