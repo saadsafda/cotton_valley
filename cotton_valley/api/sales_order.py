@@ -410,6 +410,9 @@ def push_to_erp(sales_orders):
     
     # ERP API configuration
     ERP_URL = "https://erp.cottonvalley.us/ords/unvdst/order/ord"
+
+    UDC_ERP_URL = "https://erp.universaldc.us/ords/unvdst_api/order/ord"
+
     username = ERP_USERNAME
     password = ERP_PASSWORD
     
@@ -476,7 +479,7 @@ def push_to_erp(sales_orders):
                             '--connect-timeout', '30',
                             '--compressed',  # Enable compression
                             '-v',  # Verbose output for debugging
-                            ERP_URL
+                            so_doc.company == "Cotton Valley" and ERP_URL or UDC_ERP_URL
                         ]
                         
                         # Execute curl command
