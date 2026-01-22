@@ -9,6 +9,142 @@
   "filters": [],
   "is_standard": "No",
   "javascript": null,
+  "json": "{\"filters\":[[\"Sales Order\",\"company\",\"=\",\"Cotton Valley\"]],\"fields\":[[\"name\",\"Sales Order\"],[\"customer_name\",\"Sales Order\"],[\"customer_company_name\",\"Sales Order\"],[\"customer_account_number\",\"Sales Order\"],[\"push_to_erp\",\"Sales Order\"],[\"transaction_date\",\"Sales Order\"],[\"company\",\"Sales Order\"],[\"grand_total\",\"Sales Order\"],[\"currency\",\"Sales Order\"],[\"discount_amount\",\"Sales Order\"],[\"custom_mode_of_payment\",\"Sales Order\"],[\"order_status\",\"Sales Order\"],[\"custom_last_order_date\",\"Sales Order\"],[\"customer_ip\",\"Sales Order\"],[\"customer_lat__long\",\"Sales Order\"],[\"status\",\"Sales Order\"],[\"from_app\",\"Sales Order\"]],\"order_by\":\"`tabSales Order`.`name` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"customer_name\":176,\"customer_company_name\":214,\"customer_account_number\":232,\"push_to_erp\":120,\"transaction_date\":160,\"company\":150,\"grand_total\":150,\"currency\":100,\"discount_amount\":218,\"custom_mode_of_payment\":219,\"order_status\":120,\"custom_last_order_date\":190,\"customer_ip\":154,\"customer_lat__long\":177,\"status\":100,\"from_app\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2026-01-22 04:14:44.451254",
+  "module": "Cotton Valley",
+  "name": "CV Sales Order Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "CV Sales Order Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "CV Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
+  "json": "{\"filters\":[[\"Sales Order\",\"company\",\"=\",\"UDC\"]],\"fields\":[[\"name\",\"Sales Order\"],[\"customer_name\",\"Sales Order\"],[\"customer_company_name\",\"Sales Order\"],[\"customer_account_number\",\"Sales Order\"],[\"push_to_erp\",\"Sales Order\"],[\"transaction_date\",\"Sales Order\"],[\"company\",\"Sales Order\"],[\"grand_total\",\"Sales Order\"],[\"currency\",\"Sales Order\"],[\"discount_amount\",\"Sales Order\"],[\"custom_mode_of_payment\",\"Sales Order\"],[\"order_status\",\"Sales Order\"],[\"custom_last_order_date\",\"Sales Order\"],[\"customer_ip\",\"Sales Order\"],[\"customer_lat__long\",\"Sales Order\"],[\"status\",\"Sales Order\"],[\"from_app\",\"Sales Order\"]],\"order_by\":\"`tabSales Order`.`name` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"customer_name\":176,\"customer_company_name\":214,\"customer_account_number\":232,\"push_to_erp\":120,\"transaction_date\":160,\"company\":150,\"grand_total\":150,\"currency\":100,\"discount_amount\":218,\"custom_mode_of_payment\":219,\"order_status\":120,\"custom_last_order_date\":190,\"customer_ip\":154,\"customer_lat__long\":177,\"status\":100,\"from_app\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2026-01-22 04:15:01.633577",
+  "module": "Cotton Valley",
+  "name": "UDC Sales Order Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "UDC Sales Order Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "UDC Sales Order Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "No",
+  "javascript": null,
   "json": null,
   "letter_head": null,
   "modified": "2026-01-06 00:22:58.656802",
