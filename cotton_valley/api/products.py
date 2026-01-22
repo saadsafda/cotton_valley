@@ -1190,8 +1190,7 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                     "total_batches": total_batches,
                     "status": "running",
                     "company": company
-                },
-                broadcast=True
+                }
             )
         
         try:
@@ -1362,9 +1361,8 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                 "company": company,
                 "batch_number": batch_number,
                 "total_batches": total_batches
-            },
-            broadcast=True
-        )
+            }
+            )
 
     # Log summary once
     if errors:
@@ -1503,8 +1501,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                     "total_batches": total_batches,
                     "status": "running",
                     "company": company
-                },
-                broadcast=True
+                }
             )
         
         try:
@@ -1675,9 +1672,8 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                 "company": company,
                 "batch_number": batch_number,
                 "total_batches": total_batches
-            },
-            broadcast=True
-        )
+            }
+            )
 
     # Log summary once
     if errors:
@@ -1923,8 +1919,7 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
                     "total_batches": total_batches,
                     "status": "running",
                     "company": company
-                },
-                broadcast=True
+                }
             )
         
         try:
@@ -2013,9 +2008,8 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
                 "company": company,
                 "batch_number": batch_number,
                 "total_batches": total_batches
-            },
-            broadcast=True
-        )
+            }
+            )
 
     frappe.log_error(f"CV Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "CV Price Batch Completed")
     return {"processed": processed_count, "errors": error_count, "task_id": task_id}
@@ -2070,8 +2064,7 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
                     "total_batches": total_batches,
                     "status": "running",
                     "company": company
-                },
-                broadcast=True
+                }
             )
         
         try:
@@ -2160,9 +2153,8 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
                 "company": company,
                 "batch_number": batch_number,
                 "total_batches": total_batches
-            },
-            broadcast=True
-        )
+            }
+            )
 
     frappe.log_error(f"UDC Price Batch completed. Processed: {processed_count}, Errors: {error_count}", "UDC Price Batch Completed")
     return {"processed": processed_count, "errors": error_count, "task_id": task_id}
@@ -2182,6 +2174,20 @@ def start_cv_price_sync(limit=None):
     
     if not items:
         return {"success": False, "message": "No items found to sync"}
+    
+    # Publish initial status immediately
+    frappe.publish_realtime(
+        "price_sync_progress",
+        {
+            "task_id": task_id,
+            "percent": 0,
+            "current": 0,
+            "total": len(items),
+            "status": "queued",
+            "company": "Cotton Valley",
+            "message": "Job queued, starting soon..."
+        }
+    )
     
     frappe.enqueue(
         "cotton_valley.api.products.sync_cv_price_batch",
@@ -2214,6 +2220,20 @@ def start_udc_price_sync(limit=None):
     
     if not items:
         return {"success": False, "message": "No items found to sync"}
+    
+    # Publish initial status immediately
+    frappe.publish_realtime(
+        "price_sync_progress",
+        {
+            "task_id": task_id,
+            "percent": 0,
+            "current": 0,
+            "total": len(items),
+            "status": "queued",
+            "company": "UDC",
+            "message": "Job queued, starting soon..."
+        }
+    )
     
     frappe.enqueue(
         "cotton_valley.api.products.sync_udc_price_batch",
