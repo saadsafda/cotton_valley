@@ -346,14 +346,14 @@ def get_file(file_url):
             "id": file_url,
             "file_name": file_url,
             "mime_type": "internet",
-            "original_url": file_url,
+            "original_url": file_url or "",
         }
     
     return {
         "id": file_url,
         "file_name": file_url,
         "mime_type": "internal",
-        "original_url": frappe.utils.get_url(file_url),
+        "original_url": frappe.utils.get_url(file_url) or "",
     }
 
 def get_categories_from_string(category_string):

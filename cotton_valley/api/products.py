@@ -2117,7 +2117,6 @@ def download_custom_catalog(items):
         
         if not data:
             frappe.throw(_("No items found"))
-
         # 2. Setup Excel
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -2175,14 +2174,25 @@ def download_custom_catalog(items):
         # --- WRITE DATA ---
         row = start_row + 1
         
+        # Fetch all categories in one query for performance
+        item_codes = [item.item_code for item in data]
+        all_categories = frappe.db.sql("""
+            SELECT c.parent, c.product_category as id, pc.title as title
+            FROM `tabProduct Categoris` c
+            INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
+            WHERE c.parent IN %(items)s
+        """, {"items": item_codes}, as_dict=True)
+        
+        # Group categories by item code
+        categories_map = {}
+        for cat in all_categories:
+            if cat.parent not in categories_map:
+                categories_map[cat.parent] = []
+            categories_map[cat.parent].append(cat)
+        
         for item in data:
             worksheet.set_row(row, 90)
-            categories = frappe.db.sql("""
-                SELECT c.product_category as id, pc.title as title
-                FROM `tabProduct Categoris` c
-                INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
-                WHERE c.parent = %s
-            """, (item.item_code,), as_dict=True)
+            categories = categories_map.get(item.item_code, [])
             # A: Image Handling
             if item.get("image"):
                 try:
@@ -2230,10 +2240,11 @@ def download_custom_catalog(items):
 
             # B-H: Data columns
             subcategoryName = frappe.db.get_value("Product Subcategory", item.get("subcategory"), "title") if item.get("subcategory") else "-"
+            categoryName = categories[0].title if categories and len(categories) > 0 else "-"
 
             worksheet.write(row, 1, item.get("item_code", "") or "-", text_fmt)
             worksheet.write(row, 2, item.get("item_name", "") or "-", text_fmt)
-            worksheet.write(row, 3, str(categories[0].title) or "-", text_fmt)  # Category placeholder
+            worksheet.write(row, 3, categoryName, text_fmt)
             worksheet.write(row, 4, subcategoryName or "-", text_fmt)
             worksheet.write(row, 5, item.get("case_pack", "") or "-", text_fmt)
             worksheet.write(row, 6, item.get("case_length", "") or "-", text_blue_fmt)
