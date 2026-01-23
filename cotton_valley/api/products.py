@@ -734,8 +734,8 @@ def get_product(product_id, company=None):
     )
     product["product_galleries"] = [get_file(gallery.image) for gallery in galleries]
     product["meta_title"] = product["name"]
-    product["meta_description"] = product["short_description"]
-    product["product_meta_image"] = get_file(product["product_thumbnail_id"])
+    product["meta_description"] = product["short_description"] or ""
+    product["product_meta_image"] = get_file(product["product_thumbnail_id"]) or ""
     product["product_tags"] = frappe.get_all("Product Tags", filters={"parent": product_id}, fields=["idx", "name1", "color"], order_by="idx asc")
 
     # thumbnail (first gallery file or image field)

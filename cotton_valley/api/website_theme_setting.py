@@ -339,7 +339,12 @@ def get_website_theme_settings(company=None):
 def get_file(file_url):
     """return file object with meta if available"""
     if not file_url:
-        return None
+        return {
+            "id": "",
+            "file_name": "",
+            "mime_type": "",
+            "original_url": "",
+        }
     
     if file_url.startswith("http"):
         return {
