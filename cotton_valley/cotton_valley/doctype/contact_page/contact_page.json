@@ -8,6 +8,12 @@
   "page_banner_view",
   "page_banner",
   "title",
+  "section_break_fzjx",
+  "customer_service",
+  "column_break_xpbe",
+  "product_order",
+  "column_break_llqn",
+  "pickup_hours",
   "section_break_bktr",
   "phone",
   "location_title",
@@ -15,9 +21,7 @@
   "column_break_uxda",
   "email",
   "office_title",
-  "office_address",
-  "section_break_dyzq",
-  "contact_info"
+  "office_address"
  ],
  "fields": [
   {
@@ -77,20 +81,38 @@
    "label": "Office Address"
   },
   {
-   "fieldname": "section_break_dyzq",
+   "fieldname": "section_break_fzjx",
    "fieldtype": "Section Break"
   },
   {
-   "fieldname": "contact_info",
+   "fieldname": "customer_service",
    "fieldtype": "Text Editor",
-   "label": "Contact Info"
+   "label": "Customer Service"
+  },
+  {
+   "fieldname": "column_break_xpbe",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "product_order",
+   "fieldtype": "Text Editor",
+   "label": "Product & Order"
+  },
+  {
+   "fieldname": "column_break_llqn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pickup_hours",
+   "fieldtype": "Text Editor",
+   "label": "Pickup Hours"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-07 00:02:04.402689",
+ "modified": "2026-01-23 01:45:48.125903",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Contact Page",
