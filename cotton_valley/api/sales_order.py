@@ -435,6 +435,8 @@ def push_to_erp(sales_orders):
             
             # Track successful item pushes
             pushed_items = []
+            if so_doc.company == "Cotton Valley":
+                frappe.throw("Cotton Valley Sales Order cannot be pushed to ERP via this method.")
             
             # Prepare payload for each item in the Sales Order
             for item in so_doc.items:
@@ -459,15 +461,16 @@ def push_to_erp(sales_orders):
                 }
 
                 if so_doc.company == "UDC":
-                    payload["udc_special_instructions"] = so_doc.get("custom_notes") or ""
+                    payload["inventoryItem"] = so_doc.get("product_type") or ""
                 
                 # Make API call using curl (more reliable for problematic connections)
                 max_attempts = 3
                 last_error = None
-                
+                print("Pushing item to ERP:", payload, "\n\n\n\n\n\n\n\n")
                 for attempt in range(max_attempts):
                     try:
                         # Prepare curl command with TLS settings for Oracle ORDS
+                        # Use -w to output HTTP status code
                         curl_command = [
                             'curl',
                             '-X', 'POST',
@@ -480,6 +483,7 @@ def push_to_erp(sales_orders):
                             '--max-time', '60',
                             '--connect-timeout', '30',
                             '--compressed',  # Enable compression
+                            '-w', '\n%{http_code}',  # Output HTTP status code at the end
                             '-v',  # Verbose output for debugging
                             so_doc.company == "Cotton Valley" and ERP_URL or UDC_ERP_URL
                         ]
@@ -492,23 +496,50 @@ def push_to_erp(sales_orders):
                             timeout=90
                         )
                         
-                        # Check if curl succeeded
-                        if result.returncode == 0:
-                            # Parse response if needed
-                            response_text = result.stdout.strip()
+                        # Extract HTTP status code from output
+                        output_lines = result.stdout.strip().split('\n')
+                        http_status = None
+                        response_body = ""
+                        
+                        if len(output_lines) >= 2:
+                            try:
+                                http_status = int(output_lines[-1])
+                                response_body = '\n'.join(output_lines[:-1])
+                            except ValueError:
+                                response_body = result.stdout.strip()
+                        else:
+                            response_body = result.stdout.strip()
+                        
+                        # Check if curl executed and HTTP status is success (2xx)
+                        if result.returncode == 0 and http_status and 200 <= http_status < 300:
+                            # Success
                             pushed_items.append(item.item_code)
                             frappe.log_error(
-                                message=f"Successfully pushed item {item.item_code} for order {so_name}.\nResponse: {response_text}\nDebug: {result.stderr}",
+                                message=f"Successfully pushed item {item.item_code} for order {so_name}.\nHTTP Status: {http_status}\nResponse: {response_body}\nDebug: {result.stderr}",
                                 title="ERP Push Success"
                             )
                             break  # Success, exit retry loop
                         else:
-                            error_msg = f"Curl failed with code {result.returncode}.\nStderr: {result.stderr}\nStdout: {result.stdout}"
+                            # Determine error type
+                            if http_status == 401:
+                                error_msg = f"Authentication Failed (HTTP 401): Invalid credentials for ERP system.\nPlease verify ERP_USERNAME and ERP_PASSWORD.\nResponse: {response_body}"
+                            elif http_status == 403:
+                                error_msg = f"Access Forbidden (HTTP 403): User does not have permission to access this endpoint.\nResponse: {response_body}"
+                            elif http_status and http_status >= 400:
+                                error_msg = f"HTTP Error {http_status}: {response_body}"
+                            elif result.returncode != 0:
+                                error_msg = f"Curl failed with code {result.returncode}.\nStderr: {result.stderr}\nStdout: {result.stdout}"
+                                # Check for specific SSL/TLS errors
+                                if "Connection reset by peer" in result.stderr or result.returncode == 35:
+                                    error_msg = "SSL/TLS Connection Error: The ERP server is rejecting the connection. This typically means:\n1. Your server IP needs to be whitelisted on their firewall\n2. Contact the ERP administrator to add your IP to their allowlist\n3. Or there may be SSL/TLS certificate issues on their end"
+                            else:
+                                error_msg = f"Unexpected error: HTTP Status: {http_status}, Response: {response_body}"
+                            
                             last_error = error_msg
                             
-                            # Check for specific SSL/TLS errors
-                            if "Connection reset by peer" in result.stderr or result.returncode == 35:
-                                error_msg = "SSL/TLS Connection Error: The ERP server is rejecting the connection. This typically means:\n1. Your server IP needs to be whitelisted on their firewall\n2. Contact the ERP administrator to add your IP to their allowlist\n3. Or there may be SSL/TLS certificate issues on their end"
+                            # Don't retry authentication errors - they won't succeed
+                            if http_status in [401, 403]:
+                                raise Exception(error_msg)
                             
                             if attempt < max_attempts - 1:  # Not last attempt
                                 frappe.log_error(
