@@ -110,7 +110,7 @@ def get_website_theme_settings(company=None):
     all_category_ids = frappe.get_all("Product Category", filters=[["company", "=", company]], pluck="name")
     all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0], ["company", "=", company]], pluck="name")
     brand_list = get_brands(company=company)
-    print(brand_list)
+
     result = {
         "id": 1,
         "options": {
