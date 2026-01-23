@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
-from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD
+from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD, UDC_USER, UDC_PASSWORD
 import requests
 
 @frappe.whitelist(allow_guest=True)
@@ -415,6 +415,9 @@ def push_to_erp(sales_orders):
 
     username = ERP_USERNAME
     password = ERP_PASSWORD
+
+    udc_username = UDC_USER
+    udc_password = UDC_PASSWORD
     
     results = {
         "success": [],
@@ -476,7 +479,7 @@ def push_to_erp(sales_orders):
                             '-X', 'POST',
                             '-H', 'Content-Type: application/json',
                             '-H', 'Accept: application/json',
-                            '-u', f'{username}:{password}',
+                            '-u', f'{username}:{password}' if so_doc.company == "Cotton Valley" else f'{udc_username}:{udc_password}',
                             '--data', json.dumps(payload),
                             '--insecure',  # Skip SSL verification
                             '--tlsv1.2',  # Force TLS 1.2 (Oracle ORDS common requirement)
