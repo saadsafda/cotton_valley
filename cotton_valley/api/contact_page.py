@@ -15,15 +15,16 @@ def get_contact_page(company=None):
             "data": {
                 "title": contact.title,
                 "banner_image": get_file(contact.page_banner),
-                "phone": contact.phone,
-                "email": contact.email,
-                "location_title": contact.location_title,
-                "location_address": contact.location_address,
-                "office_title": contact.office_title,
-                "office_address": contact.office_address,
+                "phone": "",
+                "email": "",
+                "location_title": "",
+                "location_address": "",
+                "office_title": "",
+                "office_address": "",
                 "customer_service": contact.customer_service,
                 "product_order": contact.product_order,
                 "pickup_hours": contact.pickup_hours,
+                "address": contact.address,
             }
         }
     except Exception as e:
