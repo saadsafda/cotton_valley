@@ -464,7 +464,7 @@ def push_to_erp(sales_orders):
                 }
 
                 if so_doc.company == "UDC":
-                    payload["inventoryItem"] = so_doc.get("product_type") or ""
+                    payload["inventoryItem"] = "REG" if so_doc.get("product_type") == "Regular" else so_doc.get("product_type")
                 
                 # Make API call using curl (more reliable for problematic connections)
                 max_attempts = 3
