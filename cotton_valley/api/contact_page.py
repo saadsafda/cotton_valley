@@ -21,7 +21,9 @@ def get_contact_page(company=None):
                 "location_address": contact.location_address,
                 "office_title": contact.office_title,
                 "office_address": contact.office_address,
-                "contact_info": contact.contact_info,
+                "customer_service": contact.customer_service,
+                "product_order": contact.product_order,
+                "pickup_hours": contact.pickup_hours,
             }
         }
     except Exception as e:
