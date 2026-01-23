@@ -6,6 +6,7 @@ def get_brands(company=None):
     try:
         company = None if not company or company == "null" else company
         filters = {}
+        filters["show_in_header"] = 1
         if company:
             filters["company"] = company
 
