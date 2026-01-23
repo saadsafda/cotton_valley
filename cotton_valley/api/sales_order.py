@@ -440,7 +440,6 @@ def push_to_erp(sales_orders):
             for item in so_doc.items:
                 customer_erp_id = ""
                 if so_doc.company == "Cotton Valley":
-                    frappe.throw("Cotton Valley Api Not implemented yet")
                     customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "cv_customer_id") or ""
                 else:
                     customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""

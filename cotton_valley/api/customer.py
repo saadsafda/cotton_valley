@@ -1,9 +1,11 @@
+import requests
 import frappe, secrets # type: ignore
 from frappe.auth import LoginManager # type: ignore
 from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.api.common import get_customer_from_token
 from frappe.utils.data import add_days, now_datetime
+from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 
 
 
@@ -607,4 +609,155 @@ def get_current_customer():
 #         frappe.log_error(f"Failed to send registration email: {str(e)}\n{frappe.get_traceback()}", "Registration Email Failed")
 
 
+
+
+@frappe.whitelist()
+def fetch_udc_customer_data(customer_id):
+    try:
+        customer = frappe.get_doc("Customer", customer_id)
+        if not customer:
+            return {"status": "error", "message": "Customer not found"}
+        
+        url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+        username = UDC_USER
+        password = UDC_PASSWORD
+
+        response = requests.get(url_base, auth=(username, password))
+        if response.status_code == 200:
+            data = response.json()
+            item_data = data.get("items", [])[0] if data.get("items") else {}
+            field_mapping = {
+                "udc_account_number": item_data.get("sbsname_lcl"),
+            }
+            
+            # Sync addresses from dlvdadr array
+            if "dlvdadr" in item_data:
+                sync_customer_addresses(customer_id, item_data.get("dlvdadr", []))
+                
+        else:
+            return {"status": "error", "message": f"Failed to fetch data. Status code: {response.status_code}"}
+
+
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+def sync_customer_addresses(customer_id, addresses_data):
+    """
+    Sync customer addresses from API response.
+    Updates existing addresses or creates new ones based on rowid/udc_address_id.
+    
+    Args:
+        customer_id: Customer ID
+        addresses_data: List of address dictionaries from API
+    """
+    try:
+        for addr_data in addresses_data:
+            rowid = str(addr_data.get("rowid", ""))
+            if not rowid:
+                continue
+            
+            # Map API fields to Address doctype fields
+            address_type = addr_data.get("rectyp", "Shipping")
+            # Normalize address type
+            if "billing" in address_type.lower():
+                address_type = "Billing"
+            elif "shipping" in address_type.lower() or "multi" in address_type.lower():
+                address_type = "Shipping"
+            else:
+                address_type = "Shipping"
+            
+            # Check if address with this udc_address_id already exists for this customer
+            existing_address = frappe.db.sql("""
+                SELECT a.name 
+                FROM `tabAddress` a
+                INNER JOIN `tabDynamic Link` dl ON dl.parent = a.name
+                WHERE a.custom_udc_address_id = %s 
+                AND dl.link_doctype = 'Customer' 
+                AND dl.link_name = %s
+                AND dl.parenttype = 'Address'
+                LIMIT 1
+            """, (rowid, customer_id), as_dict=True)
+            
+            if existing_address:
+                # Update existing address
+                address_doc = frappe.get_doc("Address", existing_address[0].name)
+                update_address_fields(address_doc, addr_data, address_type)
+                address_doc.save(ignore_permissions=True)
+                frappe.logger().info(f"Updated address {address_doc.name} for customer {customer_id}")
+            else:
+                # Create new address
+                create_new_address(customer_id, addr_data, address_type, rowid)
+                
+        frappe.db.commit()
+        return {"status": "success", "message": "Addresses synced successfully"}
+        
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Sync Customer Addresses Error")
+        return {"status": "error", "message": str(e)}
+
+
+def update_address_fields(address_doc, addr_data, address_type):
+    """
+    Update address document fields from API data.
+    
+    Args:
+        address_doc: Address document object
+        addr_data: Address data from API
+        address_type: Type of address (Billing/Shipping)
+    """
+    address_doc.address_type = address_type
+    address_doc.address_line1 = addr_data.get("adr", "").strip()
+    address_doc.city = addr_data.get("ctyname", "").strip()
+    address_doc.pincode = addr_data.get("postcd", "").strip()
+    address_doc.state = addr_data.get("prvname", "").strip()
+    address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"
+    
+    # Add state code if needed (some systems use this)
+    if addr_data.get("prvid"):
+        address_doc.custom_state_code = addr_data.get("prvid", "").strip()
+
+
+def create_new_address(customer_id, addr_data, address_type, rowid):
+    """
+    Create a new address document linked to customer.
+    
+    Args:
+        customer_id: Customer ID
+        addr_data: Address data from API
+        address_type: Type of address (Billing/Shipping)
+        rowid: UDC address ID from API
+    """
+    customer = frappe.get_doc("Customer", customer_id)
+    
+    # Create address title
+    address_title = f"{customer.customer_name} - {address_type}"
+    
+    new_address = frappe.get_doc({
+        "doctype": "Address",
+        "address_title": address_title,
+        "address_type": address_type,
+        "address_line1": addr_data.get("adr", "").strip(),
+        "city": addr_data.get("ctyname", "").strip(),
+        "pincode": addr_data.get("postcd", "").strip(),
+        "state": addr_data.get("prvname", "").strip(),
+        "country": addr_data.get("cntname", "").strip() or "UNITED STATES",
+        "custom_udc_address_id": rowid,
+        "links": [
+            {
+                "link_doctype": "Customer",
+                "link_name": customer_id
+            }
+        ]
+    })
+    
+    # Add state code if needed
+    if addr_data.get("prvid"):
+        new_address.custom_state_code = addr_data.get("prvid", "").strip()
+    
+    new_address.insert(ignore_permissions=True)
+    frappe.logger().info(f"Created new address {new_address.name} for customer {customer_id}")
+    
+    return new_address.name
 
