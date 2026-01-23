@@ -209,7 +209,8 @@ def send_registration_email(customer_email, sales_person, firstname, lastname, c
             cc=cc_emails if cc_emails else None,
             subject=email_subject,
             message=email_message,
-            now=True  # Send immediately
+            now=True,  # Send immediately
+            header=["", ""]  # Empty header to minimize footer
         )
         
         frappe.log_error(f"Registration email sent to {customer_email}", "Customer Registration Email")

@@ -20,12 +20,12 @@ frappe.listview_settings['Item'] = {
                 indicator: 'blue'
             });
 
-            // Use open_url_post which handles binary file downloads
-            window.open(
-                frappe.urllib.get_full_url(
-                    '/api/method/cotton_valley.api.products.download_custom_catalog?items=' + 
-                    encodeURIComponent(JSON.stringify(item_names))
-                )
+            // Use open_url_post to send large data via POST (avoids URL length limits)
+            frappe.open_url_post(
+                '/api/method/cotton_valley.api.products.download_custom_catalog',
+                {
+                    items: JSON.stringify(item_names)
+                }
             );
 
         });
