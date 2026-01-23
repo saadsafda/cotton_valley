@@ -469,7 +469,7 @@ def push_to_erp(sales_orders):
                 # Make API call using curl (more reliable for problematic connections)
                 max_attempts = 3
                 last_error = None
-                print("Pushing item to ERP:", payload, "\n\n\n\n\n\n\n\n")
+
                 for attempt in range(max_attempts):
                     try:
                         # Prepare curl command with TLS settings for Oracle ORDS
