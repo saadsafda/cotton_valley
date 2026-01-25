@@ -795,7 +795,7 @@ def update_address_fields(address_doc, addr_data, address_type):
     # Map API columns to Address fields
     address_doc.address_type = address_type  # rectyp (Billing/Shipping) handled in caller
     address_doc.address_line1 = addr_data.get("adrcmp", "").strip()  # Address Details
-    address_doc.city = addr_data.get("ctyname", "").strip()         # City
+    address_doc.city = addr_data.get("ctyname", "").strip() or "Unknown"  # City (default if missing)
     address_doc.pincode = addr_data.get("postcd", "").strip()       # Zip Code
     address_doc.state = addr_data.get("prvname", "").strip()        # State (Name)
     address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"  # Country
@@ -822,7 +822,7 @@ def create_new_address(customer_id, addr_data, address_type, rowid):
         "address_title": address_title,
         "address_type": address_type,
         "address_line1": addr_data.get("adr", "").strip(),
-        "city": addr_data.get("ctyname", "").strip(),
+        "city": addr_data.get("ctyname", "").strip() or "Unknown",
         "pincode": addr_data.get("postcd", "").strip(),
         "state": addr_data.get("prvname", "").strip(),
         "country": addr_data.get("cntname", "").strip() or "UNITED STATES",
