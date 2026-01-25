@@ -206,10 +206,13 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
     customer_id = customer["id"]
 
     price_level = ""
+    customer_account_number = ""
     if company == "UDC":
         price_level = frappe.db.get_value("Customer", customer_id, "price_list_for_udc")
+        customer_account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
     else:
         price_level = frappe.db.get_value("Customer", customer_id, "price_list_for_cv")
+        customer_account_number = frappe.db.get_value("Customer", customer_id, "account_number")
 
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
@@ -235,6 +238,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                 return None
             so_doc = frappe.new_doc("Sales Order")
             so_doc.customer = customer_id
+            so_doc.customer_account_number = customer_account_number
             so_doc.order_type = "Shopping Cart"
             so_doc.delivery_date = nowdate()
             so_doc.submit_datetime = submit_datetime
@@ -263,8 +267,12 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                     "rate": row["rate"],
                     "delivery_date": nowdate(),
                 })
-
+            
             sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+            so_doc.custom_customer_sales_representative = sales_person
+            if company == "UDC":
+                sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+                so_doc.custom_customer_sales_representative = sales_person
             if sales_person:
                 so_doc.sales_team = []
                 so_doc.append("sales_team", {
@@ -301,6 +309,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
     else:
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
+        so_doc.customer_account_number = customer_account_number
         so_doc.order_type = "Shopping Cart"
         so_doc.selling_price_list = price_level
 
@@ -335,6 +344,10 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
             "delivery_date": nowdate(),
         })
     sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    so_doc.custom_customer_sales_representative = sales_person
+    if company == "UDC":
+        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+        so_doc.custom_customer_sales_representative = sales_person
     if sales_person:
         so_doc.sales_team = []
         so_doc.append("sales_team", {

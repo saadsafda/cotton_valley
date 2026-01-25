@@ -141,6 +141,49 @@ frappe.ui.form.on('Customer', {
     //         });
     //     }
 
+    // --- Fetch Customer Data Button ---
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Fetch Customer Data'), function () {
+                let d = new frappe.ui.Dialog({
+                    title: __('Fetch Customer Data'),
+                    fields: [
+                        {
+                            label: 'Company',
+                            fieldname: 'company',
+                            fieldtype: 'Select',
+                            options: ['Cotton Valley', 'UDC'],
+                            reqd: 1
+                        }
+                    ],
+                    primary_action_label: __('Fetch'),
+                    primary_action(values) {
+                        d.set_primary_action(__('Fetching...'), null, true);
+                        frappe.call({
+                            method: 'cotton_valley.api.customer.fetch_customer_data',
+                            args: {
+                                customer_id: frm.doc.name,
+                                company: values.company
+                            },
+                            callback: function(r) {
+                                d.hide();
+                                if (r.message && r.message.status === 'success') {
+                                    frappe.msgprint(__('Customer data fetched and updated successfully.'));
+                                    frm.reload_doc();
+                                } else {
+                                    frappe.msgprint(__('Failed to fetch: ') + (r.message && r.message.message ? r.message.message : 'Unknown error'));
+                                }
+                            },
+                            error: function(r) {
+                                d.hide();
+                                frappe.msgprint(__('Error: ') + r.message);
+                            }
+                        });
+                    }
+                });
+                d.show();
+            });
+        }
+
     },
 
     setup: function (frm) {

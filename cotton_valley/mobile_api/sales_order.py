@@ -246,6 +246,10 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
                     "delivery_date": nowdate(),
                 })
             sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+            so_doc.custom_customer_sales_representative = sales_person
+            if company == "UDC":
+                sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+                so_doc.custom_customer_sales_representative = sales_person
             if sales_person:
                 so_doc.sales_team = []
                 so_doc.append("sales_team", {
@@ -318,6 +322,10 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
             "delivery_date": nowdate(),
         })
     sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    so_doc.custom_customer_sales_representative = sales_person
+    if company == "UDC":
+        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+        so_doc.custom_customer_sales_representative = sales_person
     if sales_person:
         so_doc.sales_team = []
         so_doc.append("sales_team", {

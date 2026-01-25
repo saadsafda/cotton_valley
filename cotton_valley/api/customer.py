@@ -612,28 +612,56 @@ def get_current_customer():
 
 
 @frappe.whitelist()
-def fetch_udc_customer_data(customer_id):
+def fetch_customer_data(customer_id, company="Cotton Valley"):
+    """
+    Fetch customer data from external API and update local Customer record.
+    Args:
+        customer_id: Customer ID
+        company: Company name ("Cotton Valley" or "UDC")
+    """
     try:
         customer = frappe.get_doc("Customer", customer_id)
         if not customer:
             return {"status": "error", "message": "Customer not found"}
         
-        url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
-        username = UDC_USER
-        password = UDC_PASSWORD
+        url_base = f"https://erp.cottonvalley.us/ords/ctnvly_api/stp/cstdata?SBSID_C={customer.cv_customer_id}"
+        username = CV_USER
+        password = CV_PASSWORD
+
+        if company == "UDC":
+            url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+            username = UDC_USER
+            password = UDC_PASSWORD
 
         response = requests.get(url_base, auth=(username, password))
         if response.status_code == 200:
             data = response.json()
             item_data = data.get("items", [])[0] if data.get("items") else {}
+            # Map API columns to Customer fields
             field_mapping = {
-                "udc_account_number": item_data.get("sbsname_lcl"),
+                "custom_store_name": item_data.get("sbsname"),              # Store Name
+                "customer_name": item_data.get("sbsname_shr"),     # First Name / Last Name
+                "custom_email_address": item_data.get("email1"),     # Email Address
             }
-            
+            if company == "Cotton Valley":
+                field_mapping["price_list_for_cv"] = fetch_price_list_name(item_data.get("rgnid"), item_data.get("rgnname"))  # Price List for CV (Name)
+                field_mapping["sales_person"] = fetch_sales_rep(item_data.get("sprid"), item_data.get("sprname"))        # Sales Representative (Name)
+                field_mapping["mode_of_payment"] = fetch_mode_of_payment(item_data.get("paytermid"), item_data.get("paytermdsc"))      # Mode of Payment
+                field_mapping["account_number"] = item_data.get("sbsname_lcl")  # Account Number
+            elif company == "UDC":
+                field_mapping["price_list_for_udc"] = fetch_price_list_name(item_data.get("rgnid"), item_data.get("rgnname"))  # Price List for UDC (Name)
+                field_mapping["udc_sales_person"] = fetch_sales_rep(item_data.get("sprid"), item_data.get("sprname"))        # Sales Representative (Name)
+                field_mapping["udc_mode_of_payment"] = fetch_mode_of_payment(item_data.get("paytermid"), item_data.get("paytermdsc"))      # Mode of Payment
+                field_mapping["udc_account_number"] = item_data.get("sbsname_lcl")  # Account Number UDC
+
+            # Set values on customer doc
+            for field, value in field_mapping.items():
+                if hasattr(customer, field):
+                    setattr(customer, field, value)
+            customer.save(ignore_permissions=True)
             # Sync addresses from dlvdadr array
             if "dlvdadr" in item_data:
                 sync_customer_addresses(customer_id, item_data.get("dlvdadr", []))
-                
         else:
             return {"status": "error", "message": f"Failed to fetch data. Status code: {response.status_code}"}
 
@@ -643,7 +671,7 @@ def fetch_udc_customer_data(customer_id):
         return {"status": "error", "message": str(e)}
 
 
-def sync_customer_addresses(customer_id, addresses_data):
+def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"):
     """
     Sync customer addresses from API response.
     Updates existing addresses or creates new ones based on rowid/udc_address_id.
@@ -669,16 +697,29 @@ def sync_customer_addresses(customer_id, addresses_data):
                 address_type = "Shipping"
             
             # Check if address with this udc_address_id already exists for this customer
-            existing_address = frappe.db.sql("""
+            existing_address = None
+            if company == "Cotton Valley":
+                existing_address = frappe.db.sql("""
                 SELECT a.name 
                 FROM `tabAddress` a
                 INNER JOIN `tabDynamic Link` dl ON dl.parent = a.name
-                WHERE a.custom_udc_address_id = %s 
+                WHERE a.cv_address_id = %s 
                 AND dl.link_doctype = 'Customer' 
                 AND dl.link_name = %s
                 AND dl.parenttype = 'Address'
                 LIMIT 1
             """, (rowid, customer_id), as_dict=True)
+            elif company == "UDC":
+                existing_address = frappe.db.sql("""
+                    SELECT a.name 
+                    FROM `tabAddress` a
+                    INNER JOIN `tabDynamic Link` dl ON dl.parent = a.name
+                    WHERE a.udc_address_id = %s 
+                    AND dl.link_doctype = 'Customer' 
+                    AND dl.link_name = %s
+                    AND dl.parenttype = 'Address'
+                    LIMIT 1
+                """, (rowid, customer_id), as_dict=True)
             
             if existing_address:
                 # Update existing address
@@ -698,6 +739,50 @@ def sync_customer_addresses(customer_id, addresses_data):
         return {"status": "error", "message": str(e)}
 
 
+def fetch_sales_rep(sprid, sprname):
+    """
+    Fetch sales representative based on ID and name.
+    
+    Args:
+        sprid: Sales Representative ID from API
+        sprname: Sales Representative Name from API
+    Returns:
+        str: Sales Representative name
+    """
+    if sprid and sprname:
+        frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
+    return frappe.db.get_value("Sales Person", sprid, "name") or ""
+
+def fetch_mode_of_payment(paytermid, paytermdsc):
+    """
+    Fetch mode of payment based on payment term ID and description.
+    
+    Args:
+        paytermid: Payment Term ID from API
+        paytermdsc: Payment Term Description from API
+    Returns:
+        str: Mode of Payment
+    """
+    if paytermid and paytermdsc:
+        frappe.db.set_value("Mode of Payment", paytermid, "mode_of_payment", paytermdsc)
+    return frappe.db.get_value("Mode of Payment", paytermid, "name") or ""
+
+
+def fetch_price_list_name(rgnid, rgnname):
+    """
+    Fetch price list name based on region ID and name.
+    
+    Args:
+        rgnid: Region ID from API
+        rgnname: Region Name from API
+    Returns:
+        str: Price List name
+    """
+    if rgnid and rgnname:
+        frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
+    return frappe.db.get_value("Price List", rgnid, "name") or ""
+
+
 def update_address_fields(address_doc, addr_data, address_type):
     """
     Update address document fields from API data.
@@ -707,16 +792,14 @@ def update_address_fields(address_doc, addr_data, address_type):
         addr_data: Address data from API
         address_type: Type of address (Billing/Shipping)
     """
-    address_doc.address_type = address_type
-    address_doc.address_line1 = addr_data.get("adr", "").strip()
-    address_doc.city = addr_data.get("ctyname", "").strip()
-    address_doc.pincode = addr_data.get("postcd", "").strip()
-    address_doc.state = addr_data.get("prvname", "").strip()
-    address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"
-    
-    # Add state code if needed (some systems use this)
-    if addr_data.get("prvid"):
-        address_doc.custom_state_code = addr_data.get("prvid", "").strip()
+    # Map API columns to Address fields
+    address_doc.address_type = address_type  # rectyp (Billing/Shipping) handled in caller
+    address_doc.address_line1 = addr_data.get("adrcmp", "").strip()  # Address Details
+    address_doc.city = addr_data.get("ctyname", "").strip()         # City
+    address_doc.pincode = addr_data.get("postcd", "").strip()       # Zip Code
+    address_doc.state = addr_data.get("prvname", "").strip()        # State (Name)
+    address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"  # Country
+    address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
 
 
 def create_new_address(customer_id, addr_data, address_type, rowid):
