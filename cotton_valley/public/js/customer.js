@@ -170,6 +170,8 @@ frappe.ui.form.on('Customer', {
                                     frappe.msgprint(__('Customer data fetched and updated successfully.'));
                                     frm.reload_doc();
                                 } else {
+                                    console.log(r.message, "sadfasdfsa");
+                                    
                                     frappe.msgprint(__('Failed to fetch: ') + (r.message && r.message.message ? r.message.message : 'Unknown error'));
                                 }
                             },

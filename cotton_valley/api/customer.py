@@ -622,8 +622,9 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
     try:
         customer = frappe.get_doc("Customer", customer_id)
         if not customer:
+            frappe.log_error(f"Customer not found: {customer_id}", "Fetch Customer Data Error")
             return {"status": "error", "message": "Customer not found"}
-        
+
         url_base = f"https://erp.cottonvalley.us/ords/ctnvly_api/stp/cstdata?SBSID_C={customer.cv_customer_id}"
         username = CV_USER
         password = CV_PASSWORD
@@ -661,13 +662,13 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             customer.save(ignore_permissions=True)
             # Sync addresses from dlvdadr array
             if "dlvdadr" in item_data:
-                sync_customer_addresses(customer_id, item_data.get("dlvdadr", []))
+                sync_customer_addresses(customer_id, item_data.get("dlvdadr", []), company)
         else:
+            frappe.log_error(f"Failed to fetch data. Status code: {response.status_code}\nResponse: {response.text}", "Fetch Customer Data Error")
             return {"status": "error", "message": f"Failed to fetch data. Status code: {response.status_code}"}
 
-
-
     except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Fetch Customer Data Error")
         return {"status": "error", "message": str(e)}
 
 
@@ -685,7 +686,6 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
             rowid = str(addr_data.get("rowid", ""))
             if not rowid:
                 continue
-            
             # Map API fields to Address doctype fields
             address_type = addr_data.get("rectyp", "Shipping")
             # Normalize address type
@@ -695,7 +695,6 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
                 address_type = "Shipping"
             else:
                 address_type = "Shipping"
-            
             # Check if address with this udc_address_id already exists for this customer
             existing_address = None
             if company == "Cotton Valley":
@@ -720,20 +719,20 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
                     AND dl.parenttype = 'Address'
                     LIMIT 1
                 """, (rowid, customer_id), as_dict=True)
-            
-            if existing_address:
-                # Update existing address
-                address_doc = frappe.get_doc("Address", existing_address[0].name)
-                update_address_fields(address_doc, addr_data, address_type)
-                address_doc.save(ignore_permissions=True)
-                frappe.logger().info(f"Updated address {address_doc.name} for customer {customer_id}")
-            else:
-                # Create new address
-                create_new_address(customer_id, addr_data, address_type, rowid)
-                
+            try:
+                if existing_address:
+                    # Update existing address
+                    address_doc = frappe.get_doc("Address", existing_address[0].name)
+                    update_address_fields(address_doc, addr_data, address_type)
+                    address_doc.save(ignore_permissions=True)
+                    frappe.logger().info(f"Updated address {address_doc.name} for customer {customer_id}")
+                else:
+                    # Create new address
+                    create_new_address(customer_id, addr_data, address_type, rowid)
+            except Exception as addr_e:
+                frappe.log_error(frappe.get_traceback(), f"Sync Address Error for customer {customer_id} rowid {rowid}")
         frappe.db.commit()
         return {"status": "success", "message": "Addresses synced successfully"}
-        
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Sync Customer Addresses Error")
         return {"status": "error", "message": str(e)}
