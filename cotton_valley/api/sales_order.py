@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
-from cotton_valley.secrets import ERP_USERNAME, ERP_PASSWORD, UDC_USER, UDC_PASSWORD
+from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 import requests
 
 @frappe.whitelist(allow_guest=True)
@@ -409,12 +409,12 @@ def push_to_erp(sales_orders):
         sales_orders = json.loads(sales_orders)
     
     # ERP API configuration
-    ERP_URL = "https://erp.cottonvalley.us/ords/unvdst/order/ord"
+    CV_ERP_URL = "https://erp.cottonvalley.us/ords/ctnvly_api/order/ord"
 
     UDC_ERP_URL = "https://erp.universaldc.us/ords/unvdst_api/order/ord"
 
-    username = ERP_USERNAME
-    password = ERP_PASSWORD
+    username = CV_USER
+    password = CV_PASSWORD
 
     udc_username = UDC_USER
     udc_password = UDC_PASSWORD
@@ -488,7 +488,7 @@ def push_to_erp(sales_orders):
                             '--compressed',  # Enable compression
                             '-w', '\n%{http_code}',  # Output HTTP status code at the end
                             '-v',  # Verbose output for debugging
-                            so_doc.company == "Cotton Valley" and ERP_URL or UDC_ERP_URL
+                            so_doc.company == "Cotton Valley" and CV_ERP_URL or UDC_ERP_URL
                         ]
                         
                         # Execute curl command
