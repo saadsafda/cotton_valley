@@ -757,7 +757,7 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
         return {"status": "error", "message": str(e)}
 
 
-def fetch_sales_rep(sprid, sprname):
+def fetch_sales_rep(sprid, sprname, company="Cotton Valley"):
     """
     Fetch sales representative based on ID and name.
     
@@ -767,20 +767,49 @@ def fetch_sales_rep(sprid, sprname):
     Returns:
         str: Sales Representative name
     """
-    exist_spr = frappe.db.exists("Sales Person", sprid)
-    if exist_spr:
-        frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
-    else:
+    # exist_spr = frappe.db.exists("Sales Person", sprid)
+    # if exist_spr:
+    #     frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
+    # else:
+    #     # Create new Sales Person if not exists
+    #     new_spr = frappe.get_doc({
+    #         "doctype": "Sales Person",
+    #         "sales_person_name": sprname,
+    #         "sales_person_id": sprid
+    #     })
+    #     new_spr.insert(ignore_permissions=True)
+    existing_spr = None
+    new_spr = None
+    if company == "Cotton Valley":
+        existing_spr = frappe.db.sql("""
+            SELECT name FROM `tabSales Person`
+            WHERE sales_person_id = %s
+            LIMIT 1
+        """, (sprid,), as_dict=True)
+    elif company == "UDC":
+        existing_spr = frappe.db.sql("""
+            SELECT name FROM `tabSales Person`
+            WHERE udc_sales_person_id = %s
+            LIMIT 1
+        """, (sprid,), as_dict=True)
+
+    if not existing_spr:
         # Create new Sales Person if not exists
-        new_spr = frappe.get_doc({
+        sales_person_fields = {
             "doctype": "Sales Person",
             "sales_person_name": sprname,
-            "sales_person_id": sprid
-        })
-        new_spr.insert(ignore_permissions=True)
-    return frappe.db.get_value("Sales Person", sprid, "name") or ""
+        }
+        if company == "Cotton Valley":
+            sales_person_fields["sales_person_id"] = sprid
+        elif company == "UDC":
+            sales_person_fields["udc_sales_person_id"] = sprid
 
-def fetch_mode_of_payment(paytermid, paytermdsc):
+        new_spr = frappe.get_doc(sales_person_fields)
+        new_spr.insert(ignore_permissions=True)
+
+    return existing_spr[0].name if existing_spr else new_spr.name
+
+def fetch_mode_of_payment(paytermid, paytermdsc, company="Cotton Valley"):
     """
     Fetch mode of payment based on payment term ID and description.
     
@@ -790,21 +819,50 @@ def fetch_mode_of_payment(paytermid, paytermdsc):
     Returns:
         str: Mode of Payment
     """
-    exist_mop = frappe.db.exists("Mode of Payment", paytermid)
-    if exist_mop:
-        frappe.db.set_value("Mode of Payment", exist_mop, "mode_of_payment", paytermdsc)
-    else:
+    # exist_mop = frappe.db.exists("Mode of Payment", paytermid)
+    # if exist_mop:
+    #     frappe.db.set_value("Mode of Payment", exist_mop, "mode_of_payment", paytermdsc)
+    # else:
+    #     # Create new Mode of Payment if not exists
+    #     new_mop = frappe.get_doc({
+    #         "doctype": "Mode of Payment",
+    #         "mode_of_payment": paytermdsc,
+    #         "mode_id": paytermid
+    #     })
+    #     new_mop.insert(ignore_permissions=True)
+    existing_mop = None
+    new_mop = None
+    if company == "Cotton Valley":
+        existing_mop = frappe.db.sql("""
+            SELECT name FROM `tabMode of Payment`
+            WHERE mode_id = %s
+            LIMIT 1
+        """, (paytermid,), as_dict=True)
+    elif company == "UDC":
+        existing_mop = frappe.db.sql("""
+            SELECT name FROM `tabMode of Payment`
+            WHERE udc_mode_id = %s
+            LIMIT 1
+        """, (paytermid,), as_dict=True)
+
+    if not existing_mop:
         # Create new Mode of Payment if not exists
-        new_mop = frappe.get_doc({
+        mop_fields = {
             "doctype": "Mode of Payment",
             "mode_of_payment": paytermdsc,
-            "mode_id": paytermid
-        })
+        }
+        if company == "Cotton Valley":
+            mop_fields["mode_id"] = paytermid
+        elif company == "UDC":
+            mop_fields["udc_mode_id"] = paytermid
+
+        new_mop = frappe.get_doc(mop_fields)
         new_mop.insert(ignore_permissions=True)
-    return frappe.db.get_value("Mode of Payment", paytermid, "name") or ""
+
+    return existing_mop[0].name if existing_mop else new_mop.name
 
 
-def fetch_price_list_name(rgnid, rgnname):
+def fetch_price_list_name(rgnid, rgnname, company="Cotton Valley"):
     """
     Fetch price list name based on region ID and name.
     
@@ -814,21 +872,54 @@ def fetch_price_list_name(rgnid, rgnname):
     Returns:
         str: Price List name
     """
-    exist_pl = frappe.db.exists("Price List", rgnid)
-    if not exist_pl:
+    # exist_pl = frappe.db.exists("Price List", rgnid)
+    # if not exist_pl:
+    #     # Create new Price List if not exists
+    #     new_pl = frappe.get_doc({
+    #         "doctype": "Price List",
+    #         "price_list_name": rgnname,
+    #         "price_id": rgnid,
+    #         "selling": 1,
+    #         "buying": 1
+    #     })
+    #     new_pl.insert(ignore_permissions=True)
+
+    # if exist_pl:
+    #     frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
+
+    existing_pl = None
+    new_pl = None
+    if company == "Cotton Valley":
+        existing_pl = frappe.db.sql("""
+            SELECT name FROM `tabPrice List`
+            WHERE price_id = %s
+            LIMIT 1
+        """, (rgnid,), as_dict=True)
+    elif company == "UDC":
+        existing_pl = frappe.db.sql("""
+            SELECT name FROM `tabPrice List`
+            WHERE udc_price_id = %s
+            LIMIT 1
+        """, (rgnid,), as_dict=True)
+
+    if not existing_pl:
         # Create new Price List if not exists
-        new_pl = frappe.get_doc({
+        pl_fields = {
             "doctype": "Price List",
             "price_list_name": rgnname,
-            "price_id": rgnid,
             "selling": 1,
             "buying": 1
-        })
-        new_pl.insert(ignore_permissions=True)
+        }
+        if company == "Cotton Valley":
+            pl_fields["price_id"] = rgnid
+        elif company == "UDC":
+            pl_fields["udc_price_id"] = rgnid
 
-    if exist_pl:
-        frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
-    return frappe.db.get_value("Price List", rgnid, "name") or ""
+        new_pl = frappe.get_doc(pl_fields)
+        new_pl.insert(ignore_permissions=True)
+    
+
+    return existing_pl[0].name if existing_pl else new_pl.name
 
 
 def update_address_fields(address_doc, addr_data, address_type):
