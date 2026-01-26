@@ -810,12 +810,12 @@ def update_address_fields(address_doc, addr_data, address_type):
     """
     # Map API columns to Address fields
     address_doc.address_type = address_type  # rectyp (Billing/Shipping) handled in caller
-    address_doc.address_line1 = addr_data.get("adrcmp", "").strip()  # Address Details
+    address_doc.address_line1 = addr_data.get("adr", "").strip()  # Address Details
     address_doc.city = addr_data.get("ctyname", "").strip() or "Unknown"  # City (default if missing)
     address_doc.pincode = addr_data.get("postcd", "").strip()       # Zip Code
     address_doc.state = addr_data.get("prvname", "").strip()        # State (Name)
     address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"  # Country
-    address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
+    # address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
 
 
 def create_new_address(customer_id, addr_data, address_type, rowid, company="Cotton Valley"):
