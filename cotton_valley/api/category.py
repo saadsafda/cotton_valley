@@ -57,7 +57,8 @@ def get_category_list(category_id=None, company=None):
         SELECT sc.parent as parent_category,
                sc.product_subcategory as subcategory,
                sub.title,
-               sub.name
+               sub.name,
+               sub.image
         FROM `tabSubCategories` sc
         INNER JOIN `tabProduct Subcategory` sub
             ON sub.name = sc.product_subcategory
@@ -76,6 +77,7 @@ def get_category_list(category_id=None, company=None):
             "id": sub["name"],
             "slug": sub["name"],
             "type": "product",
+            "image": get_file(sub["image"]),
             "products_count": frappe.db.count("Item", filters=[["custom_sub_category", "in", [sub["name"]]]])
         })
 
