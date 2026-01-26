@@ -619,6 +619,7 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
         customer_id: Customer ID
         company: Company name ("Cotton Valley" or "UDC")
     """
+
     try:
         customer = frappe.get_doc("Customer", customer_id)
         if not customer:
@@ -634,7 +635,21 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             username = UDC_USER
             password = UDC_PASSWORD
 
-        response = requests.get(url_base, auth=(username, password))
+        try:
+            response = requests.get(url_base, auth=(username, password), verify=False)
+        except requests.exceptions.SSLError as ssl_err:
+            frappe.log_error("Fetch Customer Data SSL Error", f"SSL error when connecting to external API: {ssl_err}")
+            return {
+                "status": "error",
+                "message": "Could not connect to external service due to SSL certificate verification failure. Please contact support or try again later."
+            }
+        except requests.exceptions.RequestException as req_err:
+            frappe.log_error("Fetch Customer Data Request Error", f"Request error when connecting to external API: {req_err}")
+            return {
+                "status": "error",
+                "message": f"Could not connect to external service: {req_err}"
+            }
+
         if response.status_code == 200:
             data = response.json()
             item_data = data.get("items", [])[0] if data.get("items") else {}
@@ -663,6 +678,8 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             # Sync addresses from dlvdadr array
             if "dlvdadr" in item_data:
                 sync_customer_addresses(customer_id, item_data.get("dlvdadr", []), company)
+
+            return {"status": "success", "message": "Customer data fetched and updated successfully"}
         else:
             frappe.log_error(f"Failed to fetch data. Status code: {response.status_code}\nResponse: {response.text}", "Fetch Customer Data Error")
             return {"status": "error", "message": f"Failed to fetch data. Status code: {response.status_code}"}
@@ -699,15 +716,15 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
             existing_address = None
             if company == "Cotton Valley":
                 existing_address = frappe.db.sql("""
-                SELECT a.name 
-                FROM `tabAddress` a
-                INNER JOIN `tabDynamic Link` dl ON dl.parent = a.name
-                WHERE a.cv_address_id = %s 
-                AND dl.link_doctype = 'Customer' 
-                AND dl.link_name = %s
-                AND dl.parenttype = 'Address'
-                LIMIT 1
-            """, (rowid, customer_id), as_dict=True)
+                    SELECT a.name 
+                    FROM `tabAddress` a
+                    INNER JOIN `tabDynamic Link` dl ON dl.parent = a.name
+                    WHERE a.cv_address_id = %s 
+                    AND dl.link_doctype = 'Customer' 
+                    AND dl.link_name = %s
+                    AND dl.parenttype = 'Address'
+                    LIMIT 1
+                """, (rowid, customer_id), as_dict=True)
             elif company == "UDC":
                 existing_address = frappe.db.sql("""
                     SELECT a.name 
@@ -728,7 +745,7 @@ def sync_customer_addresses(customer_id, addresses_data, company="Cotton Valley"
                     frappe.logger().info(f"Updated address {address_doc.name} for customer {customer_id}")
                 else:
                     # Create new address
-                    create_new_address(customer_id, addr_data, address_type, rowid)
+                    create_new_address(customer_id, addr_data, address_type, rowid, company)
             except Exception as addr_e:
                 frappe.log_error(frappe.get_traceback(), f"Sync Address Error for customer {customer_id} rowid {rowid}")
         frappe.db.commit()
@@ -801,7 +818,7 @@ def update_address_fields(address_doc, addr_data, address_type):
     address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
 
 
-def create_new_address(customer_id, addr_data, address_type, rowid):
+def create_new_address(customer_id, addr_data, address_type, rowid, company="Cotton Valley"):
     """
     Create a new address document linked to customer.
     
@@ -825,7 +842,7 @@ def create_new_address(customer_id, addr_data, address_type, rowid):
         "pincode": addr_data.get("postcd", "").strip(),
         "state": addr_data.get("prvname", "").strip(),
         "country": addr_data.get("cntname", "").strip() or "UNITED STATES",
-        "custom_udc_address_id": rowid,
+        "company": company,
         "links": [
             {
                 "link_doctype": "Customer",
@@ -833,6 +850,10 @@ def create_new_address(customer_id, addr_data, address_type, rowid):
             }
         ]
     })
+    if company == "Cotton Valley":
+        new_address.cv_address_id = rowid
+    elif company == "UDC":
+        new_address.udc_address_id = rowid
     
     # Add state code if needed
     if addr_data.get("prvid"):
