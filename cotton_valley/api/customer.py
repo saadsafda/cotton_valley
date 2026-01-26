@@ -631,7 +631,9 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
         password = CV_PASSWORD
 
         if company == "UDC":
-            url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+            # url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+            url_base = f"https://sc14.indus-erp.com/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+
             username = UDC_USER
             password = UDC_PASSWORD
 
@@ -765,8 +767,17 @@ def fetch_sales_rep(sprid, sprname):
     Returns:
         str: Sales Representative name
     """
-    if sprid and sprname:
+    exist_spr = frappe.db.exists("Sales Person", sprid)
+    if exist_spr:
         frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
+    else:
+        # Create new Sales Person if not exists
+        new_spr = frappe.get_doc({
+            "doctype": "Sales Person",
+            "sales_person_name": sprname,
+            "sales_person_id": sprid
+        })
+        new_spr.insert(ignore_permissions=True)
     return frappe.db.get_value("Sales Person", sprid, "name") or ""
 
 def fetch_mode_of_payment(paytermid, paytermdsc):
@@ -779,8 +790,17 @@ def fetch_mode_of_payment(paytermid, paytermdsc):
     Returns:
         str: Mode of Payment
     """
-    if paytermid and paytermdsc:
-        frappe.db.set_value("Mode of Payment", paytermid, "mode_of_payment", paytermdsc)
+    exist_mop = frappe.db.exists("Mode of Payment", paytermid)
+    if exist_mop:
+        frappe.db.set_value("Mode of Payment", exist_mop, "mode_of_payment", paytermdsc)
+    else:
+        # Create new Mode of Payment if not exists
+        new_mop = frappe.get_doc({
+            "doctype": "Mode of Payment",
+            "mode_of_payment": paytermdsc,
+            "mode_id": paytermid
+        })
+        new_mop.insert(ignore_permissions=True)
     return frappe.db.get_value("Mode of Payment", paytermid, "name") or ""
 
 
@@ -794,7 +814,19 @@ def fetch_price_list_name(rgnid, rgnname):
     Returns:
         str: Price List name
     """
-    if rgnid and rgnname:
+    exist_pl = frappe.db.exists("Price List", rgnid)
+    if not exist_pl:
+        # Create new Price List if not exists
+        new_pl = frappe.get_doc({
+            "doctype": "Price List",
+            "price_list_name": rgnname,
+            "price_id": rgnid,
+            "selling": 1,
+            "buying": 1
+        })
+        new_pl.insert(ignore_permissions=True)
+
+    if exist_pl:
         frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
     return frappe.db.get_value("Price List", rgnid, "name") or ""
 
