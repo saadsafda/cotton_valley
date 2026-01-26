@@ -451,8 +451,8 @@ def push_to_erp(sales_orders):
             
             # Track successful item pushes
             pushed_items = []
-            if so_doc.company == "Cotton Valley":
-                frappe.throw("Cotton Valley Sales Order cannot be pushed to ERP via this method.")
+            # if so_doc.company == "Cotton Valley":
+            #     frappe.throw("Cotton Valley Sales Order cannot be pushed to ERP via this method.")
             
             # Prepare payload for each item in the Sales Order
             for item in so_doc.items:
