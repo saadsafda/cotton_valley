@@ -631,8 +631,8 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
         password = CV_PASSWORD
 
         if company == "UDC":
-            # url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
-            url_base = f"https://sc14.indus-erp.com/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+            url_base = f"https://erp.universaldc.us/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
+            # url_base = f"https://sc14.indus-erp.com/ords/unvdst_api/stp/cstdata?SBSID_C={customer.udc_customer_id}"
 
             username = UDC_USER
             password = UDC_PASSWORD
