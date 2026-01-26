@@ -107,7 +107,7 @@ def make_customer_address(customer_id, address_data, address_type="Shipping"):
     try:
         address = frappe.get_doc({
             "doctype": "Address",
-            "address_title": f"{customer_id}-{address_type}",
+            "address_title": f"{customer_id}",
             "address_type": address_type,
             "address_line1": address_data.get("address_line1"),
             "address_line2": address_data.get("address_line2"),
