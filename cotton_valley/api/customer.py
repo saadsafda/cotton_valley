@@ -831,7 +831,7 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
     customer = frappe.get_doc("Customer", customer_id)
     
     # Create address title
-    address_title = f"{customer.customer_name} - {address_type}"
+    address_title = f"{customer.customer_name}"
     
     new_address = frappe.get_doc({
         "doctype": "Address",
