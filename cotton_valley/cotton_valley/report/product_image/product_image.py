@@ -31,24 +31,12 @@ def execute(filters=None):
 
     # Filter by Company
     if filters.get("company"):
-        items_in_company = frappe.get_all("Item Default", 
-            filters={"company": filters.get("company")}, 
-            pluck="parent"
-        )
-        
-        if not items_in_company:
-            return [], [] 
-            
-        if "name" in item_filters:
-            if item_filters["name"] not in items_in_company:
-                return [], []
-        else:
-            item_filters["name"] = ["in", items_in_company]
+        item_filters["company"] = ["=", filters.get("company")]
 
     # --- 2. Fetch Items ---
     # [UPDATED] Added 'item_group' and 'disabled' to fields
     items = frappe.get_all("Item", 
-        fields=["name", "image", "item_group", "disabled"], 
+        fields=["name", "image", "item_group", "disabled", "company"], 
         filters=item_filters, 
         order_by="name asc"
     )
@@ -91,17 +79,6 @@ def execute(filters=None):
     image_map = {}
     for img in all_child_images:
         image_map.setdefault(img.parent, []).append(img.image)
-
-    # --- 4. Fetch Company Map ---
-    all_defaults = frappe.get_all("Item Default",
-        filters={"parent": ["in", item_names]},
-        fields=["parent", "company"]
-    )
-
-    company_map = {}
-    for d in all_defaults:
-        if d.company:
-            company_map.setdefault(d.parent, set()).add(d.company)
 
     # --- 5. Determine Dynamic Columns ---
     max_images = 0
@@ -172,8 +149,7 @@ def execute(filters=None):
         # [NEW] Map Stock
         row["stock_qty"] = stock_map.get(item.name, 0.0)
 
-        comps = sorted(list(company_map.get(item.name, [])))
-        row["company"] = ", ".join(comps)
+        row["company"] = item.company
 
         # Main Image (Height set to 300px)
         if item.image:

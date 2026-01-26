@@ -4,6 +4,8 @@ frappe.ui.form.on('Customer', {
         $("[data-label='Create']").hide();
         $("[data-label='Actions']").hide();
 
+        frm.trigger('load_address_html');
+
         if (!frm.is_new()) {
             frm.add_custom_button(__('Login as Customer'), function () {
                 frappe.prompt([
@@ -191,10 +193,46 @@ frappe.ui.form.on('Customer', {
     setup: function (frm) {
         frm.set_query("customer_billing_address", function (doc) {
             return {
+                query: 'frappe.contacts.doctype.address.address.address_query', 
                 filters: {
                     link_doctype: "Customer",
-                    link_name: doc.name,
+                    link_name: doc.name, 
+                    address_type: "Billing"
                 },
+            };
+        });
+
+
+        frm.set_query("customer_primary_address", function (doc) {
+            return {
+                query: 'frappe.contacts.doctype.address.address.address_query',
+                filters: {
+                    link_doctype: "Customer",
+                    link_name: doc.name,      
+                    address_type: "Shipping"  
+                }
+            };
+        });
+
+        frm.set_query("custom_udc_customer_primary_address", function (doc) {
+            return {
+                query: 'frappe.contacts.doctype.address.address.address_query',
+                filters: {
+                    link_doctype: "Customer",
+                    link_name: doc.name,      
+                    address_type: "Shipping"  
+                }
+            };
+        });
+
+        frm.set_query("custom_udc_customer_billing_address", function (doc) {
+            return {
+                query: 'frappe.contacts.doctype.address.address.address_query',
+                filters: {
+                    link_doctype: "Customer",
+                    link_name: doc.name,      
+                    address_type: "Billing"  
+                }
             };
         });
     },
@@ -203,5 +241,121 @@ frappe.ui.form.on('Customer', {
         if (frm.doc.password !== frm.doc.confirm_password) {
             frappe.throw(__('Password and Confirm Password must be the same'));
         }
+    },
+
+    // ============================================================
+    //  ADDRESS LIST NAVIGATION FUNCTION
+    // ============================================================
+    load_address_html: function(frm) {
+        if(frm.is_new()) return;
+
+        // Backend se data fetch karte hain taake Preview dikha sakein (Optional, but looks good)
+        frappe.call({
+            method: 'frappe.client.get_list',
+            args: {
+                doctype: 'Address',
+                filters: [
+                    ['Dynamic Link', 'link_doctype', '=', 'Customer'],
+                    ['Dynamic Link', 'link_name', '=', frm.doc.name]
+                ],
+                fields: ['name', 'address_type', 'address_line1', 'city', 'state', 'pincode', 'country', 'company']
+            },
+            callback: function(r) {
+                let cv_rows = "";  // Cotton Valley Rows
+                let udc_rows = ""; // UDC Rows
+                
+                if (r.message && r.message.length > 0) {
+                    r.message.forEach(function(addr) {
+                        let row_html = `
+                            <tr>
+                                <td><a href="/app/address/${addr.name}">${addr.address_type || 'Address'}</a></td>
+                                <td>${addr.address_line1 || '-'}</td>
+                                <td>${addr.city || '-'}</td>
+                                <td>${addr.state || '-'}</td>
+                                <td>${addr.pincode || '-'}</td>
+
+                            </tr>
+                        `;
+                        
+                        let company_value = addr.company || addr.custom_company;
+                        if (company_value === 'UDC') {
+                            udc_rows += row_html;
+                        } else {
+                            cv_rows += row_html;
+                        }
+                    });
+                }
+
+                // --- 1. FUNCTION TO GENERATE HTML WITH "GO TO LIST" BUTTON ---
+                function get_html_with_link(rows, type) {
+                    // Button ID unique honi chahiye
+                    let btn_id = type === 'UDC' ? 'btn-go-udc' : 'btn-go-cv';
+                    
+                    // Agar data empty hai tab bhi button dikhayein
+                    let table_html = rows ? rows : `<tr><td colspan="3" class="text-muted text-center">No addresses found in preview</td></tr>`;
+
+                    return `
+                        <div style="padding: 10px; border: 1px solid #d1d8dd; background-color: #fff;">
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h5 style="margin: 0; font-weight: bold;">${type} Addresses</h5>
+                                <button class="btn btn-xs btn-primary ${btn_id}">
+                                    <i class="fa fa-external-link"></i> Open Full List
+                                </button>
+                            </div>
+
+                            <table class="table table-bordered table-condensed" style="margin:0; font-size: 12px;">
+                                <thead>
+                                    <tr style="background-color: #f7fafc;">
+                                        <th width="15%">Type</th>
+                                        <th width="40%">Address</th>
+                                        <th width="15%">City</th>
+                                        <th width="15%">State</th>
+                                        <th width="15%">Pincode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${table_html}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                // --- 2. INJECT HTML INTO FIELDS ---
+
+                // Cotton Valley Field
+                if (frm.fields_dict['custom_customer_addresses']) {
+                    let $wrapper = $(frm.fields_dict['custom_customer_addresses'].wrapper);
+                    $wrapper.html(get_html_with_link(cv_rows, 'Cotton Valley'));
+
+                    // BUTTON CLICK LOGIC (Cotton Valley)
+                    $wrapper.find('.btn-go-cv').on('click', function() {
+                        frappe.route_options = {
+                            "link_doctype": "Customer",
+                            "link_name": frm.doc.name,
+                            "company": "Cotton Valley" 
+                        };
+                        frappe.set_route("List", "Address");
+                    });
+                }
+
+                // UDC Field
+                if (frm.fields_dict['custom_udc_customer_addresses']) {
+                    let $wrapper = $(frm.fields_dict['custom_udc_customer_addresses'].wrapper);
+                    $wrapper.html(get_html_with_link(udc_rows, 'UDC'));
+
+                    // BUTTON CLICK LOGIC (UDC)
+                    $wrapper.find('.btn-go-udc').on('click', function() {
+                        frappe.route_options = {
+                            "link_doctype": "Customer",
+                            "link_name": frm.doc.name,
+                            "company": "UDC" // <--- YEH FILTER LIST VIEW MEIN LAGEGA
+                        };
+                        frappe.set_route("List", "Address");
+                    });
+                }
+            }
+        });
     },
 });
