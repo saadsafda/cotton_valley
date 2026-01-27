@@ -140,10 +140,10 @@ def check_device_active(deviceId):
             
             if not device_found:
                 success = False
-                message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+                message = "Device is not registered. Please contact admin.\n\nDevice Id: " + deviceId
         else:
             success = False
-            message = "No devices registered for this employee. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+            message = "No devices registered for this employee. Please contact admin.\n\nDevice Id: " + deviceId
     else:
         success = False
         message = "No active employee found for the current user."
@@ -187,7 +187,7 @@ def check_device_registration(deviceId, device_model, device_os):
                 })
                 registration.save(ignore_permissions=True)
                 frappe.db.commit()
-                message = "Device is not registered. Attendance cannot be marked.\n\nDevice Id: " + deviceId
+                message = "Device is not registered. Please contact admin.\n\nDevice Id: " + deviceId
         else:
             # No devices registered for this employee yet
             if not frappe.db.exists("Employee Device Registration", {"employee": employee.name}):
