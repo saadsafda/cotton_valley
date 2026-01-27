@@ -70,7 +70,7 @@ def get_data(filters, price_lists):
     conditions = ""
     
     if filters.get("company"):
-        conditions += f" AND id.company = '{filters.get('company')}' "
+        conditions += f" AND i.company = '{filters.get('company')}' "
     
     if filters.get("item_group"):
         conditions += f" AND i.item_group = '{filters.get('item_group')}' "
@@ -83,7 +83,7 @@ def get_data(filters, price_lists):
             i.name as item_code,
             i.item_name,
             i.item_group,
-            GROUP_CONCAT(DISTINCT id.company SEPARATOR ', ') as company_list
+            i.company as company
         FROM
             `tabItem` i
         LEFT JOIN
@@ -123,7 +123,7 @@ def get_data(filters, price_lists):
             "item_code": item.item_code,
             "item_name": item.item_name,
             "item_group": item.item_group,
-            "company": item.company_list
+            "company": item.company
         }
 
         for pl in price_lists:

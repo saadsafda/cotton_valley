@@ -350,7 +350,7 @@ frappe.ui.form.on('Customer', {
                         frappe.route_options = {
                             "link_doctype": "Customer",
                             "link_name": frm.doc.name,
-                            "company": "UDC" // <--- YEH FILTER LIST VIEW MEIN LAGEGA
+                            "company": "UDC" 
                         };
                         frappe.set_route("List", "Address");
                     });
