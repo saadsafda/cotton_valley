@@ -87,7 +87,7 @@ frappe.ui.form.on('Customer', {
                 );
             });
         }
-
+        
 
 
         // ===== EMAIL WITH TEMPLATE BUTTON =====
@@ -187,6 +187,29 @@ frappe.ui.form.on('Customer', {
                 d.show();
             });
         }
+
+        // ============================================================
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Send Mass Email'), function () {
+                frappe.confirm(__('Are you sure you want to send the Mass Email template?'), function () {
+                    // Server API call
+                    frappe.call({
+                        method: 'cotton_valley.server_scripts.customer.send_mass_email_btn',
+                        args: {
+                            customer_id: frm.doc.name
+                        },
+                        freeze: true,
+                        freeze_message: "Sending Email...",
+                        callback: function (r) {
+                            if (!r.exc) {
+                                frappe.msgprint(__('Email has been sent successfully!'));
+                            }
+                        }
+                    });
+                });
+            });
+        }
+        // ============================================================
 
     },
 

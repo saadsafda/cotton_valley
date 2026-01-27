@@ -63,3 +63,94 @@ def get_location_from_ip(doc, method):
             message=frappe.get_traceback(),
             title=f"Customer IP API Error: {ip_addr}"
         )
+
+
+
+@frappe.whitelist()
+def send_mass_email_btn(customer_id):
+    """
+    Send Mass Email to Customer using 'Mass Email Template'
+    Triggered via Button on Customer Form
+    """
+    try:
+        if not customer_id:
+            frappe.throw("Customer ID is required")
+
+        # 1. Get Customer Data
+        doc = frappe.get_doc("Customer", customer_id)
+        
+        # 2. Get Email Address
+        recipient_email = doc.email_id or doc.get('custom_email_address')
+        if not recipient_email:
+            frappe.msgprint(f"No email address found for customer {doc.name}", alert=True)
+            return
+
+        # 3. Setup Template Configuration
+        template_name = "Mass Email Template"
+        email_subject = "Welcome to Cotton Valley & UDC" # Default Subject
+        email_message = ""
+        cc_emails = []
+
+        # --- FIX: Safe Name Fetching ---
+        # Hum .get() use kar rahe hain taake agar field na ho to Error na aye
+        # Pehle 'custom_first_name' check karega, phir 'first_name', phir 'customer_name'
+        f_name = doc.get('custom_first_name') or doc.get('first_name') or doc.customer_name
+        l_name = doc.get('custom_last_name') or doc.get('last_name') or ""
+
+        # 4. Context Mapping
+        context = {
+            "first_name": f_name,
+            "last_name": l_name,
+            "email": recipient_email,
+            "reset_link": "https://cottonvalley.net/my-account",
+            "customer_name": doc.customer_name
+        }
+
+        # 5. Check if Template Exists
+        if frappe.db.exists("Email Template", template_name):
+            email_template = frappe.get_doc("Email Template", template_name)
+            
+            # Subject Render
+            email_subject = frappe.render_template(email_template.subject, context)
+            
+            # Get CC emails
+            if hasattr(email_template, 'custom_cc_email') and email_template.custom_cc_email:
+                cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
+
+            # Body Render
+            response_html = email_template.response_html if email_template.use_html else email_template.response
+            email_message = frappe.render_template(response_html, context)
+            
+        else:
+            # 6. Fallback HTML (Agar template delete ho jaye)
+            email_message = f"""
+            <!doctype html>
+            <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px;">
+                <p><b>Dear {context['first_name']} {context['last_name']}</b></p>
+                <p>We are thrilled to announce that <b>Cotton Valley LLC</b> and <b>Universal Distribution Center LLC</b> have launched a new website.</p>
+                <p>Your Email: <b>{context['email']}</b></p>
+                <p><a href="{context['reset_link']}">Click Here to Set Password</a></p>
+            </body>
+            </html>
+            """
+            frappe.log_error(f"Template '{template_name}' not found. Used fallback HTML.", "Mass Email Warning")
+
+        # 7. Send the Email
+        frappe.sendmail(
+            recipients=[recipient_email],
+            cc=cc_emails if cc_emails else None,
+            subject=email_subject,
+            message=email_message,
+            reference_doctype="Customer",
+            reference_name=customer_id,
+            now=True,
+            header=["", ""]
+        )
+
+        frappe.msgprint("Mass Email sent successfully!")
+
+    except Exception as e:
+        error_msg = f"Failed to send Mass Email: {str(e)}"
+        frappe.log_error(f"{error_msg}\n{frappe.get_traceback()}", "Mass Email Error")
+        frappe.throw(error_msg)
