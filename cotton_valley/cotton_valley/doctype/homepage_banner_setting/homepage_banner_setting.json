@@ -63,11 +63,13 @@
  ],
  "fields": [
   {
+   "description": "Recommended Size: 483 \u00d7 314 pixels",
    "fieldname": "right_top",
    "fieldtype": "Attach Image",
    "label": "Right Top"
   },
   {
+   "description": "Recommended Size: 483 \u00d7 314 pixels",
    "fieldname": "right_bottom",
    "fieldtype": "Attach Image",
    "label": "Right Bottom"
@@ -382,7 +384,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-04 03:17:17.078062",
+ "modified": "2026-01-27 02:09:24.794171",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",
