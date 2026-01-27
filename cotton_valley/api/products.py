@@ -1048,8 +1048,18 @@ def sync_item_from_api(item_code, company=None):
                 except AttributeError as e:
                     frappe.log_error("Category Append Error", f"Failed to append category for item {item_code}: {str(e)}. Field 'custom_product_categories' may not exist.")
         else:
-            # Category doesn't exist - show the error
-            frappe.msgprint(f"Category with ERP ID {itmclsid} not found. Please create it first.")
+            category_doc = frappe.get_doc({
+                "doctype": "Product Category",
+                "erp_id": itmclsid,
+                "title": itmclsdsc or f"Category {itmclsid}",
+                "company": company,
+            })
+            category_doc.insert(ignore_permissions=True)
+            item_doc.custom_product_categories = []
+            item_doc.append("custom_product_categories", {
+                "product_category": category_doc.name
+            })
+            updated = True
 
     # Handle subcategory synchronization based on itmctgid (ERP ID)
     itmctgid = item_data.get("itmctgid")
@@ -1078,8 +1088,13 @@ def sync_item_from_api(item_code, company=None):
             except AttributeError as e:
                 frappe.log_error(f"Failed to set subcategory for item {item_code}: {str(e)}. Field 'custom_sub_category' may not exist.", "Subcategory Update Error")
         else:
-            # Subcategory doesn't exist - show the error
-            frappe.msgprint(f"Subcategory with ERP ID {itmctgid} not found. Please create it first.")
+            new_subcat = frappe.get_doc({
+                "doctype": "Product Subcategory",
+                "erp_id": itmctgid,
+                "title": itmctgdsc or f"Subcategory {itmctgid}",
+                "company": company
+            })
+            new_subcat.insert(ignore_permissions=True)
 
     if updated:
         item_doc.save(ignore_permissions=True)
