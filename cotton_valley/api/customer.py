@@ -532,85 +532,6 @@ def get_current_customer():
 
 
 
-# # Register Email For Customer
-# @frappe.whitelist(allow_guest=True)
-# def send_registration_email(customer_email, firstname, lastname, company, template_name):
-#     """
-#     Send welcome email to newly registered customer
-#     Uses Email Template from ERPNext for easy content management
-#     """
-#     try:
-#         if not customer_email:
-#             frappe.log_error("No email address found for customer", "Registration Email Failed")
-#             return
-        
-#         # Try to get Email Template from ERPNext
-#         template_name = template_name
-#         print(template_name, "template name running")
-#         # if company == "Cotton Valley":
-#         #     template_name = "New Registration Message_CVL"
-#         # else:
-#         #     template_name = "New Registration Message_UDC"
-#         email_subject = f"Welcome to {company}!"
-#         email_message = ""
-        
-#         cc_emails = []
-#         if frappe.db.exists("Email Template", template_name):
-#             email_template = frappe.get_doc("Email Template", template_name)
-#             email_subject = email_template.subject
-            
-#             # Get CC emails from child table
-#             if email_template.custom_cc_email:
-#                 cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
-            
-#             # Render template with customer data
-#             context = {
-#                 "firstname": firstname,
-#                 "lastname": lastname,
-#                 "email": customer_email
-#             }
-#             response = email_template.response_html if email_template.use_html else email_template.response
-#             email_message = frappe.render_template(response, context)
-#         else:
-#             # Fallback message if template doesn't exist
-#             email_message = f"""
-#                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-#                     <h2 style="color: #333;">Welcome to {company}!</h2>
-#                     <p>Dear {firstname} {lastname},</p>
-                    
-#                     <p>Thank you for registering with us! We're excited to have you as part of our community.</p>
-                    
-#                     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-#                         <h3 style="margin-top: 0; color: #555;">Your Registration Details:</h3>
-#                         <p><strong>Customer ID:</strong> {firstname}</p>
-#                         <p><strong>Email:</strong> {customer_email}</p>
-#                     </div>
-                    
-#                     <p><strong>Note:</strong> Your account is currently pending approval. Our team will review your registration and activate your account shortly. You will receive another email once your account is activated.</p>
-                    
-#                     <p>If you have any questions, please don't hesitate to contact us.</p>
-                    
-#                 </div>
-#             """
-        
-#         # Send the email with CC
-#         frappe.sendmail(
-#             recipients=[customer_email],
-#             cc=cc_emails if cc_emails else None,
-#             subject=email_subject,
-#             message=email_message,
-#             now=True  # Send immediately
-#         )
-        
-#         frappe.log_error(f"Registration email sent to {customer_email}", "Customer Registration Email")
-        
-#     except Exception as e:
-#         # Don't fail registration if email fails
-#         frappe.log_error(f"Failed to send registration email: {str(e)}\n{frappe.get_traceback()}", "Registration Email Failed")
-
-
-
-
 @frappe.whitelist()
 def fetch_customer_data(customer_id, company="Cotton Valley"):
     """
@@ -767,17 +688,6 @@ def fetch_sales_rep(sprid, sprname, company="Cotton Valley"):
     Returns:
         str: Sales Representative name
     """
-    # exist_spr = frappe.db.exists("Sales Person", sprid)
-    # if exist_spr:
-    #     frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
-    # else:
-    #     # Create new Sales Person if not exists
-    #     new_spr = frappe.get_doc({
-    #         "doctype": "Sales Person",
-    #         "sales_person_name": sprname,
-    #         "sales_person_id": sprid
-    #     })
-    #     new_spr.insert(ignore_permissions=True)
     existing_spr = None
     new_spr = None
     if company == "Cotton Valley":
@@ -819,17 +729,6 @@ def fetch_mode_of_payment(paytermid, paytermdsc, company="Cotton Valley"):
     Returns:
         str: Mode of Payment
     """
-    # exist_mop = frappe.db.exists("Mode of Payment", paytermid)
-    # if exist_mop:
-    #     frappe.db.set_value("Mode of Payment", exist_mop, "mode_of_payment", paytermdsc)
-    # else:
-    #     # Create new Mode of Payment if not exists
-    #     new_mop = frappe.get_doc({
-    #         "doctype": "Mode of Payment",
-    #         "mode_of_payment": paytermdsc,
-    #         "mode_id": paytermid
-    #     })
-    #     new_mop.insert(ignore_permissions=True)
     existing_mop = None
     new_mop = None
     if company == "Cotton Valley":
@@ -872,21 +771,6 @@ def fetch_price_list_name(rgnid, rgnname, company="Cotton Valley"):
     Returns:
         str: Price List name
     """
-    # exist_pl = frappe.db.exists("Price List", rgnid)
-    # if not exist_pl:
-    #     # Create new Price List if not exists
-    #     new_pl = frappe.get_doc({
-    #         "doctype": "Price List",
-    #         "price_list_name": rgnname,
-    #         "price_id": rgnid,
-    #         "selling": 1,
-    #         "buying": 1
-    #     })
-    #     new_pl.insert(ignore_permissions=True)
-
-    # if exist_pl:
-    #     frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
-
     existing_pl = None
     new_pl = None
     if company == "Cotton Valley":
