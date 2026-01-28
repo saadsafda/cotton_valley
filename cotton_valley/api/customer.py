@@ -421,10 +421,10 @@ def get_current_customer(company=None):
         }
 
         sales_rep = None
-        if company == "UDC" and customer.udc_sales_person:
-            sales_rep = frappe.get_doc("Sales Person", customer.udc_sales_person)
+        if company == "UDC":
+            sales_rep = frappe.get_doc("Sales Person", customer.udc_sales_person) if customer.udc_sales_person else None
         else:
-            sales_rep = frappe.get_doc("Sales Person", customer.sales_person)
+            sales_rep = frappe.get_doc("Sales Person", customer.sales_person) if customer.sales_person else None
 
         if sales_rep:
             sales_employee = {}
