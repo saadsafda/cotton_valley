@@ -392,8 +392,9 @@ def customer_logout():
         return {"status": "error", "message": str(e)}
 
 @frappe.whitelist(allow_guest=True)
-def get_current_customer():
+def get_current_customer(company=None):
     try:
+        company = "Cotton Valley" if not company or company == "null" else company
         customer_id = get_customer_from_token()
         
         if not customer_id:
@@ -413,14 +414,19 @@ def get_current_customer():
             "cell_phone": customer.custom_cell_phone,
             "profile_image_id": customer.image,
             "status": 1 if not customer.disabled else 0,
-            "mode_of_payment": customer.mode_of_payment,
+            "mode_of_payment": customer.udc_mode_of_payment if company == "UDC" else customer.mode_of_payment,
             "company": customer.custom_company_name,
             "created_at": customer.creation,
             "updated_at": customer.modified,
         }
 
-        if customer.sales_person:
+        sales_rep = None
+        if company == "UDC" and customer.udc_sales_person:
+            sales_rep = frappe.get_doc("Sales Person", customer.udc_sales_person)
+        else:
             sales_rep = frappe.get_doc("Sales Person", customer.sales_person)
+
+        if sales_rep:
             sales_employee = {}
             if sales_rep.employee:
                 sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, ["user_id", "cell_number"], as_dict=True)
@@ -468,6 +474,8 @@ def get_current_customer():
             addr_doc = frappe.get_doc("Address", link.parent)
             if addr_doc.disabled:
                 continue
+            if addr_doc.company != company:
+                continue
             is_default = 0
             if addr_doc.address_type == "Shipping" and addr_doc.name == customer.customer_primary_address:
                 is_default = 1
@@ -493,20 +501,7 @@ def get_current_customer():
         # --- Profile Image ---
         customer_data["profile_image"] = get_file(customer.image)
 
-        # --- Payment Account (if you have one) ---
-        # payment_account = frappe.db.get_value(
-        #     "Payment Account", {"customer": customer_id},
-        #     ["name", "paypal_email", "bank_name", "bank_account_no"], as_dict=True
-        # )
-        # if payment_account:
-        #     customer_data["payment_account"] = {
-        #         "id": payment_account.name,
-        #         "user_id": customer_id,
-        #         "paypal_email": payment_account.paypal_email,
-        #         "bank_name": payment_account.bank_name,
-        #         "bank_account_no": payment_account.bank_account_no,
-        #     }
-        # else:
+        # --- Payment Account (Placeholder) ---
         customer_data["payment_account"] = {
             "id": 1,
             "user_id": customer_id,
