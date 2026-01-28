@@ -6,7 +6,7 @@
  "docstatus": 0,
  "doctype": "Workspace",
  "for_user": "",
- "hide_custom": 0,
+ "hide_custom": 1,
  "icon": "users",
  "idx": 0,
  "is_hidden": 0,
@@ -159,7 +159,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-01-26 02:28:24.504062",
+ "modified": "2026-01-28 04:09:45.915046",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Users",

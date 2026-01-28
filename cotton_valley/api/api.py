@@ -160,7 +160,7 @@ def send_registration_email(customer_email, sales_person, firstname, lastname, c
         if company == "Cotton Valley":
             template_name = "New Registration Message_CVL"
         else:
-            template_name = "New Registration Message_UDC"
+            template_name = "New Registrations Message_UDC  "
         email_subject = f"Welcome to {company}!"
         email_message = ""
         
