@@ -22,6 +22,23 @@ def increase_threshold_stock_on_cancel(doc, method):
 def order_cancel(doc, method):
     if not doc.cancellation_reason:
         frappe.throw(_("Please enter a value in the *Cancellation Reason* field before cancelling this Sales Order."))
+    cancel_delivery_note(doc, method)
+
+def cancel_delivery_note(doc, method):
+    try:
+        delivery_notes = frappe.get_all(
+            "Delivery Note",
+            filters={"against_sales_order": doc.name, "docstatus": 1},
+            fields=["name"]
+        )
+
+        for dn in delivery_notes:
+            dn_doc = frappe.get_doc("Delivery Note", dn.name)
+            dn_doc.cancel()
+        
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Auto Delivery Note Cancellation Failed")
 
 
 def update_customer_order_summary(doc, method):

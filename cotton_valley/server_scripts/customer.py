@@ -144,8 +144,7 @@ def send_mass_email_btn(customer_id):
             message=email_message,
             reference_doctype="Customer",
             reference_name=customer_id,
-            now=True,
-            header=["", ""]
+            now=True
         )
 
         frappe.msgprint("Mass Email sent successfully!")
