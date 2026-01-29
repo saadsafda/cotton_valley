@@ -39,9 +39,9 @@ frappe.ui.form.on('Item', {
                 let company_name = frm.doc.company;
 
                 if (company_name == "UDC") {
-                    base_url = "https://universal.destrotechnologies.website/en/product/"; 
+                    base_url = "https://universal.destrotechnologies.website/product/"; 
                 } else {
-                    base_url = "https://cottonvalley.destrotechnologies.website/en/product/";
+                    base_url = "https://cottonvalley.destrotechnologies.website/product/";
                 }
 
                 if (base_url) {
