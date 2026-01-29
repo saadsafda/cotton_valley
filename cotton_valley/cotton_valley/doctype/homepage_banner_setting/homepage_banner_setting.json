@@ -86,6 +86,7 @@
    "label": "Promotion Banner Section"
   },
   {
+   "description": "Recommended Size 989 \u00d7 362 pixels",
    "fieldname": "promotion_banner",
    "fieldtype": "Attach Image",
    "label": "Promotion Banner"
@@ -95,6 +96,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Recommended Size: 483 \u00d7 314 pixels",
    "fieldname": "promotion_subbanner",
    "fieldtype": "Attach Image",
    "label": "Promotion SubBanner"
@@ -253,6 +255,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "Recommended Size: 1496 \u00d7 247 pixels",
    "fieldname": "newsletter_background",
    "fieldtype": "Attach Image",
    "label": "Newsletter Background"
@@ -384,7 +387,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-27 02:09:24.794171",
+ "modified": "2026-01-28 23:33:49.161060",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Homepage Banner Setting",
