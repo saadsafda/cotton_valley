@@ -1151,7 +1151,15 @@ CHUNK_SIZE = 200  # adjust as needed
 def _is_valid_value(val):
     return val not in (None, "", "0", 0, "null")
 
-def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_cv_item_batch(
+    batch,
+    company="Cotton Valley",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
@@ -1164,6 +1172,7 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID="
     warehouse = "Stores - CV"
@@ -1173,6 +1182,13 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
     is_scheduler_run = batch_number is not None and total_batches is not None
     if not total_items:
         total_items = batch_item_count
+
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
 
     session = requests.Session()
     session.auth = (CV_USER, CV_PASSWORD)
@@ -1184,9 +1200,8 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
         # Calculate progress
         if is_scheduler_run:
             # Overall progress across all batches
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1393,7 +1408,15 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
 
 
 
-def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_udc_item_batch(
+    batch,
+    company="UDC",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
@@ -1406,6 +1429,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID="
     warehouse = "Stores - U"
@@ -1415,6 +1439,13 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
     is_scheduler_run = batch_number is not None and total_batches is not None
     if not total_items:
         total_items = batch_item_count
+
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
 
     session = requests.Session()
     session.auth = (UDC_USER, UDC_PASSWORD)
@@ -1426,9 +1457,8 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
         # Calculate progress
         if is_scheduler_run:
             # Overall progress across all batches
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1816,7 +1846,15 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
 #     return f"UDC item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
-def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_cv_price_batch(
+    batch,
+    company="Cotton Valley",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Process a batch of Cotton Valley item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
@@ -1828,6 +1866,7 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID="
     username = CV_USER
@@ -1841,12 +1880,18 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
     if not total_items:
         total_items = batch_item_count
 
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+
     for idx, item_code in enumerate(batch):
         # Calculate progress
         if is_scheduler_run:
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1961,7 +2006,15 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
     return {"processed": processed_count, "errors": error_count, "task_id": task_id}
 
 
-def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_udc_price_batch(
+    batch,
+    company="UDC",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Process a batch of UDC item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
@@ -1973,6 +2026,7 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID="
     username = UDC_USER
@@ -1986,12 +2040,18 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
     if not total_items:
         total_items = batch_item_count
 
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+
     for idx, item_code in enumerate(batch):
         # Calculate progress
         if is_scheduler_run:
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)

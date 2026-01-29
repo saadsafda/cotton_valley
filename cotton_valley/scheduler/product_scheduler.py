@@ -107,6 +107,7 @@ def scheduler_dispatch_cv_item_sync():
             expires_in_sec=3600 * 2  # 2 hours
         )
 
+        items_before_batch = 0
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
                 "cotton_valley.api.products.sync_cv_item_batch",
@@ -118,8 +119,10 @@ def scheduler_dispatch_cv_item_sync():
                 task_id=task_id,
                 batch_number=idx,
                 total_batches=total_batches,
-                total_items=total_items
+                total_items=total_items,
+                items_before_batch=items_before_batch
             )
+            items_before_batch += len(batch)
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
         _set_cv_setting("last_item_code", names[-1])
@@ -203,6 +206,7 @@ def scheduler_dispatch_udc_item_sync():
             expires_in_sec=3600 * 2  # 2 hours
         )
 
+        items_before_batch = 0
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
                 "cotton_valley.api.products.sync_udc_item_batch",
@@ -214,8 +218,10 @@ def scheduler_dispatch_udc_item_sync():
                 task_id=task_id,
                 batch_number=idx,
                 total_batches=total_batches,
-                total_items=total_items
+                total_items=total_items,
+                items_before_batch=items_before_batch
             )
+            items_before_batch += len(batch)
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
         _set_cv_setting("last_item_code", names[-1])
@@ -312,6 +318,7 @@ def scheduler_dispatch_cv_price_sync():
             expires_in_sec=3600 * 2
         )
 
+        items_before_batch = 0
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
                 "cotton_valley.api.products.sync_cv_price_batch",
@@ -323,8 +330,10 @@ def scheduler_dispatch_cv_price_sync():
                 task_id=task_id,
                 batch_number=idx,
                 total_batches=total_batches,
-                total_items=total_items
+                total_items=total_items,
+                items_before_batch=items_before_batch
             )
+            items_before_batch += len(batch)
 
         _set_cv_setting("last_price_item_code_cv", names[-1])
 
@@ -401,6 +410,7 @@ def scheduler_dispatch_udc_price_sync():
             expires_in_sec=3600 * 2
         )
 
+        items_before_batch = 0
         for idx, batch in enumerate(batches, start=1):
             frappe.enqueue(
                 "cotton_valley.api.products.sync_udc_price_batch",
@@ -412,8 +422,10 @@ def scheduler_dispatch_udc_price_sync():
                 task_id=task_id,
                 batch_number=idx,
                 total_batches=total_batches,
-                total_items=total_items
+                total_items=total_items,
+                items_before_batch=items_before_batch
             )
+            items_before_batch += len(batch)
 
         _set_cv_setting("last_price_item_code_udc", names[-1])
 
