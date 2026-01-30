@@ -1342,28 +1342,52 @@ def sync_cv_item_batch(
             if updated:
                 item_doc.save(ignore_permissions=True)
 
-            # Qty / Bin update
+            # Qty update via Stock Reconciliation (do not write Bin directly)
             qty_avlbl_raw = item_data.get("qty_avlbl")
-            if _is_valid_value(qty_avlbl_raw):
-                qty_avlbl = int(float(qty_avlbl_raw or 0))
+            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
+            if qty_avlbl is not None:
+                try:
+                    qty_avlbl = float(qty_avlbl or 0)
+                except (ValueError, TypeError):
+                    qty_avlbl = None
 
-                bin_name = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-                if bin_name:
-                    frappe.db.set_value("Bin", bin_name, "actual_qty", qty_avlbl)
-                else:
-                    frappe.get_doc({
-                        "doctype": "Bin",
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "actual_qty": qty_avlbl
-                    }).insert(ignore_permissions=True)
+            if qty_avlbl is not None:
+                try:
+                    current_qty = frappe.db.get_value(
+                        "Bin",
+                        {"item_code": item_code, "warehouse": warehouse},
+                        "actual_qty"
+                    ) or 0
+                except Exception:
+                    current_qty = 0
 
-                # Update your custom fields (prefer set_value to avoid full doc save)
-                item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-                item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-                if item_available_qty == item_threshold_stock:
-                    frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-                frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
+                if float(current_qty) != float(qty_avlbl):
+                    try:
+                        retail_price = frappe.db.get_value(
+                            "Item Price",
+                            {"item_code": item_code, "price_list": "Retail"},
+                            "price_list_rate"
+                        )
+                        if retail_price is None:
+                            retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+
+                        sr_doc = frappe.get_doc({
+                            "doctype": "Stock Reconciliation",
+                            "company": company,
+                            "purpose": "Stock Reconciliation",
+                            "posting_date": frappe.utils.nowdate(),
+                            "items": [{
+                                "item_code": item_code,
+                                "warehouse": warehouse,
+                                "qty": qty_avlbl,
+                                "valuation_rate": float(retail_price or 0)
+                            }]
+                        })
+                        sr_doc.flags.ignore_permissions = True
+                        sr_doc.insert(ignore_permissions=True)
+                        sr_doc.submit()
+                    except Exception as e:
+                        errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
 
             # Optional: log invalid fields once per item instead of per field insert spam
             if invalid_fields:
@@ -1599,28 +1623,52 @@ def sync_udc_item_batch(
             if updated:
                 item_doc.save(ignore_permissions=True)
 
-            # Qty / Bin update
+            # Qty update via Stock Reconciliation (do not write Bin directly)
             qty_avlbl_raw = item_data.get("qty_avlbl")
-            if _is_valid_value(qty_avlbl_raw):
-                qty_avlbl = int(float(qty_avlbl_raw or 0))
+            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
+            if qty_avlbl is not None:
+                try:
+                    qty_avlbl = float(qty_avlbl or 0)
+                except (ValueError, TypeError):
+                    qty_avlbl = None
 
-                bin_name = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-                if bin_name:
-                    frappe.db.set_value("Bin", bin_name, "actual_qty", qty_avlbl)
-                else:
-                    frappe.get_doc({
-                        "doctype": "Bin",
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "actual_qty": qty_avlbl
-                    }).insert(ignore_permissions=True)
+            if qty_avlbl is not None:
+                try:
+                    current_qty = frappe.db.get_value(
+                        "Bin",
+                        {"item_code": item_code, "warehouse": warehouse},
+                        "actual_qty"
+                    ) or 0
+                except Exception:
+                    current_qty = 0
 
-                # Update your custom fields (prefer set_value to avoid full doc save)
-                item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-                item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-                if item_available_qty == item_threshold_stock:
-                    frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-                frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
+                if float(current_qty) != float(qty_avlbl):
+                    try:
+                        retail_price = frappe.db.get_value(
+                            "Item Price",
+                            {"item_code": item_code, "price_list": "Retail"},
+                            "price_list_rate"
+                        )
+                        if retail_price is None:
+                            retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+
+                        sr_doc = frappe.get_doc({
+                            "doctype": "Stock Reconciliation",
+                            "company": company,
+                            "purpose": "Stock Reconciliation",
+                            "posting_date": frappe.utils.nowdate(),
+                            "items": [{
+                                "item_code": item_code,
+                                "warehouse": warehouse,
+                                "qty": qty_avlbl,
+                                "valuation_rate": float(retail_price or 0)
+                            }]
+                        })
+                        sr_doc.flags.ignore_permissions = True
+                        sr_doc.insert(ignore_permissions=True)
+                        sr_doc.submit()
+                    except Exception as e:
+                        errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
 
             # Optional: log invalid fields once per item instead of per field insert spam
             if invalid_fields:
