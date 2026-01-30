@@ -1101,8 +1101,8 @@ def sync_item_from_api(item_code, company=None):
         frappe.db.commit()
 
     # Update warehouse stock quantity via Stock Reconciliation (do not write Bin directly)
-    qty_avlbl = item_data.get("qty_avlbl")
-    qty_avlbl = qty_avlbl if qty_avlbl not in [None, "", "null"] else None
+    qty_avlbl_raw = item_data.get("qty_avlbl")
+    qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
 
     if qty_avlbl is not None:
         try:
@@ -1153,6 +1153,12 @@ def sync_item_from_api(item_code, company=None):
                     f"Failed to reconcile stock for {item_code} in {warehouse}: {str(e)}",
                     "Stock Reconciliation Error"
                 )
+    else:
+        frappe.log_error(
+            title="Stock Quantity Not Updated",
+            message=f"Stock quantity not updated for {item_code}: qty_avlbl is invalid or empty, {qty_avlbl_raw}",
+        )
+
 
     frappe.db.commit()
 
@@ -1344,7 +1350,7 @@ def sync_cv_item_batch(
 
             # Qty update via Stock Reconciliation (do not write Bin directly)
             qty_avlbl_raw = item_data.get("qty_avlbl")
-            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
+            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
             if qty_avlbl is not None:
                 try:
                     qty_avlbl = float(qty_avlbl or 0)
@@ -1388,6 +1394,9 @@ def sync_cv_item_batch(
                         sr_doc.submit()
                     except Exception as e:
                         errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
+            else:
+                errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
+
 
             # Optional: log invalid fields once per item instead of per field insert spam
             if invalid_fields:
@@ -1625,7 +1634,7 @@ def sync_udc_item_batch(
 
             # Qty update via Stock Reconciliation (do not write Bin directly)
             qty_avlbl_raw = item_data.get("qty_avlbl")
-            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
+            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
             if qty_avlbl is not None:
                 try:
                     qty_avlbl = float(qty_avlbl or 0)
@@ -1669,6 +1678,8 @@ def sync_udc_item_batch(
                         sr_doc.submit()
                     except Exception as e:
                         errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
+            else:
+                errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
 
             # Optional: log invalid fields once per item instead of per field insert spam
             if invalid_fields:
