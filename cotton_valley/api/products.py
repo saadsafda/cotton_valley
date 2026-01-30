@@ -1125,6 +1125,14 @@ def sync_item_from_api(item_code, company=None):
 
         if float(current_qty) != float(qty_avlbl):
             try:
+                retail_price = frappe.db.get_value(
+                    "Item Price",
+                    {"item_code": item_code, "price_list": "Retail"},
+                    "price_list_rate"
+                )
+                if retail_price is None:
+                    retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+
                 sr_doc = frappe.get_doc({
                     "doctype": "Stock Reconciliation",
                     "company": company,
@@ -1133,7 +1141,8 @@ def sync_item_from_api(item_code, company=None):
                     "items": [{
                         "item_code": item_code,
                         "warehouse": warehouse,
-                        "qty": qty_avlbl
+                        "qty": qty_avlbl,
+                        "valuation_rate": float(retail_price or 0)
                     }]
                 })
                 sr_doc.flags.ignore_permissions = True
