@@ -99,12 +99,12 @@ frappe.listview_settings['Customer'] = {
             });
         };
 
-        listview.page.add_inner_button('Sync Customers (CV)', () => {
-            start_customer_sync('Cotton Valley');
-        });
+        // listview.page.add_inner_button('Sync Customers (CV)', () => {
+        //     start_customer_sync('Cotton Valley');
+        // });
 
-        listview.page.add_inner_button('Sync Customers (UDC)', () => {
-            start_customer_sync('UDC');
-        });
+        // listview.page.add_inner_button('Sync Customers (UDC)', () => {
+        //     start_customer_sync('UDC');
+        // });
     }
 };
