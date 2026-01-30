@@ -129,11 +129,15 @@ def send_sales_order_confirmation_email(doc, method):
                 "salesRepEmail": sales_person_email,
                 "paymentmethod": doc.custom_mode_of_payment,
                 "company": doc.company,
-                "address1": doc.billing_address_details,
                 "state": doc.state or "",
                 "zip": doc.zip_code or "",
                 "country": doc.country or "",
-                "shipAddress1": doc.shipping_address_details or "",
+                "billAddress": doc.billing_address_details,
+                "city": doc.billing_city or "",
+                "phone": doc.custom_billing_phone or "",
+                "email": doc.custom_customer_email or "",
+                "shipAddress": doc.shipping_address_details or "",
+                "shipCity": doc.shipping_city or "",
                 "shipState": doc.shipping_state or "",
                 "shipZip": doc.shipping_zip_code or "",
                 "shipCountry": doc.shipping_country or "",
@@ -142,6 +146,7 @@ def send_sales_order_confirmation_email(doc, method):
                 "grandtotal": doc.grand_total,
                 "currency": doc.currency,
                 "items": doc.items,
+                "specialinstructions": doc.custom_notes or "",
             }
             
             # Render template
