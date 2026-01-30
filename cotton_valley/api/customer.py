@@ -845,6 +845,7 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
         "state": addr_data.get("prvname", "").strip(),
         "country": addr_data.get("cntname", "").strip() or "UNITED STATES",
         "company": company,
+        "phone": addr_data.get("phone", "").strip(),
         "links": [
             {
                 "link_doctype": "Customer",
