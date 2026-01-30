@@ -575,7 +575,8 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             field_mapping = {
                 "custom_store_name": item_data.get("sbsname"),              # Store Name
                 "customer_name": item_data.get("sbsname_shr"),     # First Name / Last Name
-                "custom_email_address": item_data.get("email1"),     # Email Address
+                "custom_phone_number": item_data.get("phone"),          # Phone Number
+                "custom_cell_phone": item_data.get("mobile"),           # Cell Phone
             }
             if company == "Cotton Valley":
                 field_mapping["price_list_for_cv"] = fetch_price_list_name(item_data.get("rgnid"), item_data.get("rgnname"))  # Price List for CV (Name)
@@ -817,6 +818,7 @@ def update_address_fields(address_doc, addr_data, address_type):
     address_doc.pincode = addr_data.get("postcd", "").strip()       # Zip Code
     address_doc.state = addr_data.get("prvname", "").strip()        # State (Name)
     address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"  # Country
+    address_doc.phone = addr_data.get("phone", "").strip()          # Phone Number
     # address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
 
 
