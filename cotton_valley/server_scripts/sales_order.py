@@ -184,8 +184,10 @@ def send_sales_order_confirmation_email(doc, method):
             </div>
             """
         
-        # Send email (include CC if present)
+        sender = "order@cottonvalley.net" if doc.company == "Cotton Valley" else "order@universaldc.com"
+        # Send the email with CC
         frappe.sendmail(
+            sender=sender,
             recipients=recipients,
             cc=cc_emails if cc_emails else None,
             subject=subject,
@@ -316,7 +318,10 @@ def send_abandoned_cart_emails():
                 response = email_template.response_html if email_template.use_html else email_template.response
                 message = frappe.render_template(response, template_args)
 
+                sender = "order@cottonvalley.net" if so.company == "Cotton Valley" else "order@universaldc.com"
+                # Send the email with CC
                 frappe.sendmail(
+                    sender=sender,
                     recipients=[customer_email],
                     cc=cc_emails if cc_emails else None,
                     subject=subject,

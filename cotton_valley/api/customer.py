@@ -234,7 +234,10 @@ def forgot_password(email, company=None):
                 </div>
                 """
 
+            sender = "info@cottonvalley.net" if company == "Cotton Valley" else "info@universaldc.com"
+            # Send the email with CC
             frappe.sendmail(
+                sender=sender,
                 recipients=[email],
                 subject=subject,
                 message=message,

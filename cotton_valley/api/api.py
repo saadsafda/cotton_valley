@@ -203,8 +203,10 @@ def send_registration_email(customer_email, sales_person, firstname, lastname, c
                 </div>
             """
         
+        sender = "info@cottonvalley.net" if company == "Cotton Valley" else "info@universaldc.com"
         # Send the email with CC
         frappe.sendmail(
+            sender=sender,
             recipients=[customer_email, sales_person_email] if sales_person_email else [customer_email],
             cc=cc_emails if cc_emails else None,
             subject=email_subject,
