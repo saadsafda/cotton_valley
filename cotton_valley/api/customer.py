@@ -528,6 +528,134 @@ def get_current_customer(company=None):
 
 
 @frappe.whitelist()
+def fetch_all_cv_customer_data(task_id=None):
+    """
+    Fetch all customer data from external API and update local Customer records.
+    """
+    try:
+        customers = frappe.get_all("Customer", filters={"disabled": 0}, fields=["name"])
+        total = len(customers)
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "current": 0,
+                    "total": total,
+                    "percent": 0,
+                    "status": "running"
+                }
+            )
+        for idx, cust in enumerate(customers, start=1):
+            fetch_customer_data(cust.name, "Cotton Valley")
+            if task_id:
+                percent = int((idx / total) * 100) if total else 100
+                frappe.publish_realtime(
+                    "customer_sync_progress",
+                    {
+                        "task_id": task_id,
+                        "company": "Cotton Valley",
+                        "current": idx,
+                        "total": total,
+                        "percent": percent,
+                        "customer_id": cust.name,
+                        "status": "running"
+                    }
+                )
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "current": total,
+                    "total": total,
+                    "percent": 100,
+                    "status": "complete"
+                }
+            )
+        return {"status": "success", "message": "All customer data fetched and updated successfully"}
+    except Exception as e:
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "status": "error",
+                    "message": str(e)
+                }
+            )
+        frappe.log_error(frappe.get_traceback(), "Fetch All Customer Data Error")
+        return {"status": "error", "message": str(e)}
+    
+@frappe.whitelist()
+def fetch_all_UDC_customer_data(task_id=None):
+    """
+    Fetch all customer data from external API and update local Customer records.
+    """
+    try:
+        customers = frappe.get_all("Customer", filters={"disabled": 0}, fields=["name"])
+        total = len(customers)
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "current": 0,
+                    "total": total,
+                    "percent": 0,
+                    "status": "running"
+                }
+            )
+        for idx, cust in enumerate(customers, start=1):
+            fetch_customer_data(cust.name, "UDC")
+            if task_id:
+                percent = int((idx / total) * 100) if total else 100
+                frappe.publish_realtime(
+                    "customer_sync_progress",
+                    {
+                        "task_id": task_id,
+                        "company": "UDC",
+                        "current": idx,
+                        "total": total,
+                        "percent": percent,
+                        "customer_id": cust.name,
+                        "status": "running"
+                    }
+                )
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "current": total,
+                    "total": total,
+                    "percent": 100,
+                    "status": "complete"
+                }
+            )
+        return {"status": "success", "message": "All customer data fetched and updated successfully"}
+    except Exception as e:
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "status": "error",
+                    "message": str(e)
+                }
+            )
+        frappe.log_error(frappe.get_traceback(), "Fetch All Customer Data Error")
+        return {"status": "error", "message": str(e)}
+
+
+
+@frappe.whitelist()
 def fetch_customer_data(customer_id, company="Cotton Valley"):
     """
     Fetch customer data from external API and update local Customer record.
@@ -868,4 +996,3 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
     frappe.logger().info(f"Created new address {new_address.name} for customer {customer_id}")
     
     return new_address.name
-
