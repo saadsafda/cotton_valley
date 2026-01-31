@@ -196,7 +196,10 @@ frappe.ui.form.on('Customer', {
                     frappe.call({
                         method: 'cotton_valley.server_scripts.customer.send_mass_email_btn',
                         args: {
-                            customer_id: frm.doc.name
+                            customer_id: frm.doc.name,
+                            email: frm.doc.custom_email_address,
+                            first_name: frm.doc.customer_name,
+                            last_name: frm.doc.custom_last_name || ""
                         },
                         freeze: true,
                         freeze_message: "Sending Email...",

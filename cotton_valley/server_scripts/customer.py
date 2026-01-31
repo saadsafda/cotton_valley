@@ -67,7 +67,7 @@ def get_location_from_ip(doc, method):
 
 
 @frappe.whitelist()
-def send_mass_email_btn(customer_id):
+def send_mass_email_btn(customer_id, email, first_name, last_name, show_message=1):
     """
     Send Mass Email to Customer using 'Mass Email Template'
     Triggered via Button on Customer Form
@@ -76,13 +76,10 @@ def send_mass_email_btn(customer_id):
         if not customer_id:
             frappe.throw("Customer ID is required")
 
-        # 1. Get Customer Data
-        doc = frappe.get_doc("Customer", customer_id)
-        
         # 2. Get Email Address
-        recipient_email = doc.email_id or doc.get('custom_email_address')
+        recipient_email = email
         if not recipient_email:
-            frappe.msgprint(f"No email address found for customer {doc.name}", alert=True)
+            frappe.msgprint(f"No email address found for customer {customer_id}", alert=True)
             return
 
         # 3. Setup Template Configuration
@@ -94,16 +91,16 @@ def send_mass_email_btn(customer_id):
         # --- FIX: Safe Name Fetching ---
         # Hum .get() use kar rahe hain taake agar field na ho to Error na aye
         # Pehle 'custom_first_name' check karega, phir 'first_name', phir 'customer_name'
-        f_name = doc.get('custom_first_name') or doc.get('first_name') or doc.customer_name
-        l_name = doc.get('custom_last_name') or doc.get('last_name') or ""
+        f_name = first_name or ""
+        l_name = last_name or ""
 
         # 4. Context Mapping
         context = {
             "first_name": f_name,
             "last_name": l_name,
             "email": recipient_email,
-            "reset_link": "https://cottonvalley.net/my-account",
-            "customer_name": doc.customer_name
+            "reset_link": "https://www.cottonvalley.net/auth/forgot-password",
+            "customer_name": f"{f_name} {l_name}".strip()
         }
 
         # 5. Check if Template Exists
@@ -147,9 +144,150 @@ def send_mass_email_btn(customer_id):
             now=True
         )
 
-        frappe.msgprint("Mass Email sent successfully!")
+        if int(show_message or 0):
+            frappe.msgprint("Mass Email sent successfully!")
 
     except Exception as e:
         error_msg = f"Failed to send Mass Email: {str(e)}"
+        frappe.log_error(f"{error_msg}\n{frappe.get_traceback()}", "Mass Email Error")
+        frappe.throw(error_msg)
+
+
+
+# send email to all customers
+@frappe.whitelist()
+def send_email_to_all_customers(task_id=None, publish_progress=1):
+    """
+    Send Mass Email to All Customers using 'Mass Email Template'
+    Triggered via Button on Customer List
+    """
+    try:
+        # 1. Get All Customers
+        customers = frappe.get_all("Customer", fields=["name", "custom_email_address", "customer_name", "custom_last_name"])
+
+        if not customers:
+            frappe.msgprint("No customers found to send emails.", alert=True)
+            return
+
+        total = len(customers)
+        task_id = task_id or frappe.generate_hash(length=12)
+        publish_progress = int(publish_progress or 0)
+
+        if publish_progress:
+            frappe.publish_realtime(
+                "mass_email_progress",
+                {
+                    "task_id": task_id,
+                    "status": "starting",
+                    "percent": 0,
+                    "current": 0,
+                    "total": total,
+                    "sent": 0,
+                    "skipped": 0,
+                    "failed": 0
+                },
+                user=frappe.session.user
+            )
+
+        sent_count = 0
+        skipped_count = 0
+        failed_count = 0
+        progress_interval = max(1, total // 100)
+
+        # 2. Loop through each customer and send email
+        for idx, cust in enumerate(customers):
+            customer_id = cust.name
+            recipient_email = cust.get('custom_email_address')
+            if not recipient_email:
+                frappe.log_error(f"No email address found for customer {customer_id}", "Mass Email Warning")
+                skipped_count += 1
+                if publish_progress and ((idx + 1) % progress_interval == 0 or idx == total - 1):
+                    percent = int(((idx + 1) / total) * 100)
+                    frappe.publish_realtime(
+                        "mass_email_progress",
+                        {
+                            "task_id": task_id,
+                            "status": "running",
+                            "percent": percent,
+                            "current": idx + 1,
+                            "total": total,
+                            "sent": sent_count,
+                            "skipped": skipped_count,
+                            "failed": failed_count,
+                            "customer_id": customer_id
+                        },
+                        user=frappe.session.user
+                    )
+                continue
+
+            # Call the existing function to send email
+            try:
+                send_mass_email_btn(
+                    customer_id,
+                    recipient_email,
+                    cust.get('customer_name'),
+                    cust.get('custom_last_name'),
+                    show_message=0
+                )
+                sent_count += 1
+            except Exception as e:
+                failed_count += 1
+                frappe.log_error(
+                    f"Mass Email failed for customer {customer_id}: {str(e)}\n{frappe.get_traceback()}",
+                    "Mass Email Error"
+                )
+
+            if publish_progress and ((idx + 1) % progress_interval == 0 or idx == total - 1):
+                percent = int(((idx + 1) / total) * 100)
+                frappe.publish_realtime(
+                    "mass_email_progress",
+                    {
+                        "task_id": task_id,
+                        "status": "running",
+                        "percent": percent,
+                        "current": idx + 1,
+                        "total": total,
+                        "sent": sent_count,
+                        "skipped": skipped_count,
+                        "failed": failed_count,
+                        "customer_id": customer_id
+                    },
+                    user=frappe.session.user
+                )
+
+        if publish_progress:
+            frappe.publish_realtime(
+                "mass_email_progress",
+                {
+                    "task_id": task_id,
+                    "status": "complete",
+                    "percent": 100,
+                    "current": total,
+                    "total": total,
+                    "sent": sent_count,
+                    "skipped": skipped_count,
+                    "failed": failed_count
+                },
+                user=frappe.session.user
+            )
+
+        if failed_count:
+            frappe.msgprint(
+                f"Mass Emails completed with {failed_count} failures and {skipped_count} skipped.",
+                alert=True
+            )
+        else:
+            frappe.msgprint("Mass Emails sent to all customers successfully!")
+
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "total": total,
+            "sent": sent_count,
+            "skipped": skipped_count,
+            "failed": failed_count
+        }
+    except Exception as e:
+        error_msg = f"Failed to send Mass Emails to all customers: {str(e)}"
         frappe.log_error(f"{error_msg}\n{frappe.get_traceback()}", "Mass Email Error")
         frappe.throw(error_msg)

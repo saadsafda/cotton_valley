@@ -1214,6 +1214,7 @@ def sync_cv_item_batch(
 
     processed = 0
     errors = []
+    stock_recon_items = []
 
     for idx, item_code in enumerate(batch):
         # Calculate progress
@@ -1367,33 +1368,24 @@ def sync_cv_item_batch(
                 except Exception:
                     current_qty = 0
 
-                if float(current_qty) != float(qty_avlbl):
-                    try:
-                        retail_price = frappe.db.get_value(
-                            "Item Price",
-                            {"item_code": item_code, "price_list": "Retail"},
-                            "price_list_rate"
-                        )
-                        if retail_price is None:
-                            retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+                # if float(current_qty) != float(qty_avlbl):
+                try:
+                    retail_price = frappe.db.get_value(
+                        "Item Price",
+                        {"item_code": item_code, "price_list": "Retail"},
+                        "price_list_rate"
+                    )
+                    if retail_price is None:
+                        retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
 
-                        sr_doc = frappe.get_doc({
-                            "doctype": "Stock Reconciliation",
-                            "company": company,
-                            "purpose": "Stock Reconciliation",
-                            "posting_date": frappe.utils.nowdate(),
-                            "items": [{
-                                "item_code": item_code,
-                                "warehouse": warehouse,
-                                "qty": qty_avlbl,
-                                "valuation_rate": float(retail_price or 0)
-                            }]
-                        })
-                        sr_doc.flags.ignore_permissions = True
-                        sr_doc.insert(ignore_permissions=True)
-                        sr_doc.submit()
-                    except Exception as e:
-                        errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
+                    stock_recon_items.append({
+                        "item_code": item_code,
+                        "warehouse": warehouse,
+                        "qty": qty_avlbl,
+                        "valuation_rate": float(retail_price or 0)
+                    })
+                except Exception as e:
+                    errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
             else:
                 errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
 
@@ -1409,6 +1401,21 @@ def sync_cv_item_batch(
 
         except Exception as e:
             errors.append({"item_code": item_code, "error": f"Unhandled: {str(e)}"})
+
+    if stock_recon_items:
+        try:
+            sr_doc = frappe.get_doc({
+                "doctype": "Stock Reconciliation",
+                "company": company,
+                "purpose": "Stock Reconciliation",
+                "posting_date": frappe.utils.nowdate(),
+                "items": stock_recon_items
+            })
+            sr_doc.flags.ignore_permissions = True
+            sr_doc.insert(ignore_permissions=True)
+            sr_doc.submit()
+        except Exception as e:
+            errors.append({"item_code": "BATCH", "error": f"Stock Reconciliation failed: {str(e)}"})
 
     # ✅ Commit once per batch
     frappe.db.commit()
@@ -1498,6 +1505,7 @@ def sync_udc_item_batch(
 
     processed = 0
     errors = []
+    stock_recon_items = []
 
     for idx, item_code in enumerate(batch):
         # Calculate progress
@@ -1651,33 +1659,24 @@ def sync_udc_item_batch(
                 except Exception:
                     current_qty = 0
 
-                if float(current_qty) != float(qty_avlbl):
-                    try:
-                        retail_price = frappe.db.get_value(
-                            "Item Price",
-                            {"item_code": item_code, "price_list": "Retail"},
-                            "price_list_rate"
-                        )
-                        if retail_price is None:
-                            retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+                # if float(current_qty) != float(qty_avlbl):
+                try:
+                    retail_price = frappe.db.get_value(
+                        "Item Price",
+                        {"item_code": item_code, "price_list": "Retail"},
+                        "price_list_rate"
+                    )
+                    if retail_price is None:
+                        retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
 
-                        sr_doc = frappe.get_doc({
-                            "doctype": "Stock Reconciliation",
-                            "company": company,
-                            "purpose": "Stock Reconciliation",
-                            "posting_date": frappe.utils.nowdate(),
-                            "items": [{
-                                "item_code": item_code,
-                                "warehouse": warehouse,
-                                "qty": qty_avlbl,
-                                "valuation_rate": float(retail_price or 0)
-                            }]
-                        })
-                        sr_doc.flags.ignore_permissions = True
-                        sr_doc.insert(ignore_permissions=True)
-                        sr_doc.submit()
-                    except Exception as e:
-                        errors.append({"item_code": item_code, "error": f"Stock Reconciliation failed: {str(e)}"})
+                    stock_recon_items.append({
+                        "item_code": item_code,
+                        "warehouse": warehouse,
+                        "qty": qty_avlbl,
+                        "valuation_rate": float(retail_price or 0)
+                    })
+                except Exception as e:
+                    errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
             else:
                 errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
 
@@ -1692,6 +1691,21 @@ def sync_udc_item_batch(
 
         except Exception as e:
             errors.append({"item_code": item_code, "error": f"Unhandled: {str(e)}"})
+
+    if stock_recon_items:
+        try:
+            sr_doc = frappe.get_doc({
+                "doctype": "Stock Reconciliation",
+                "company": company,
+                "purpose": "Stock Reconciliation",
+                "posting_date": frappe.utils.nowdate(),
+                "items": stock_recon_items
+            })
+            sr_doc.flags.ignore_permissions = True
+            sr_doc.insert(ignore_permissions=True)
+            sr_doc.submit()
+        except Exception as e:
+            errors.append({"item_code": "BATCH", "error": f"Stock Reconciliation failed: {str(e)}"})
 
     # ✅ Commit once per batch
     frappe.db.commit()
