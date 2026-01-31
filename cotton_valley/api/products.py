@@ -1378,12 +1378,19 @@ def sync_cv_item_batch(
                     if retail_price is None:
                         retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
 
-                    stock_recon_items.append({
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "qty": qty_avlbl,
-                        "valuation_rate": float(retail_price or 0)
-                    })
+                        valuation_rate = float(retail_price or 0)
+                        if qty_avlbl < 0 or valuation_rate < 0:
+                            errors.append({
+                                "item_code": item_code,
+                                "error": f"Invalid stock values (qty={qty_avlbl}, valuation_rate={valuation_rate})"
+                            })
+                        else:
+                            stock_recon_items.append({
+                                "item_code": item_code,
+                                "warehouse": warehouse,
+                                "qty": qty_avlbl,
+                                "valuation_rate": valuation_rate
+                            })
                 except Exception as e:
                     errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
             else:
@@ -1669,12 +1676,19 @@ def sync_udc_item_batch(
                     if retail_price is None:
                         retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
 
-                    stock_recon_items.append({
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "qty": qty_avlbl,
-                        "valuation_rate": float(retail_price or 0)
-                    })
+                        valuation_rate = float(retail_price or 0)
+                        if qty_avlbl < 0 or valuation_rate < 0:
+                            errors.append({
+                                "item_code": item_code,
+                                "error": f"Invalid stock values (qty={qty_avlbl}, valuation_rate={valuation_rate})"
+                            })
+                        else:
+                            stock_recon_items.append({
+                                "item_code": item_code,
+                                "warehouse": warehouse,
+                                "qty": qty_avlbl,
+                                "valuation_rate": valuation_rate
+                            })
                 except Exception as e:
                     errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
             else:
