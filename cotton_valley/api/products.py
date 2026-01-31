@@ -1397,12 +1397,6 @@ def sync_cv_item_batch(
                 errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
 
 
-            # Optional: log invalid fields once per item instead of per field insert spam
-            if invalid_fields:
-                frappe.log_error(
-                    title=f"CV Item invalid fields: {item_code}",
-                    message=str(invalid_fields[:50])
-                )
 
             processed += 1
 
@@ -1694,12 +1688,6 @@ def sync_udc_item_batch(
             else:
                 errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
 
-            # Optional: log invalid fields once per item instead of per field insert spam
-            if invalid_fields:
-                frappe.log_error(
-                    title=f"UDC Item invalid fields: {item_code}",
-                    message=str(invalid_fields[:50])
-                )
 
             processed += 1
 
