@@ -218,21 +218,21 @@
    "doc_view": "List",
    "label": "CV Product Image",
    "type": "URL",
-   "url": "https://erp.destrotechnologies.website/app/query-report/Product%20image?company=Cotton+Valley"
+   "url": "https://portal.cottonvalley.net/app/query-report/Product%20image?company=Cotton+Valley"
   },
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "CV Sales Invoice",
    "type": "URL",
-   "url": "https://erp.destrotechnologies.website/app/query-report/Sales%20Invoice%20report%20View?company=Cotton+Valley"
+   "url": "https://portal.cottonvalley.net/app/query-report/Sales%20Invoice%20report%20View?company=Cotton+Valley"
   },
   {
    "color": "Grey",
    "doc_view": "List",
    "label": "UDC Sales Invoice",
    "type": "URL",
-   "url": "https://erp.destrotechnologies.website/app/query-report/Sales%20Invoice%20report%20View?company=UDC"
+   "url": "https://portal.cottonvalley.net/app/query-report/Sales%20Invoice%20report%20View?company=UDC"
   },
   {
    "color": "Orange",
@@ -247,7 +247,7 @@
    "doc_view": "List",
    "label": "UDC Product Image",
    "type": "URL",
-   "url": "https://erp.destrotechnologies.website/app/query-report/Product%20image?company=UDC"
+   "url": "https://portal.cottonvalley.net/app/query-report/Product%20image?company=UDC"
   },
   {
    "color": "Orange",

@@ -33,10 +33,10 @@ frappe.ui.form.on('Customer', {
 
                                         // Open new window and set cookie
                                         // Open portal in new tab
-                                        window.open(`https://cottonvalleyllc.vercel.app/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://www.cottonvalley.net/auth/erplogin?token=${token}`, "_blank");
 
                                     } else {
-                                        window.open(`https://universaldcllc.vercel.app/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://www.universaldc.com/auth/erplogin?token=${token}`, "_blank");
                                     }
                                 } else {
                                     frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
