@@ -985,6 +985,7 @@ def sync_item_from_api(item_code, company=None):
         "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
         "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
         "custom_weight_lbs": float(item_data.get("casewt") or 0),
+        "available_stock": float(item_data.get("qty_avlbl") or 0),
     }
 
     updated = False
@@ -1098,67 +1099,6 @@ def sync_item_from_api(item_code, company=None):
 
     if updated:
         item_doc.save(ignore_permissions=True)
-        frappe.db.commit()
-
-    # Update warehouse stock quantity via Stock Reconciliation (do not write Bin directly)
-    qty_avlbl_raw = item_data.get("qty_avlbl")
-    qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
-
-    if qty_avlbl is not None:
-        try:
-            qty_avlbl = float(qty_avlbl or 0)
-        except (ValueError, TypeError) as e:
-            frappe.log_error(f"Invalid stock quantity value '{qty_avlbl}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
-            qty_avlbl = None
-
-    if qty_avlbl is not None:
-        warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
-
-        try:
-            current_qty = frappe.db.get_value(
-                "Bin",
-                {"item_code": item_code, "warehouse": warehouse},
-                "actual_qty"
-            ) or 0
-        except Exception:
-            current_qty = 0
-
-        if float(current_qty) != float(qty_avlbl):
-            try:
-                retail_price = frappe.db.get_value(
-                    "Item Price",
-                    {"item_code": item_code, "price_list": "Retail"},
-                    "price_list_rate"
-                )
-                if retail_price is None:
-                    retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
-
-                sr_doc = frappe.get_doc({
-                    "doctype": "Stock Reconciliation",
-                    "company": company,
-                    "purpose": "Stock Reconciliation",
-                    "posting_date": frappe.utils.nowdate(),
-                    "items": [{
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "qty": qty_avlbl,
-                        "valuation_rate": float(retail_price or 0)
-                    }]
-                })
-                sr_doc.flags.ignore_permissions = True
-                sr_doc.insert(ignore_permissions=True)
-                sr_doc.submit()
-            except Exception as e:
-                frappe.log_error(
-                    f"Failed to reconcile stock for {item_code} in {warehouse}: {str(e)}",
-                    "Stock Reconciliation Error"
-                )
-    else:
-        frappe.log_error(
-            title="Stock Quantity Not Updated",
-            message=f"Stock quantity not updated for {item_code}: qty_avlbl is invalid or empty, {qty_avlbl_raw}",
-        )
-
 
     frappe.db.commit()
 
