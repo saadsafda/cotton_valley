@@ -1194,6 +1194,7 @@ def sync_cv_item_batch(
         items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID="
+    # url_base = "https://sc15.indus-erp.com/ords/ctnvly_api/itm/itmapi?ITMID="
     warehouse = "Stores - CV"
     batch_item_count = len(batch)
     
@@ -1209,12 +1210,8 @@ def sync_cv_item_batch(
         else:
             items_before_this_batch = (batch_number - 1) * batch_item_count
 
-    session = requests.Session()
-    session.auth = (CV_USER, CV_PASSWORD)
-
     processed = 0
     errors = []
-    stock_recon_items = []
 
     for idx, item_code in enumerate(batch):
         # Calculate progress
@@ -1245,9 +1242,12 @@ def sync_cv_item_batch(
         
         try:
             url = f"{url_base}{item_code}"
-            resp = session.get(url, timeout=30)
+            resp = requests.get(url, auth=(CV_USER, CV_PASSWORD), verify=False)
 
-            if resp.status_code != 200:
+            if resp.status_code == 404:
+                errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
+                continue
+            elif resp.status_code != 200:
                 errors.append({"item_code": item_code, "error": f"API {resp.status_code}: {resp.text[:300]}"})
                 continue
 
@@ -1288,6 +1288,7 @@ def sync_cv_item_batch(
                 "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
+                "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
 
             updated = False
@@ -1356,76 +1357,11 @@ def sync_cv_item_batch(
             if updated:
                 item_doc.save(ignore_permissions=True)
 
-            # Qty update via Stock Reconciliation (do not write Bin directly)
-            qty_avlbl_raw = item_data.get("qty_avlbl")
-            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
-            if qty_avlbl is not None:
-                try:
-                    qty_avlbl = float(qty_avlbl or 0)
-                except (ValueError, TypeError):
-                    qty_avlbl = None
-
-            if qty_avlbl is not None:
-                try:
-                    current_qty = frappe.db.get_value(
-                        "Bin",
-                        {"item_code": item_code, "warehouse": warehouse},
-                        "actual_qty"
-                    ) or 0
-                except Exception:
-                    current_qty = 0
-
-                # if float(current_qty) != float(qty_avlbl):
-                try:
-                    retail_price = frappe.db.get_value(
-                        "Item Price",
-                        {"item_code": item_code, "price_list": "Retail"},
-                        "price_list_rate"
-                    )
-                    if retail_price is None:
-                        retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
-
-                        valuation_rate = float(retail_price or 0)
-                        if qty_avlbl < 0 or valuation_rate < 0:
-                            errors.append({
-                                "item_code": item_code,
-                                "error": f"Invalid stock values (qty={qty_avlbl}, valuation_rate={valuation_rate})"
-                            })
-                        else:
-                            stock_recon_items.append({
-                                "item_code": item_code,
-                                "warehouse": warehouse,
-                                "qty": qty_avlbl,
-                                "valuation_rate": valuation_rate
-                            })
-                except Exception as e:
-                    errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
-            else:
-                errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
-
-
 
             processed += 1
 
         except Exception as e:
             errors.append({"item_code": item_code, "error": f"Unhandled: {str(e)}"})
-
-    if stock_recon_items:
-        try:
-            sr_doc = frappe.get_doc({
-                "doctype": "Stock Reconciliation",
-                "company": company,
-                "purpose": "Stock Reconciliation",
-                "posting_date": frappe.utils.nowdate(),
-                "items": stock_recon_items
-            })
-            sr_doc.flags.ignore_permissions = True
-            sr_doc.insert(ignore_permissions=True)
-            frappe.db.commit()
-            sr_doc.submit()
-        except Exception as e:
-            errors.append({"item_code": "BATCH", "error": f"Stock Reconciliation failed: {str(e)}"})
-
     # ✅ Commit once per batch
     frappe.db.commit()
 
@@ -1509,12 +1445,8 @@ def sync_udc_item_batch(
         else:
             items_before_this_batch = (batch_number - 1) * batch_item_count
 
-    session = requests.Session()
-    session.auth = (UDC_USER, UDC_PASSWORD)
-
     processed = 0
     errors = []
-    stock_recon_items = []
 
     for idx, item_code in enumerate(batch):
         # Calculate progress
@@ -1545,9 +1477,12 @@ def sync_udc_item_batch(
         
         try:
             url = f"{url_base}{item_code}"
-            resp = session.get(url, timeout=30)
+            resp = requests.get(url, auth=(UDC_USER, UDC_PASSWORD), verify=False)
 
-            if resp.status_code != 200:
+            if resp.status_code == 404:
+                errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
+                continue
+            elif resp.status_code != 200:
                 errors.append({"item_code": item_code, "error": f"API {resp.status_code}: {resp.text[:300]}"})
                 continue
 
@@ -1588,6 +1523,7 @@ def sync_udc_item_batch(
                 "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
+                "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
 
             updated = False
@@ -1656,73 +1592,10 @@ def sync_udc_item_batch(
             if updated:
                 item_doc.save(ignore_permissions=True)
 
-            # Qty update via Stock Reconciliation (do not write Bin directly)
-            qty_avlbl_raw = item_data.get("qty_avlbl")
-            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
-            if qty_avlbl is not None:
-                try:
-                    qty_avlbl = float(qty_avlbl or 0)
-                except (ValueError, TypeError):
-                    qty_avlbl = None
-
-            if qty_avlbl is not None:
-                try:
-                    current_qty = frappe.db.get_value(
-                        "Bin",
-                        {"item_code": item_code, "warehouse": warehouse},
-                        "actual_qty"
-                    ) or 0
-                except Exception:
-                    current_qty = 0
-
-                # if float(current_qty) != float(qty_avlbl):
-                try:
-                    retail_price = frappe.db.get_value(
-                        "Item Price",
-                        {"item_code": item_code, "price_list": "Retail"},
-                        "price_list_rate"
-                    )
-                    if retail_price is None:
-                        retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
-
-                        valuation_rate = float(retail_price or 0)
-                        if qty_avlbl < 0 or valuation_rate < 0:
-                            errors.append({
-                                "item_code": item_code,
-                                "error": f"Invalid stock values (qty={qty_avlbl}, valuation_rate={valuation_rate})"
-                            })
-                        else:
-                            stock_recon_items.append({
-                                "item_code": item_code,
-                                "warehouse": warehouse,
-                                "qty": qty_avlbl,
-                                "valuation_rate": valuation_rate
-                            })
-                except Exception as e:
-                    errors.append({"item_code": item_code, "error": f"Stock Reconciliation prep failed: {str(e)}"})
-            else:
-                errors.append({"item_code": item_code, "error": f"Invalid qty_avlbl: {qty_avlbl_raw}"})
-
-
             processed += 1
 
         except Exception as e:
             errors.append({"item_code": item_code, "error": f"Unhandled: {str(e)}"})
-
-    if stock_recon_items:
-        try:
-            sr_doc = frappe.get_doc({
-                "doctype": "Stock Reconciliation",
-                "company": company,
-                "purpose": "Stock Reconciliation",
-                "posting_date": frappe.utils.nowdate(),
-                "items": stock_recon_items
-            })
-            sr_doc.flags.ignore_permissions = True
-            sr_doc.insert(ignore_permissions=True)
-            sr_doc.submit()
-        except Exception as e:
-            errors.append({"item_code": "BATCH", "error": f"Stock Reconciliation failed: {str(e)}"})
 
     # ✅ Commit once per batch
     frappe.db.commit()

@@ -2,13 +2,16 @@ import frappe
 from frappe import _
 
 
-def increase_threshold_stock_on_cancel(doc, method):
+def increase_stock_on_cancel(doc, method):
     """
     Increase threshold_stock back when Sales Order is cancelled.
     This restores the reserved stock.
     """
     try:
         for item in doc.items:
+            current_available = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
+            new_available = current_available + item.qty
+            frappe.db.set_value("Item", item.item_code, "available_stock", new_available)
             current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
             available_stock = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
             # Don't exceed available stock
@@ -69,7 +72,7 @@ def update_customer_order_summary(doc, method):
     frappe.db.commit()
 
     make_delivery_note_on_submit(doc, method)
-    decrease_threshold_stock(doc, method)
+    decrease_stock(doc, method)
     send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
 
@@ -202,13 +205,16 @@ def send_sales_order_confirmation_email(doc, method):
 
 
 
-def decrease_threshold_stock(doc, method):
+def decrease_stock(doc, method):
     """
     Decrease threshold_stock for each item when Sales Order is submitted.
     This reserves stock for website display.
     """
     try:
         for item in doc.items:
+            current_available = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
+            new_available = max(0, current_available - item.qty)  # Don't go below 0
+            frappe.db.set_value("Item", item.item_code, "available_stock", new_available)
             current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
             new_threshold = max(0, current_threshold - item.qty)  # Don't go below 0
             frappe.db.set_value("Item", item.item_code, "threshold_stock", new_threshold)
