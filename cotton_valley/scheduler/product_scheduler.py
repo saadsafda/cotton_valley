@@ -62,7 +62,7 @@ def scheduler_dispatch_cv_item_sync():
         max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "Cotton Valley"
-        last_item_code = _get_cv_setting("last_item_code", "") or ""
+        last_item_code = _get_cv_setting("last_item_code_cv", "") or ""
 
         # Fetch items in stable order, continuing after last_item_code
         # (This avoids loading all 4000 into memory)
@@ -80,7 +80,7 @@ def scheduler_dispatch_cv_item_sync():
 
         if not items:
             # We reached the end — reset cursor so next run starts from beginning
-            _set_cv_setting("last_item_code", "")
+            _set_cv_setting("last_item_code_cv", "")
             return "CV Sync: reached end, cursor reset."
 
         names = [d["name"] for d in items]
@@ -125,7 +125,7 @@ def scheduler_dispatch_cv_item_sync():
             items_before_batch += len(batch)
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
-        _set_cv_setting("last_item_code", names[-1])
+        _set_cv_setting("last_item_code_cv", names[-1])
 
         return {
             "success": True,
@@ -161,7 +161,7 @@ def scheduler_dispatch_udc_item_sync():
         max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "UDC"
-        last_item_code = _get_cv_setting("last_item_code", "") or ""
+        last_item_code = _get_cv_setting("last_item_code_udc", "") or ""
 
         # Fetch items in stable order, continuing after last_item_code
         # (This avoids loading all 4000 into memory)
@@ -179,7 +179,7 @@ def scheduler_dispatch_udc_item_sync():
 
         if not items:
             # We reached the end — reset cursor so next run starts from beginning
-            _set_cv_setting("last_item_code", "")
+            _set_cv_setting("last_item_code_udc", "")
             return "UDC Sync: reached end, cursor reset."
 
         names = [d["name"] for d in items]
@@ -224,7 +224,7 @@ def scheduler_dispatch_udc_item_sync():
             items_before_batch += len(batch)
 
         # Update cursor to last item we dispatched (not processed) so next scheduler continues
-        _set_cv_setting("last_item_code", names[-1])
+        _set_cv_setting("last_item_code_udc", names[-1])
 
         return {
             "success": True,
