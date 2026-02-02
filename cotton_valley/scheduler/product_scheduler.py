@@ -5,8 +5,8 @@ import uuid
 from typing import List, Optional
 
 LOCK_KEY = "cv_sync_items_lock"
-DEFAULT_BATCH_SIZE = 200
-DEFAULT_MAX_BATCHES_PER_RUN = 10  # 10 * 200 = 2000 items per scheduler run
+DEFAULT_BATCH_SIZE = 300
+DEFAULT_MAX_BATCHES_PER_RUN = 10  # Not used anymore - all items processed in one go
 
 
 def _get_cv_setting(fieldname: str, default=None):
@@ -59,29 +59,19 @@ def scheduler_dispatch_cv_item_sync():
 
     try:
         batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
-        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "Cotton Valley"
-        last_item_code = _get_cv_setting("last_item_code_cv", "") or ""
 
-        # Fetch items in stable order, continuing after last_item_code
-        # (This avoids loading all 4000 into memory)
-        filters = {"company": company}
-        if last_item_code:
-            filters["name"] = (">", last_item_code)
-
+        # Fetch ALL items for company in one go
         items = frappe.get_all(
             "Item",
-            filters=filters,
+            filters={"company": company},
             fields=["name"],
-            order_by="name asc",
-            limit=batch_size * max_batches
+            order_by="name asc"
         )
 
         if not items:
-            # We reached the end — reset cursor so next run starts from beginning
-            _set_cv_setting("last_item_code_cv", "")
-            return "CV Sync: reached end, cursor reset."
+            return "CV Sync: No items found for Cotton Valley."
 
         names = [d["name"] for d in items]
 
@@ -124,13 +114,10 @@ def scheduler_dispatch_cv_item_sync():
             )
             items_before_batch += len(batch)
 
-        # Update cursor to last item we dispatched (not processed) so next scheduler continues
-        _set_cv_setting("last_item_code_cv", names[-1])
-
         return {
             "success": True,
             "task_id": task_id,
-            "message": f"CV Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "message": f"CV Sync dispatched {len(batches)} batches, {len(names)} items total.",
             "total_batches": total_batches,
             "total_items": total_items
         }
@@ -158,29 +145,19 @@ def scheduler_dispatch_udc_item_sync():
 
     try:
         batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
-        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "UDC"
-        last_item_code = _get_cv_setting("last_item_code_udc", "") or ""
 
-        # Fetch items in stable order, continuing after last_item_code
-        # (This avoids loading all 4000 into memory)
-        filters = {"company": company}
-        if last_item_code:
-            filters["name"] = (">", last_item_code)
-
+        # Fetch ALL items for company in one go
         items = frappe.get_all(
             "Item",
-            filters=filters,
+            filters={"company": company},
             fields=["name"],
-            order_by="name asc",
-            limit=batch_size * max_batches
+            order_by="name asc"
         )
 
         if not items:
-            # We reached the end — reset cursor so next run starts from beginning
-            _set_cv_setting("last_item_code_udc", "")
-            return "UDC Sync: reached end, cursor reset."
+            return "UDC Sync: No items found for UDC."
 
         names = [d["name"] for d in items]
 
@@ -223,13 +200,10 @@ def scheduler_dispatch_udc_item_sync():
             )
             items_before_batch += len(batch)
 
-        # Update cursor to last item we dispatched (not processed) so next scheduler continues
-        _set_cv_setting("last_item_code_udc", names[-1])
-
         return {
             "success": True,
             "task_id": task_id,
-            "message": f"UDC Sync dispatched {len(batches)} batches, {len(names)} items. Cursor -> {names[-1]}",
+            "message": f"UDC Sync dispatched {len(batches)} batches, {len(names)} items total.",
             "total_batches": total_batches,
             "total_items": total_items
         }
