@@ -193,10 +193,10 @@ frappe.listview_settings['Customer'] = {
             });
         };
 
-        // listview.page.add_inner_button(__('Send Mass Email (All Customers)'), () => {
-        //     frappe.confirm(__('Are you sure you want to send the Mass Email template to all customers?'), function () {
-        //         start_mass_email();
-        //     });
-        // });
+        listview.page.add_inner_button(__('Send Mass Email (All Customers)'), () => {
+            frappe.confirm(__('Are you sure you want to send the Mass Email template to all customers?'), function () {
+                start_mass_email();
+            });
+        });
     }
 };
