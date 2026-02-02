@@ -31,5 +31,41 @@ frappe.query_reports["Inventory Level Check"] = {
             "reqd": 0
         }
 
-	]
+	],
+    "formatter": function(value, row, column, data, default_formatter) {
+        // Ensure row number column shows full number
+        if (column.fieldname === "_idx") {
+            return row._idx + 1;
+        }
+        return default_formatter(value, row, column, data);
+    },
+    "onload": function(report) {
+       frappe.dom.set_style(`
+        /* Header column target */
+        .slick-header-column.row-number, 
+        .slick-header-column[id*="_idx_"],
+        .slick-header-column:first-child { 
+            width: 90px !important; 
+            min-width: 90px !important; 
+            max-width: 90px !important;
+        }
+
+        /* Data cell target */
+        .slick-cell.row-number, 
+        .slick-cell.l0.r0,
+        .slick-cell:first-child { 
+            width: 90px !important; 
+            min-width: 90px !important; 
+            max-width: 90px !important;
+            text-align: center !important;
+            overflow: visible !important;
+        }
+        
+        /* Ensure text doesn't truncate */
+        .datatable .dt-cell__content {
+            overflow: visible !important;
+            text-overflow: unset !important;
+        }
+    `);
+    }
 };

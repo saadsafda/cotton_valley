@@ -13,7 +13,7 @@ def get_columns():
         {
             "fieldname": "item_code",
             "label": "Item Code",
-            "fieldtype": "Link",
+            "fieldtype": "Data",
             "options": "Item",
             "align": "left",
             "width": 120
@@ -22,7 +22,7 @@ def get_columns():
             "fieldname": "item_name",
             "label": "Item Name",
             "fieldtype": "Data",
-            "width": 150
+            "width": 450
         },
         {
             "fieldname": "company",
