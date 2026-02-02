@@ -1344,7 +1344,14 @@ def sync_cv_item_batch(
                         item_doc.custom_sub_category = subcategory.get("name")
                         updated = True
                 else:
-                    errors.append({"item_code": item_code, "error": f"Subcategory ERP ID {itmctgid} not found"})
+                    frappe.get_doc({
+                        "doctype": "Product Subcategory",
+                        "erp_id": itmctgid,
+                        "title": itmctgdsc or f"{itmctgid}",
+                        "company": company,
+                    }).insert(ignore_permissions=True)
+                    item_doc.custom_sub_category = itmctgid
+                    updated = True
 
             if updated:
                 item_doc.save(ignore_permissions=True)
@@ -1637,7 +1644,14 @@ def sync_udc_item_batch(
                         item_doc.custom_sub_category = subcategory.get("name")
                         updated = True
                 else:
-                    errors.append({"item_code": item_code, "error": f"Subcategory ERP ID {itmctgid} not found"})
+                    frappe.get_doc({
+                        "doctype": "Product Subcategory",
+                        "erp_id": itmctgid,
+                        "title": itmctgdsc or f"{itmctgid}",
+                        "company": company,
+                    }).insert(ignore_permissions=True)
+                    item_doc.custom_sub_category = itmctgid
+                    updated = True
 
             if updated:
                 item_doc.save(ignore_permissions=True)
