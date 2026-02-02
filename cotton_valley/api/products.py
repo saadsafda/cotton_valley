@@ -1351,7 +1351,7 @@ def sync_cv_item_batch(
 
             # Qty update via Stock Reconciliation (do not write Bin directly)
             qty_avlbl_raw = item_data.get("qty_avlbl")
-            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
+            qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null"] else None
             if qty_avlbl is not None:
                 try:
                     qty_avlbl = float(qty_avlbl or 0)
@@ -1414,6 +1414,7 @@ def sync_cv_item_batch(
             })
             sr_doc.flags.ignore_permissions = True
             sr_doc.insert(ignore_permissions=True)
+            frappe.db.commit()
             sr_doc.submit()
         except Exception as e:
             errors.append({"item_code": "BATCH", "error": f"Stock Reconciliation failed: {str(e)}"})
