@@ -1100,46 +1100,65 @@ def sync_item_from_api(item_code, company=None):
         item_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-    # Update warehouse stock quantity - prefer stk_qty, fallback to qty_avlbl
-    qty_avlbl = item_data.get("qty_avlbl")
-    
-    # Use stk_qty if available, otherwise use qty_avlbl
-    qty_avlbl = qty_avlbl if qty_avlbl not in [None, "", "null"] else 0
-    
-    if qty_avlbl not in [None, "", "null"]:
+    # Update warehouse stock quantity via Stock Reconciliation (do not write Bin directly)
+    qty_avlbl_raw = item_data.get("qty_avlbl")
+    qty_avlbl = qty_avlbl_raw if qty_avlbl_raw not in [None, "", "null", 0] else None
+
+    if qty_avlbl is not None:
         try:
-            qty_avlbl = qty_avlbl or 0
+            qty_avlbl = float(qty_avlbl or 0)
         except (ValueError, TypeError) as e:
             frappe.log_error(f"Invalid stock quantity value '{qty_avlbl}' for item {item_code}: {str(e)}", "Stock Qty Conversion Error")
-            qty_avlbl = 0
-        
+            qty_avlbl = None
+
+    if qty_avlbl is not None:
         warehouse = "Stores - CV" if company == "Cotton Valley" else "Stores - U"
 
         try:
-            # Check if Bin exists for item and warehouse
-            bin_exists = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-            if bin_exists:
-                bin_doc = frappe.get_doc("Bin", bin_exists)
-                bin_doc.actual_qty = qty_avlbl
-                bin_doc.save(ignore_permissions=True)
-            else:
-                frappe.get_doc({
-                    "doctype": "Bin",
-                    "item_code": item_code,
-                    "warehouse": warehouse,
-                    "actual_qty": qty_avlbl
-                }).insert(ignore_permissions=True)
-        except Exception as e:
-            frappe.log_error(f"Failed to update Bin for item {item_code}, warehouse {warehouse}: {str(e)}", "Bin Update Error")
-        
-        try:
-            item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-            item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-            if item_available_qty == item_threshold_stock:
-                frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl or 0)
-            frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
-        except Exception as e:
-            frappe.log_error(f"Failed to update Item stock fields for {item_code}: {str(e)}", "Item Stock Update Error")
+            current_qty = frappe.db.get_value(
+                "Bin",
+                {"item_code": item_code, "warehouse": warehouse},
+                "actual_qty"
+            ) or 0
+        except Exception:
+            current_qty = 0
+
+        if float(current_qty) != float(qty_avlbl):
+            try:
+                retail_price = frappe.db.get_value(
+                    "Item Price",
+                    {"item_code": item_code, "price_list": "Retail"},
+                    "price_list_rate"
+                )
+                if retail_price is None:
+                    retail_price = frappe.db.get_value("Item", item_code, "stock_price") or 0
+
+                sr_doc = frappe.get_doc({
+                    "doctype": "Stock Reconciliation",
+                    "company": company,
+                    "purpose": "Stock Reconciliation",
+                    "posting_date": frappe.utils.nowdate(),
+                    "items": [{
+                        "item_code": item_code,
+                        "warehouse": warehouse,
+                        "qty": qty_avlbl,
+                        "valuation_rate": float(retail_price or 0)
+                    }]
+                })
+                sr_doc.flags.ignore_permissions = True
+                sr_doc.insert(ignore_permissions=True)
+                sr_doc.submit()
+            except Exception as e:
+                frappe.log_error(
+                    f"Failed to reconcile stock for {item_code} in {warehouse}: {str(e)}",
+                    "Stock Reconciliation Error"
+                )
+    else:
+        frappe.log_error(
+            title="Stock Quantity Not Updated",
+            message=f"Stock quantity not updated for {item_code}: qty_avlbl is invalid or empty, {qty_avlbl_raw}",
+        )
+
 
     frappe.db.commit()
 
@@ -1151,7 +1170,15 @@ CHUNK_SIZE = 200  # adjust as needed
 def _is_valid_value(val):
     return val not in (None, "", "0", 0, "null")
 
-def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_cv_item_batch(
+    batch,
+    company="Cotton Valley",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
@@ -1164,8 +1191,10 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itm/itmapi?ITMID="
+    # url_base = "https://sc15.indus-erp.com/ords/ctnvly_api/itm/itmapi?ITMID="
     warehouse = "Stores - CV"
     batch_item_count = len(batch)
     
@@ -1174,8 +1203,12 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
     if not total_items:
         total_items = batch_item_count
 
-    session = requests.Session()
-    session.auth = (CV_USER, CV_PASSWORD)
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
 
     processed = 0
     errors = []
@@ -1184,9 +1217,8 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
         # Calculate progress
         if is_scheduler_run:
             # Overall progress across all batches
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1210,9 +1242,12 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
         
         try:
             url = f"{url_base}{item_code}"
-            resp = session.get(url, timeout=30)
+            resp = requests.get(url, auth=(CV_USER, CV_PASSWORD), verify=False)
 
-            if resp.status_code != 200:
+            if resp.status_code == 404:
+                errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
+                continue
+            elif resp.status_code != 200:
                 errors.append({"item_code": item_code, "error": f"API {resp.status_code}: {resp.text[:300]}"})
                 continue
 
@@ -1253,6 +1288,7 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                 "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
+                "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
 
             updated = False
@@ -1309,46 +1345,23 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
                         item_doc.custom_sub_category = subcategory.get("name")
                         updated = True
                 else:
-                    errors.append({"item_code": item_code, "error": f"Subcategory ERP ID {itmctgid} not found"})
+                    frappe.get_doc({
+                        "doctype": "Product Subcategory",
+                        "erp_id": itmctgid,
+                        "title": itmctgdsc or f"{itmctgid}",
+                        "company": company,
+                    }).insert(ignore_permissions=True)
+                    item_doc.custom_sub_category = itmctgid
+                    updated = True
 
             if updated:
                 item_doc.save(ignore_permissions=True)
 
-            # Qty / Bin update
-            qty_avlbl_raw = item_data.get("qty_avlbl")
-            if _is_valid_value(qty_avlbl_raw):
-                qty_avlbl = int(float(qty_avlbl_raw or 0))
-
-                bin_name = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-                if bin_name:
-                    frappe.db.set_value("Bin", bin_name, "actual_qty", qty_avlbl)
-                else:
-                    frappe.get_doc({
-                        "doctype": "Bin",
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "actual_qty": qty_avlbl
-                    }).insert(ignore_permissions=True)
-
-                # Update your custom fields (prefer set_value to avoid full doc save)
-                item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-                item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-                if item_available_qty == item_threshold_stock:
-                    frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-                frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
-
-            # Optional: log invalid fields once per item instead of per field insert spam
-            if invalid_fields:
-                frappe.log_error(
-                    title=f"CV Item invalid fields: {item_code}",
-                    message=str(invalid_fields[:50])
-                )
 
             processed += 1
 
         except Exception as e:
             errors.append({"item_code": item_code, "error": f"Unhandled: {str(e)}"})
-
     # ✅ Commit once per batch
     frappe.db.commit()
 
@@ -1393,7 +1406,15 @@ def sync_cv_item_batch(batch, company="Cotton Valley", task_id=None, batch_numbe
 
 
 
-def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_udc_item_batch(
+    batch,
+    company="UDC",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Processes a list of item_codes.
     Commits once at end (or every X items if you want).
@@ -1406,6 +1427,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itm/itmapi?ITMID="
     warehouse = "Stores - U"
@@ -1416,8 +1438,12 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
     if not total_items:
         total_items = batch_item_count
 
-    session = requests.Session()
-    session.auth = (UDC_USER, UDC_PASSWORD)
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
 
     processed = 0
     errors = []
@@ -1426,9 +1452,8 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
         # Calculate progress
         if is_scheduler_run:
             # Overall progress across all batches
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1452,9 +1477,12 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
         
         try:
             url = f"{url_base}{item_code}"
-            resp = session.get(url, timeout=30)
+            resp = requests.get(url, auth=(UDC_USER, UDC_PASSWORD), verify=False)
 
-            if resp.status_code != 200:
+            if resp.status_code == 404:
+                errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
+                continue
+            elif resp.status_code != 200:
                 errors.append({"item_code": item_code, "error": f"API {resp.status_code}: {resp.text[:300]}"})
                 continue
 
@@ -1495,6 +1523,7 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                 "custom_package_width_inch": float(item_data.get("casesizwid") or 0),
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
+                "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
 
             updated = False
@@ -1551,40 +1580,17 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
                         item_doc.custom_sub_category = subcategory.get("name")
                         updated = True
                 else:
-                    errors.append({"item_code": item_code, "error": f"Subcategory ERP ID {itmctgid} not found"})
+                    frappe.get_doc({
+                        "doctype": "Product Subcategory",
+                        "erp_id": itmctgid,
+                        "title": itmctgdsc or f"{itmctgid}",
+                        "company": company,
+                    }).insert(ignore_permissions=True)
+                    item_doc.custom_sub_category = itmctgid
+                    updated = True
 
             if updated:
                 item_doc.save(ignore_permissions=True)
-
-            # Qty / Bin update
-            qty_avlbl_raw = item_data.get("qty_avlbl")
-            if _is_valid_value(qty_avlbl_raw):
-                qty_avlbl = int(float(qty_avlbl_raw or 0))
-
-                bin_name = frappe.db.exists("Bin", {"item_code": item_code, "warehouse": warehouse})
-                if bin_name:
-                    frappe.db.set_value("Bin", bin_name, "actual_qty", qty_avlbl)
-                else:
-                    frappe.get_doc({
-                        "doctype": "Bin",
-                        "item_code": item_code,
-                        "warehouse": warehouse,
-                        "actual_qty": qty_avlbl
-                    }).insert(ignore_permissions=True)
-
-                # Update your custom fields (prefer set_value to avoid full doc save)
-                item_available_qty = frappe.db.get_value("Item", item_code, "available_stock")
-                item_threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock")
-                if item_available_qty == item_threshold_stock:
-                    frappe.db.set_value("Item", item_code, "threshold_stock", qty_avlbl)
-                frappe.db.set_value("Item", item_code, "available_stock", qty_avlbl)
-
-            # Optional: log invalid fields once per item instead of per field insert spam
-            if invalid_fields:
-                frappe.log_error(
-                    title=f"UDC Item invalid fields: {item_code}",
-                    message=str(invalid_fields[:50])
-                )
 
             processed += 1
 
@@ -1816,7 +1822,15 @@ def sync_udc_item_batch(batch, company="UDC", task_id=None, batch_number=None, t
 #     return f"UDC item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
 
 
-def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_cv_price_batch(
+    batch,
+    company="Cotton Valley",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Process a batch of Cotton Valley item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
@@ -1828,6 +1842,7 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID="
     username = CV_USER
@@ -1841,12 +1856,18 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
     if not total_items:
         total_items = batch_item_count
 
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+
     for idx, item_code in enumerate(batch):
         # Calculate progress
         if is_scheduler_run:
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)
@@ -1961,7 +1982,15 @@ def sync_cv_price_batch(batch, company="Cotton Valley", task_id=None, batch_numb
     return {"processed": processed_count, "errors": error_count, "task_id": task_id}
 
 
-def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, total_batches=None, total_items=None):
+def sync_udc_price_batch(
+    batch,
+    company="UDC",
+    task_id=None,
+    batch_number=None,
+    total_batches=None,
+    total_items=None,
+    items_before_batch=None,
+):
     """
     Process a batch of UDC item prices from external API.
     Called by scheduler dispatcher, runs in background queue.
@@ -1973,6 +2002,7 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
         batch_number: Current batch number (for scheduler multi-batch runs)
         total_batches: Total number of batches (for scheduler multi-batch runs)
         total_items: Total items across all batches (for scheduler multi-batch runs)
+        items_before_batch: Items processed before this batch (for variable batch sizes)
     """
     url_base = "https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID="
     username = UDC_USER
@@ -1986,12 +2016,18 @@ def sync_udc_price_batch(batch, company="UDC", task_id=None, batch_number=None, 
     if not total_items:
         total_items = batch_item_count
 
+    items_before_this_batch = 0
+    if is_scheduler_run:
+        if items_before_batch is not None:
+            items_before_this_batch = int(items_before_batch)
+        else:
+            items_before_this_batch = (batch_number - 1) * batch_item_count
+
     for idx, item_code in enumerate(batch):
         # Calculate progress
         if is_scheduler_run:
-            items_before_this_batch = (batch_number - 1) * batch_item_count
             overall_current = items_before_this_batch + idx + 1
-            overall_percent = int((overall_current / total_items) * 100)
+            overall_percent = int((overall_current / total_items) * 100) if total_items else 0
         else:
             overall_current = idx + 1
             overall_percent = int((idx / batch_item_count) * 100)

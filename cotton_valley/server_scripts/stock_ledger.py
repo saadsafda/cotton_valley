@@ -4,20 +4,39 @@ import time
 
 def update_item_stock_and_price(item_code):
     # Get total available stock from Bin
-    qty = frappe.db.sql("""
-        SELECT SUM(actual_qty)
-        FROM `tabBin`
-        WHERE item_code = %s
-    """, (item_code,))[0][0] or 0
+    # If the Item is tied to a company, only sum warehouses for that company
+    item_company = frappe.db.get_value("Item", item_code, "company")
+    if item_company:
+        qty = frappe.db.sql("""
+            SELECT SUM(b.actual_qty)
+            FROM `tabBin` b
+            INNER JOIN `tabWarehouse` w ON w.name = b.warehouse
+            WHERE b.item_code = %s AND w.company = %s
+        """, (item_code, item_company))[0][0] or 0
+    else:
+        qty = frappe.db.sql("""
+            SELECT SUM(actual_qty)
+            FROM `tabBin`
+            WHERE item_code = %s
+        """, (item_code,))[0][0] or 0
 
     # Get latest valuation rate from Stock Ledger Entry
-    rate = frappe.db.sql("""
-        SELECT valuation_rate
-        FROM `tabStock Ledger Entry`
-        WHERE item_code = %s
-        ORDER BY posting_date DESC, posting_time DESC
-        LIMIT 1
-    """, (item_code,))
+    if item_company:
+        rate = frappe.db.sql("""
+            SELECT valuation_rate
+            FROM `tabStock Ledger Entry`
+            WHERE item_code = %s AND company = %s
+            ORDER BY posting_date DESC, posting_time DESC
+            LIMIT 1
+        """, (item_code, item_company))
+    else:
+        rate = frappe.db.sql("""
+            SELECT valuation_rate
+            FROM `tabStock Ledger Entry`
+            WHERE item_code = %s
+            ORDER BY posting_date DESC, posting_time DESC
+            LIMIT 1
+        """, (item_code,))
     valuation_rate = rate[0][0] if rate else 0
     threshold_stock = frappe.db.get_value("Item", item_code, "threshold_stock") or 0
     available_stock = frappe.db.get_value("Item", item_code, "available_stock") or 0

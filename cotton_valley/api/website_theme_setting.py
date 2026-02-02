@@ -13,9 +13,7 @@ def settings(company=None):
     if check_customer_token():
         current_customer = get_customer_from_token()
         if current_customer:
-            customer_payment = frappe.db.get_value(
-                "Customer", current_customer, "mode_of_payment"
-            )
+            customer_payment = frappe.db.get_value("Customer", current_customer, "udc_mode_of_payment") if company == "UDC" else frappe.db.get_value("Customer", current_customer, "mode_of_payment")
             if customer_payment:
                 mode_of_payment = frappe.get_all(
                     "Mode of Payment",

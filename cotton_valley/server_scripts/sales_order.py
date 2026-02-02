@@ -2,13 +2,16 @@ import frappe
 from frappe import _
 
 
-def increase_threshold_stock_on_cancel(doc, method):
+def increase_stock_on_cancel(doc, method):
     """
     Increase threshold_stock back when Sales Order is cancelled.
     This restores the reserved stock.
     """
     try:
         for item in doc.items:
+            current_available = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
+            new_available = current_available + item.qty
+            frappe.db.set_value("Item", item.item_code, "available_stock", new_available)
             current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
             available_stock = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
             # Don't exceed available stock
@@ -22,6 +25,23 @@ def increase_threshold_stock_on_cancel(doc, method):
 def order_cancel(doc, method):
     if not doc.cancellation_reason:
         frappe.throw(_("Please enter a value in the *Cancellation Reason* field before cancelling this Sales Order."))
+    cancel_delivery_note(doc, method)
+
+def cancel_delivery_note(doc, method):
+    try:
+        delivery_notes = frappe.get_all(
+            "Delivery Note",
+            filters={"against_sales_order": doc.name, "docstatus": 1},
+            fields=["name"]
+        )
+
+        for dn in delivery_notes:
+            dn_doc = frappe.get_doc("Delivery Note", dn.name)
+            dn_doc.cancel()
+        
+        frappe.db.commit()
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Auto Delivery Note Cancellation Failed")
 
 
 def update_customer_order_summary(doc, method):
@@ -52,7 +72,7 @@ def update_customer_order_summary(doc, method):
     frappe.db.commit()
 
     make_delivery_note_on_submit(doc, method)
-    decrease_threshold_stock(doc, method)
+    decrease_stock(doc, method)
     send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
 
@@ -112,11 +132,15 @@ def send_sales_order_confirmation_email(doc, method):
                 "salesRepEmail": sales_person_email,
                 "paymentmethod": doc.custom_mode_of_payment,
                 "company": doc.company,
-                "address1": doc.billing_address_details,
                 "state": doc.state or "",
                 "zip": doc.zip_code or "",
                 "country": doc.country or "",
-                "shipAddress1": doc.shipping_address_details or "",
+                "billAddress": doc.billing_address_details,
+                "city": doc.billing_city or "",
+                "phone": doc.custom_billing_phone or "",
+                "email": doc.custom_customer_email or "",
+                "shipAddress": doc.shipping_address_details or "",
+                "shipCity": doc.shipping_city or "",
                 "shipState": doc.shipping_state or "",
                 "shipZip": doc.shipping_zip_code or "",
                 "shipCountry": doc.shipping_country or "",
@@ -125,6 +149,7 @@ def send_sales_order_confirmation_email(doc, method):
                 "grandtotal": doc.grand_total,
                 "currency": doc.currency,
                 "items": doc.items,
+                "specialinstructions": doc.custom_notes or "",
             }
             
             # Render template
@@ -162,8 +187,10 @@ def send_sales_order_confirmation_email(doc, method):
             </div>
             """
         
-        # Send email (include CC if present)
+        sender = "order@cottonvalley.net" if doc.company == "Cotton Valley" else "order@universaldc.com"
+        # Send the email with CC
         frappe.sendmail(
+            sender=sender,
             recipients=recipients,
             cc=cc_emails if cc_emails else None,
             subject=subject,
@@ -178,13 +205,16 @@ def send_sales_order_confirmation_email(doc, method):
 
 
 
-def decrease_threshold_stock(doc, method):
+def decrease_stock(doc, method):
     """
     Decrease threshold_stock for each item when Sales Order is submitted.
     This reserves stock for website display.
     """
     try:
         for item in doc.items:
+            current_available = frappe.db.get_value("Item", item.item_code, "available_stock") or 0
+            new_available = max(0, current_available - item.qty)  # Don't go below 0
+            frappe.db.set_value("Item", item.item_code, "available_stock", new_available)
             current_threshold = frappe.db.get_value("Item", item.item_code, "threshold_stock") or 0
             new_threshold = max(0, current_threshold - item.qty)  # Don't go below 0
             frappe.db.set_value("Item", item.item_code, "threshold_stock", new_threshold)
@@ -294,7 +324,10 @@ def send_abandoned_cart_emails():
                 response = email_template.response_html if email_template.use_html else email_template.response
                 message = frappe.render_template(response, template_args)
 
+                sender = "order@cottonvalley.net" if so.company == "Cotton Valley" else "order@universaldc.com"
+                # Send the email with CC
                 frappe.sendmail(
+                    sender=sender,
                     recipients=[customer_email],
                     cc=cc_emails if cc_emails else None,
                     subject=subject,

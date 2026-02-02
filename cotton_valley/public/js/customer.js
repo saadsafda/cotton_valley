@@ -33,10 +33,10 @@ frappe.ui.form.on('Customer', {
 
                                         // Open new window and set cookie
                                         // Open portal in new tab
-                                        window.open(`https://cottonvalley.destrotechnologies.website/en/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://www.cottonvalley.net/auth/erplogin?token=${token}`, "_blank");
 
                                     } else {
-                                        window.open(`https://universal.destrotechnologies.website/en/auth/erplogin?token=${token}`, "_blank");
+                                        window.open(`https://www.universaldc.com/auth/erplogin?token=${token}`, "_blank");
                                     }
                                 } else {
                                     frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
@@ -196,7 +196,10 @@ frappe.ui.form.on('Customer', {
                     frappe.call({
                         method: 'cotton_valley.server_scripts.customer.send_mass_email_btn',
                         args: {
-                            customer_id: frm.doc.name
+                            customer_id: frm.doc.name,
+                            email: frm.doc.custom_email_address,
+                            first_name: frm.doc.customer_name,
+                            last_name: frm.doc.custom_last_name || ""
                         },
                         freeze: true,
                         freeze_message: "Sending Email...",

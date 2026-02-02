@@ -234,7 +234,10 @@ def forgot_password(email, company=None):
                 </div>
                 """
 
+            sender = "info@cottonvalley.net" if company == "Cotton Valley" else "info@universaldc.com"
+            # Send the email with CC
             frappe.sendmail(
+                sender=sender,
                 recipients=[email],
                 subject=subject,
                 message=message,
@@ -392,8 +395,9 @@ def customer_logout():
         return {"status": "error", "message": str(e)}
 
 @frappe.whitelist(allow_guest=True)
-def get_current_customer():
+def get_current_customer(company=None):
     try:
+        company = "Cotton Valley" if not company or company == "null" else company
         customer_id = get_customer_from_token()
         
         if not customer_id:
@@ -413,14 +417,19 @@ def get_current_customer():
             "cell_phone": customer.custom_cell_phone,
             "profile_image_id": customer.image,
             "status": 1 if not customer.disabled else 0,
-            "mode_of_payment": customer.mode_of_payment,
+            "mode_of_payment": customer.udc_mode_of_payment if company == "UDC" else customer.mode_of_payment,
             "company": customer.custom_company_name,
             "created_at": customer.creation,
             "updated_at": customer.modified,
         }
 
-        if customer.sales_person:
-            sales_rep = frappe.get_doc("Sales Person", customer.sales_person)
+        sales_rep = None
+        if company == "UDC":
+            sales_rep = frappe.get_doc("Sales Person", customer.udc_sales_person) if customer.udc_sales_person else None
+        else:
+            sales_rep = frappe.get_doc("Sales Person", customer.sales_person) if customer.sales_person else None
+
+        if sales_rep:
             sales_employee = {}
             if sales_rep.employee:
                 sales_employee = frappe.db.get_value("Employee", {"name": sales_rep.employee}, ["user_id", "cell_number"], as_dict=True)
@@ -468,6 +477,8 @@ def get_current_customer():
             addr_doc = frappe.get_doc("Address", link.parent)
             if addr_doc.disabled:
                 continue
+            if addr_doc.company != company:
+                continue
             is_default = 0
             if addr_doc.address_type == "Shipping" and addr_doc.name == customer.customer_primary_address:
                 is_default = 1
@@ -493,20 +504,7 @@ def get_current_customer():
         # --- Profile Image ---
         customer_data["profile_image"] = get_file(customer.image)
 
-        # --- Payment Account (if you have one) ---
-        # payment_account = frappe.db.get_value(
-        #     "Payment Account", {"customer": customer_id},
-        #     ["name", "paypal_email", "bank_name", "bank_account_no"], as_dict=True
-        # )
-        # if payment_account:
-        #     customer_data["payment_account"] = {
-        #         "id": payment_account.name,
-        #         "user_id": customer_id,
-        #         "paypal_email": payment_account.paypal_email,
-        #         "bank_name": payment_account.bank_name,
-        #         "bank_account_no": payment_account.bank_account_no,
-        #     }
-        # else:
+        # --- Payment Account (Placeholder) ---
         customer_data["payment_account"] = {
             "id": 1,
             "user_id": customer_id,
@@ -532,82 +530,131 @@ def get_current_customer():
 
 
 
-# # Register Email For Customer
-# @frappe.whitelist(allow_guest=True)
-# def send_registration_email(customer_email, firstname, lastname, company, template_name):
-#     """
-#     Send welcome email to newly registered customer
-#     Uses Email Template from ERPNext for easy content management
-#     """
-#     try:
-#         if not customer_email:
-#             frappe.log_error("No email address found for customer", "Registration Email Failed")
-#             return
-        
-#         # Try to get Email Template from ERPNext
-#         template_name = template_name
-#         print(template_name, "template name running")
-#         # if company == "Cotton Valley":
-#         #     template_name = "New Registration Message_CVL"
-#         # else:
-#         #     template_name = "New Registration Message_UDC"
-#         email_subject = f"Welcome to {company}!"
-#         email_message = ""
-        
-#         cc_emails = []
-#         if frappe.db.exists("Email Template", template_name):
-#             email_template = frappe.get_doc("Email Template", template_name)
-#             email_subject = email_template.subject
-            
-#             # Get CC emails from child table
-#             if email_template.custom_cc_email:
-#                 cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
-            
-#             # Render template with customer data
-#             context = {
-#                 "firstname": firstname,
-#                 "lastname": lastname,
-#                 "email": customer_email
-#             }
-#             response = email_template.response_html if email_template.use_html else email_template.response
-#             email_message = frappe.render_template(response, context)
-#         else:
-#             # Fallback message if template doesn't exist
-#             email_message = f"""
-#                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-#                     <h2 style="color: #333;">Welcome to {company}!</h2>
-#                     <p>Dear {firstname} {lastname},</p>
-                    
-#                     <p>Thank you for registering with us! We're excited to have you as part of our community.</p>
-                    
-#                     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-#                         <h3 style="margin-top: 0; color: #555;">Your Registration Details:</h3>
-#                         <p><strong>Customer ID:</strong> {firstname}</p>
-#                         <p><strong>Email:</strong> {customer_email}</p>
-#                     </div>
-                    
-#                     <p><strong>Note:</strong> Your account is currently pending approval. Our team will review your registration and activate your account shortly. You will receive another email once your account is activated.</p>
-                    
-#                     <p>If you have any questions, please don't hesitate to contact us.</p>
-                    
-#                 </div>
-#             """
-        
-#         # Send the email with CC
-#         frappe.sendmail(
-#             recipients=[customer_email],
-#             cc=cc_emails if cc_emails else None,
-#             subject=email_subject,
-#             message=email_message,
-#             now=True  # Send immediately
-#         )
-        
-#         frappe.log_error(f"Registration email sent to {customer_email}", "Customer Registration Email")
-        
-#     except Exception as e:
-#         # Don't fail registration if email fails
-#         frappe.log_error(f"Failed to send registration email: {str(e)}\n{frappe.get_traceback()}", "Registration Email Failed")
-
+@frappe.whitelist()
+def fetch_all_cv_customer_data(task_id=None):
+    """
+    Fetch all customer data from external API and update local Customer records.
+    """
+    try:
+        customers = frappe.get_all("Customer", filters={"disabled": 0}, fields=["name"])
+        total = len(customers)
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "current": 0,
+                    "total": total,
+                    "percent": 0,
+                    "status": "running"
+                }
+            )
+        for idx, cust in enumerate(customers, start=1):
+            fetch_customer_data(cust.name, "Cotton Valley")
+            if task_id:
+                percent = int((idx / total) * 100) if total else 100
+                frappe.publish_realtime(
+                    "customer_sync_progress",
+                    {
+                        "task_id": task_id,
+                        "company": "Cotton Valley",
+                        "current": idx,
+                        "total": total,
+                        "percent": percent,
+                        "customer_id": cust.name,
+                        "status": "running"
+                    }
+                )
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "current": total,
+                    "total": total,
+                    "percent": 100,
+                    "status": "complete"
+                }
+            )
+        return {"status": "success", "message": "All customer data fetched and updated successfully"}
+    except Exception as e:
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "Cotton Valley",
+                    "status": "error",
+                    "message": str(e)
+                }
+            )
+        frappe.log_error(frappe.get_traceback(), "Fetch All Customer Data Error")
+        return {"status": "error", "message": str(e)}
+    
+@frappe.whitelist()
+def fetch_all_UDC_customer_data(task_id=None):
+    """
+    Fetch all customer data from external API and update local Customer records.
+    """
+    try:
+        customers = frappe.get_all("Customer", filters={"disabled": 0}, fields=["name"])
+        total = len(customers)
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "current": 0,
+                    "total": total,
+                    "percent": 0,
+                    "status": "running"
+                }
+            )
+        for idx, cust in enumerate(customers, start=1):
+            fetch_customer_data(cust.name, "UDC")
+            if task_id:
+                percent = int((idx / total) * 100) if total else 100
+                frappe.publish_realtime(
+                    "customer_sync_progress",
+                    {
+                        "task_id": task_id,
+                        "company": "UDC",
+                        "current": idx,
+                        "total": total,
+                        "percent": percent,
+                        "customer_id": cust.name,
+                        "status": "running"
+                    }
+                )
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "current": total,
+                    "total": total,
+                    "percent": 100,
+                    "status": "complete"
+                }
+            )
+        return {"status": "success", "message": "All customer data fetched and updated successfully"}
+    except Exception as e:
+        if task_id:
+            frappe.publish_realtime(
+                "customer_sync_progress",
+                {
+                    "task_id": task_id,
+                    "company": "UDC",
+                    "status": "error",
+                    "message": str(e)
+                }
+            )
+        frappe.log_error(frappe.get_traceback(), "Fetch All Customer Data Error")
+        return {"status": "error", "message": str(e)}
 
 
 
@@ -659,7 +706,8 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             field_mapping = {
                 "custom_store_name": item_data.get("sbsname"),              # Store Name
                 "customer_name": item_data.get("sbsname_shr"),     # First Name / Last Name
-                "custom_email_address": item_data.get("email1"),     # Email Address
+                "custom_phone_number": item_data.get("phone"),          # Phone Number
+                "custom_cell_phone": item_data.get("mobile"),           # Cell Phone
             }
             if company == "Cotton Valley":
                 field_mapping["price_list_for_cv"] = fetch_price_list_name(item_data.get("rgnid"), item_data.get("rgnname"))  # Price List for CV (Name)
@@ -767,17 +815,6 @@ def fetch_sales_rep(sprid, sprname, company="Cotton Valley"):
     Returns:
         str: Sales Representative name
     """
-    # exist_spr = frappe.db.exists("Sales Person", sprid)
-    # if exist_spr:
-    #     frappe.db.set_value("Sales Person", sprid, "sales_person_name", sprname)
-    # else:
-    #     # Create new Sales Person if not exists
-    #     new_spr = frappe.get_doc({
-    #         "doctype": "Sales Person",
-    #         "sales_person_name": sprname,
-    #         "sales_person_id": sprid
-    #     })
-    #     new_spr.insert(ignore_permissions=True)
     existing_spr = None
     new_spr = None
     if company == "Cotton Valley":
@@ -819,17 +856,6 @@ def fetch_mode_of_payment(paytermid, paytermdsc, company="Cotton Valley"):
     Returns:
         str: Mode of Payment
     """
-    # exist_mop = frappe.db.exists("Mode of Payment", paytermid)
-    # if exist_mop:
-    #     frappe.db.set_value("Mode of Payment", exist_mop, "mode_of_payment", paytermdsc)
-    # else:
-    #     # Create new Mode of Payment if not exists
-    #     new_mop = frappe.get_doc({
-    #         "doctype": "Mode of Payment",
-    #         "mode_of_payment": paytermdsc,
-    #         "mode_id": paytermid
-    #     })
-    #     new_mop.insert(ignore_permissions=True)
     existing_mop = None
     new_mop = None
     if company == "Cotton Valley":
@@ -872,21 +898,6 @@ def fetch_price_list_name(rgnid, rgnname, company="Cotton Valley"):
     Returns:
         str: Price List name
     """
-    # exist_pl = frappe.db.exists("Price List", rgnid)
-    # if not exist_pl:
-    #     # Create new Price List if not exists
-    #     new_pl = frappe.get_doc({
-    #         "doctype": "Price List",
-    #         "price_list_name": rgnname,
-    #         "price_id": rgnid,
-    #         "selling": 1,
-    #         "buying": 1
-    #     })
-    #     new_pl.insert(ignore_permissions=True)
-
-    # if exist_pl:
-    #     frappe.db.set_value("Price List", rgnid, "price_list_name", rgnname)
-
     existing_pl = None
     new_pl = None
     if company == "Cotton Valley":
@@ -938,6 +949,7 @@ def update_address_fields(address_doc, addr_data, address_type):
     address_doc.pincode = addr_data.get("postcd", "").strip()       # Zip Code
     address_doc.state = addr_data.get("prvname", "").strip()        # State (Name)
     address_doc.country = addr_data.get("cntname", "").strip() or "UNITED STATES"  # Country
+    address_doc.phone = addr_data.get("phone", "").strip()          # Phone Number
     # address_doc.custom_state_code = addr_data.get("prvid", "").strip()  # State (ID)
 
 
@@ -966,6 +978,7 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
         "state": addr_data.get("prvname", "").strip(),
         "country": addr_data.get("cntname", "").strip() or "UNITED STATES",
         "company": company,
+        "phone": addr_data.get("phone", "").strip(),
         "links": [
             {
                 "link_doctype": "Customer",
@@ -986,4 +999,3 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
     frappe.logger().info(f"Created new address {new_address.name} for customer {customer_id}")
     
     return new_address.name
-

@@ -197,8 +197,6 @@ frappe.pages['item-sync-progress'].on_page_load = function(wrapper) {
 
     // Listen for custom progress updates via realtime
     frappe.realtime.on('item_sync_progress', function(data) {
-        console.log('Received progress:', data);
-        
         // Build log message with batch info if scheduler run
         let batchInfo = '';
         if (data.batch_number && data.total_batches) {

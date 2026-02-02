@@ -160,7 +160,7 @@ def send_registration_email(customer_email, sales_person, firstname, lastname, c
         if company == "Cotton Valley":
             template_name = "New Registration Message_CVL"
         else:
-            template_name = "New Registrations Message_UDC  "
+            template_name = "New Registrations Message_UDC"
         email_subject = f"Welcome to {company}!"
         email_message = ""
         
@@ -203,14 +203,15 @@ def send_registration_email(customer_email, sales_person, firstname, lastname, c
                 </div>
             """
         
+        sender = "info@cottonvalley.net" if company == "Cotton Valley" else "info@universaldc.com"
         # Send the email with CC
         frappe.sendmail(
+            sender=sender,
             recipients=[customer_email, sales_person_email] if sales_person_email else [customer_email],
             cc=cc_emails if cc_emails else None,
             subject=email_subject,
             message=email_message,
             now=True,  # Send immediately
-            header=["", ""]  # Empty header to minimize footer
         )
         
         frappe.log_error(f"Registration email sent to {customer_email}", "Customer Registration Email")
