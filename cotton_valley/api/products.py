@@ -495,21 +495,24 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     for g in galleries_data:
         galleries_map.setdefault(g["parent"], []).append(get_file(g["image"]) if g["image"] else None)
 
+    # OPTIMIZATION: Batch fetch retail prices for all items in ONE query (instead of N queries in loop)
+    retail_price_map = {}
+    if check_customer_token():
+        retail_price_data = frappe.db.sql("""
+            SELECT item_code, price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code IN %s AND price_list = %s
+        """, (item_ids, "Retail"), as_dict=True)
+        retail_price_map = {p["item_code"]: p["price_list_rate"] for p in retail_price_data}
 
     # --- Final Assembly ---
     products = []
     for product in items:
         product_id = product["id"]
 
-        # Price
+        # Price - OPTIMIZED: Use pre-fetched retail prices instead of query per item
         if check_customer_token():
-            default_price_data = frappe.db.sql("""
-                SELECT item_code, price_list_rate
-                FROM `tabItem Price`
-                WHERE item_code = %s and price_list = %s
-                LIMIT 1
-            """, (product_id, "Retail"), as_dict=True)
-            retail_price = default_price_data[0]["price_list_rate"] if default_price_data else 0
+            retail_price = retail_price_map.get(product_id, 0)
             customer_price = price_map.get(product_id, 0)
 
             product["price"] = customer_price if customer_price > 0 else retail_price
@@ -740,9 +743,13 @@ def get_product(product_id, company=None):
 
     # thumbnail (first gallery file or image field)
 
-    # categories (via Item Category child table, if you have)
+    # OPTIMIZED: Fetch categories with all details in ONE query instead of calling get_category_list per category
     categories = frappe.db.sql("""
-        SELECT c.product_category as id
+        SELECT 
+            c.product_category as id,
+            pc.title,
+            pc.category_image,
+            pc.banner_image
         FROM `tabProduct Categoris` c
         INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
         WHERE c.parent = %s
@@ -750,7 +757,16 @@ def get_product(product_id, company=None):
 
     category_list = []
     for cat in categories:
-        category_list.append(get_category_list(cat.id, company)["data"][0] if get_category_list(cat.id, company)["data"] else {"id": cat.id, "name": cat.id, "slug": cat.id, "category_image": None, "banner_image": None, "products_count": 0, "subcategories": []})
+        category_list.append({
+            "id": cat.id,
+            "name": cat.title or cat.id,
+            "slug": cat.id,
+            "category_image": get_file(cat.category_image),
+            "banner_image": get_file(cat.banner_image),
+            "products_count": 0,
+            "subcategories": [],
+            "type": "product"
+        })
 
     product["categories"] = category_list
     reviews = []
@@ -759,17 +775,18 @@ def get_product(product_id, company=None):
     product["rating_count"] = sum([r["rating"] for r in reviews]) / len(reviews) if reviews else 0
 
     if product["brand"]:
-        brand_data = frappe.get_doc("Brand", product["brand"])
-        product["store"] = {
-            "id": brand_data.name,
-            "store_name": brand_data.brand,
-            "slug": brand_data.name,
-            "description": brand_data.description,
-            "store_logo": get_file(brand_data.image)
-        }
+        # OPTIMIZED: Use get_value instead of get_doc to avoid loading full document
+        brand_data = frappe.db.get_value("Brand", product["brand"], ["name", "brand", "description", "image"], as_dict=True)
+        if brand_data:
+            product["store"] = {
+                "id": brand_data.name,
+                "store_name": brand_data.brand,
+                "slug": brand_data.name,
+                "description": brand_data.description,
+                "store_logo": get_file(brand_data.image)
+            }
 
-
-    product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
+    # REMOVED DUPLICATE: related_products was fetched twice, keeping only the first one
     product["cross_sell_products"] = []
 
     return product

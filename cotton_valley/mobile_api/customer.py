@@ -49,6 +49,30 @@ def get_all_customers():
         # Create a dictionary for quick lookup
         last_order_map = {order.customer: order.last_order_date for order in last_orders}
         
+        # OPTIMIZATION: Batch fetch ALL addresses for ALL customers in ONE query (instead of N+M queries)
+        all_addresses = frappe.db.sql("""
+            SELECT 
+                dl.link_name as customer,
+                a.name,
+                a.address_title,
+                a.address_line1,
+                a.address_type,
+                a.city,
+                a.pincode,
+                a.phone,
+                a.country,
+                a.state
+            FROM `tabDynamic Link` dl
+            INNER JOIN `tabAddress` a ON a.name = dl.parent
+            WHERE dl.link_doctype = 'Customer' 
+                AND dl.link_name IN %s
+                AND dl.parenttype = 'Address'
+        """, (customer_ids,), as_dict=True)
+        
+        # Group addresses by customer
+        addresses_by_customer = {}
+        for addr in all_addresses:
+            addresses_by_customer.setdefault(addr.customer, []).append(addr)
         
         customer_list = []
         for customer in customers:
@@ -78,33 +102,27 @@ def get_all_customers():
                 "created_at": customer.creation,
                 "updated_at": customer.modified,
             }
-            # --- Addresses ---
-            links = frappe.get_all("Dynamic Link",
-                filters={"link_doctype": "Customer", "link_name": customer.name},
-                fields=["parent"]
-            )
+            # --- Addresses (OPTIMIZED: Use pre-fetched data) ---
             addresses = []
-            for link in links:
-                addr_doc = frappe.get_doc("Address", link.parent)
+            for addr in addresses_by_customer.get(customer.name, []):
                 is_default = 0
-                if addr_doc.address_type == "Shipping" and addr_doc.name == customer.customer_primary_address:
+                if addr.address_type == "Shipping" and addr.name == customer.customer_primary_address:
                     is_default = 1
-
-                if addr_doc.address_type == "Billing" and addr_doc.name == customer.customer_billing_address:
+                if addr.address_type == "Billing" and addr.name == customer.customer_billing_address:
                     is_default = 1
 
                 addresses.append({
-                    "id": addr_doc.name,
-                    "title": addr_doc.address_title,
-                    "street": addr_doc.address_line1,
-                    "address_type": addr_doc.address_type,
-                    "city": addr_doc.city,
-                    "pincode": addr_doc.pincode,
+                    "id": addr.name,
+                    "title": addr.address_title,
+                    "street": addr.address_line1,
+                    "address_type": addr.address_type,
+                    "city": addr.city,
+                    "pincode": addr.pincode,
                     "is_default": is_default,
                     "country_code": customer_data["country_code"],
-                    "phone": addr_doc.phone,
-                    "country": addr_doc.country,
-                    "state": addr_doc.state,
+                    "phone": addr.phone,
+                    "country": addr.country,
+                    "state": addr.state,
                 })
             customer_data["address"] = addresses
 
