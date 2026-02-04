@@ -857,9 +857,10 @@ def get_prices(item_code, company=None):
             try:
                 region_name = item.get("rgnname")
                 rate = item.get("rate")
+                rgnid = item.get("rgnid")
 
                 # Validate item data
-                if not region_name or not rate:
+                if not region_name or not rate or not rgnid:
                     skipped_count += 1
                     continue
                 
@@ -873,8 +874,12 @@ def get_prices(item_code, company=None):
                     skipped_count += 1
                     continue
 
-                # Check if price list exists
-                price_list = frappe.db.exists("Price List", region_name)
+                # Check if price list exists based on company
+                if company == "UDC":
+                    price_list = frappe.db.get_value("Price List", {"udc_price_id": rgnid}, "name")
+                else:  # Cotton Valley
+                    price_list = frappe.db.get_value("Price List", {"price_id": rgnid}, "name")
+                
                 if not price_list:
                     skipped_count += 1
                     continue
@@ -1597,188 +1602,6 @@ def sync_udc_item_batch(
     return {"processed": processed, "errors": len(errors), "task_id": task_id}
 
 
-
-
-# @frappe.whitelist()
-# def get_cv_product_prices():
-#     """Fetch and update prices for Cotton Valley items"""
-#     items = frappe.get_all("Item", filters={"company": "Cotton Valley"}, pluck="name")
-#     total = len(items)
-#     frappe.log_error("Starting CV", f"Starting CV price update for {total} items...")
-#     url_base = "https://erp.cottonvalley.us/ords/ctnvly_api/itmrate/rgnrate?ITMID="
-#     username = CV_USER
-#     password = CV_PASSWORD
-#     error_count = 0
-#     processed_count = 0
-#     try:
-#         for start in range(0, total, CHUNK_SIZE):
-#             batch = items[start:start + CHUNK_SIZE]
-#             frappe.log_error("Processing CV", f"Processing CV items {start + 1} to {start + len(batch)}...")
-
-#             for item_code in batch:
-#                 try:
-#                     url = f"{url_base}{item_code}&INACTIVE_YN=N"
-#                     response = requests.get(url, auth=(username, password), timeout=30)
-#                     if response.status_code != 200:
-#                         frappe.log_error("API Error", f"CV {item_code}: API Error {response.status_code}")
-#                         error_count += 1
-#                         continue
-
-#                     if not response.text.strip():
-#                         frappe.log_error("Empty Response", f"CV {item_code}: Empty response")
-#                         error_count += 1
-#                         continue
-
-#                     try:
-#                         data = response.json()
-#                     except Exception as e:
-#                         frappe.log_error("JSON Decode Error", f"CV {item_code}: JSON decode error: {str(e)}")
-#                         error_count += 1
-#                         continue
-
-#                     if not data.get("items"):
-#                         continue
-
-#                     for item in data["items"]:
-#                         region_name = item.get("rgnname")
-#                         rate = item.get("rate")
-
-#                         if not region_name or not rate or float(rate) <= 0:
-#                             continue
-
-#                         price_list = frappe.db.exists("Price List", region_name)
-#                         if not price_list:
-#                             continue
-
-#                         existing = frappe.db.exists("Item Price", {
-#                             "item_code": item_code,
-#                             "price_list": price_list
-#                         })
-
-#                         try:
-#                             if existing:
-#                                 ip = frappe.get_doc("Item Price", existing)
-#                                 ip.price_list_rate = float(rate)
-#                                 ip.save()
-#                             else:
-#                                 frappe.get_doc({
-#                                     "doctype": "Item Price",
-#                                     "item_code": item_code,
-#                                     "price_list": price_list,
-#                                     "price_list_rate": float(rate),
-#                                     "currency": "USD"
-#                                 }).insert()
-#                         except Exception as e:
-#                             frappe.log_error(frappe.get_traceback(), f"CV {item_code}: Error saving price: {str(e)}")
-#                             error_count += 1
-#                             continue
-
-#                 except Exception as e:
-#                     frappe.log_error(frappe.get_traceback(), f"CV Error for {item_code}: {str(e)}")
-#                     error_count += 1
-#                 finally:
-#                     frappe.db.commit()
-#                 processed_count += 1
-
-#             frappe.log_error(f"CV Batch {start // CHUNK_SIZE + 1} completed.", "CV Batch Completed")
-#     except Exception as e:
-#         frappe.log_error(f"Critical error in get_cv_product_prices: {str(e)}", "CV Critical Error")
-#         error_count += 1
-#     finally:
-#         frappe.log_error(f"CV Price update job completed. Processed: {processed_count}, Errors: {error_count}", "CV Job Completed")
-#     return f"CV item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
-
-
-# @frappe.whitelist()
-# def get_udc_product_prices():
-#     """Fetch and update prices for UDC items"""
-#     items = frappe.get_all("Item", filters={"company": "UDC"}, pluck="name")
-#     total = len(items)
-#     frappe.log_error("Starting UDC", f"Starting UDC price update for {total} items...")
-#     url_base = "https://erp.universaldc.us/ords/unvdst_api/itmrate/rgnrate?ITMID="
-#     username = UDC_USER
-#     password = UDC_PASSWORD
-#     error_count = 0
-#     processed_count = 0
-#     try:
-#         for start in range(0, total, CHUNK_SIZE):
-#             batch = items[start:start + CHUNK_SIZE]
-#             frappe.log_error("Processing UDC", f"Processing UDC items {start + 1} to {start + len(batch)}...")
-
-#             for item_code in batch:
-#                 try:
-#                     url = f"{url_base}{item_code}&INACTIVE_YN=N"
-#                     response = requests.get(url, auth=(username, password), timeout=30)
-#                     if response.status_code != 200:
-#                         frappe.log_error("API Error", f"UDC {item_code}: API Error {response.status_code}")
-#                         error_count += 1
-#                         continue
-
-#                     if not response.text.strip():
-#                         frappe.log_error("Empty Response", f"UDC {item_code}: Empty response")
-#                         error_count += 1
-#                         continue
-
-#                     try:
-#                         data = response.json()
-#                     except Exception as e:
-#                         frappe.log_error("JSON Decode Error", f"UDC {item_code}: JSON decode error: {str(e)}")
-#                         error_count += 1
-#                         continue
-
-#                     if not data.get("items"):
-#                         continue
-
-#                     for item in data["items"]:
-#                         region_name = item.get("rgnname")
-#                         rate = item.get("rate")
-
-#                         if not region_name or not rate or float(rate) <= 0:
-#                             continue
-
-#                         price_list = frappe.db.exists("Price List", region_name)
-#                         if not price_list:
-#                             continue
-
-#                         existing = frappe.db.exists("Item Price", {
-#                             "item_code": item_code,
-#                             "price_list": price_list
-#                         })
-
-#                         try:
-#                             if existing:
-#                                 ip = frappe.get_doc("Item Price", existing)
-#                                 ip.price_list_rate = float(rate)
-#                                 ip.save()
-#                             else:
-#                                 frappe.get_doc({
-#                                     "doctype": "Item Price",
-#                                     "item_code": item_code,
-#                                     "price_list": price_list,
-#                                     "price_list_rate": float(rate),
-#                                     "currency": "USD"
-#                                 }).insert()
-#                         except Exception as e:
-#                             frappe.log_error(frappe.get_traceback(), f"UDC {item_code}: Error saving price: {str(e)}")
-#                             error_count += 1
-#                             continue
-
-#                 except Exception as e:
-#                     frappe.log_error(frappe.get_traceback(), f"UDC Error for {item_code}: {str(e)}")
-#                     error_count += 1
-#                 finally:
-#                     frappe.db.commit()
-#                 processed_count += 1
-
-#             frappe.log_error(f"UDC Batch {start // CHUNK_SIZE + 1} completed.", "UDC Batch Completed")
-#     except Exception as e:
-#         frappe.log_error(f"Critical error in get_udc_product_prices: {str(e)}", "UDC Critical Error")
-#         error_count += 1
-#     finally:
-#         frappe.log_error(f"UDC Price update job completed. Processed: {processed_count}, Errors: {error_count}", "UDC Job Completed")
-#     return f"UDC item prices update attempted. Processed: {processed_count}, Errors: {error_count}"
-
-
 def sync_cv_price_batch(
     batch,
     company="Cotton Valley",
@@ -1871,11 +1694,13 @@ def sync_cv_price_batch(
             for item in data["items"]:
                 region_name = item.get("rgnname")
                 rate = item.get("rate")
+                rgnid = item.get("rgnid")
 
-                if not region_name or not rate or float(rate) <= 0:
+                if not region_name or not rate or not rgnid or float(rate) <= 0:
                     continue
 
-                price_list = frappe.db.exists("Price List", region_name)
+                # Fetch price list using price_id for Cotton Valley
+                price_list = frappe.db.get_value("Price List", {"price_id": rgnid}, "name")
                 if not price_list:
                     continue
 
@@ -2031,11 +1856,13 @@ def sync_udc_price_batch(
             for item in data["items"]:
                 region_name = item.get("rgnname")
                 rate = item.get("rate")
+                rgnid = item.get("rgnid")
 
-                if not region_name or not rate or float(rate) <= 0:
+                if not region_name or not rate or not rgnid or float(rate) <= 0:
                     continue
 
-                price_list = frappe.db.exists("Price List", region_name)
+                # Fetch price list using udc_price_id for UDC
+                price_list = frappe.db.get_value("Price List", {"udc_price_id": rgnid}, "name")
                 if not price_list:
                     continue
 
