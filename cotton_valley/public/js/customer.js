@@ -26,8 +26,8 @@ frappe.ui.form.on('Customer', {
                                 customer_id: customer_id
                             },
                             callback: function (r) {
-                                if (r.message && r.message.status === "success") {
-                                    let token = r.message?.message?.access_token;
+                                if (r.message && r.message?.status === "success") {
+                                    let token = r.message?.access_token;
                                     frappe.msgprint(__('Login successful! Navigating to portal...'));
                                     if (values.portal === 'Cotton Valley') {
 
@@ -39,7 +39,7 @@ frappe.ui.form.on('Customer', {
                                         window.open(`https://www.universaldc.com/auth/erplogin?token=${token}`, "_blank");
                                     }
                                 } else {
-                                    frappe.msgprint(__('Login failed: ' + (r.message || 'Unknown error')));
+                                    frappe.msgprint(__('Login failed: ' + (r.message?.message || 'Unknown error')));
                                 }
                             },
                             error: function (r) {

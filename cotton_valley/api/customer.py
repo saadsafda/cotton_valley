@@ -87,7 +87,7 @@ def sale_rep_as_customer(customer_id):
             password = customer.get_password('custom_password')
 
             result = customer_login(email, password)
-            return {"status": "success", "message": result}
+            return result
         else:
             return {"status": "error", "message": "Customer not found"}
     except Exception as e:
@@ -354,7 +354,7 @@ def customer_login(email, password):
         }).insert(ignore_permissions=True)
 
         return {
-            "status": 200,
+            "status": "success",
             "message": "Login successful",
             "access_token": token,   # Bearer token
             "token_type": "token",
