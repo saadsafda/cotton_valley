@@ -10,6 +10,8 @@ frappe.ui.form.on('Item', {
                         item_code: frm.doc.item_code,
                         company: frm.doc.company
                     },
+                    freeze: true,
+                    freeze_message: "Fetching Prices...",
                     callback: function(r) {
                         if(r.message) {
                             frappe.msgprint(__(r.message));
@@ -25,6 +27,8 @@ frappe.ui.form.on('Item', {
                         item_code: frm.doc.item_code,
                         company: frm.doc.company
                     },
+                    freeze: true,
+                    freeze_message: "Updating Item Data...",
                     callback: function(r) {
                         if(r.message) {
                             frappe.msgprint(__(r.message));
