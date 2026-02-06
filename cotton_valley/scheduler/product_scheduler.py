@@ -248,9 +248,13 @@ def scheduler_dispatch_cv_price_sync():
 
     try:
         batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
-        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "Cotton Valley"
+        
+        # Calculate max_batches based on total products / batch_size
+        total_products = frappe.db.count("Item", {"company": company})
+        max_batches = (total_products + batch_size - 1) // batch_size  # Ceiling division
+        
         last_price_item_code = _get_cv_setting("last_price_item_code_cv", "") or ""
 
         filters = {"company": company}
@@ -340,9 +344,13 @@ def scheduler_dispatch_udc_price_sync():
 
     try:
         batch_size = int(_get_cv_setting("batch_size", DEFAULT_BATCH_SIZE) or DEFAULT_BATCH_SIZE)
-        max_batches = int(_get_cv_setting("max_batches_per_run", DEFAULT_MAX_BATCHES_PER_RUN) or DEFAULT_MAX_BATCHES_PER_RUN)
 
         company = "UDC"
+        
+        # Calculate max_batches based on total products / batch_size
+        total_products = frappe.db.count("Item", {"company": company})
+        max_batches = (total_products + batch_size - 1) // batch_size  # Ceiling division
+        
         last_price_item_code = _get_cv_setting("last_price_item_code_udc", "") or ""
 
         filters = {"company": company}
