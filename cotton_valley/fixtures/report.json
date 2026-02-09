@@ -2395,7 +2395,7 @@
   "modified": "2025-12-29 04:13:43.156452",
   "module": "Cotton Valley",
   "name": "Items With Price level",
-  "prepared_report": 1,
+  "prepared_report": 0,
   "query": null,
   "ref_doctype": "Item",
   "reference_report": null,
