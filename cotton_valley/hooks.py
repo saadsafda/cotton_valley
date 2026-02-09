@@ -82,6 +82,7 @@ doctype_js = {
     "Item" : "public/js/item.js", 
     "Customer" : "public/js/customer.js",
     "Sales Order" : "public/js/sales_order.js",
+    "Sales Invoice" : "public/js/sales_invoice.js",
 	"Activity Log": "public/js/activity_log.js",
 	"Tag": "public/js/tag.js"
 }
