@@ -530,7 +530,7 @@ def get_current_customer(company=None):
         return {"status": "error", "message": str(e)}
 
 
-@frappe.whitelist(allow_guest=False)
+@frappe.whitelist(allow_guest=True)
 def heartbeat():
     customer_id = get_customer_from_token()
     # customer = Customer name like "CUST-0001" or actual customer id
