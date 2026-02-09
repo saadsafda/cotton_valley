@@ -521,26 +521,26 @@ def download_sales_order_excel(sales_order):
     for i in range(max_lines):
         btxt = billing_lines[i] if i < len(billing_lines) else ""
         ws.merge_cells(start_row=r + i, start_column=1, end_row=r + i, end_column=3)
-        put(r + i, 1, btxt, None, left)
+        put(r + i, 1, btxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
         stxt = shipping_lines[i] if i < len(shipping_lines) else ""
         ws.merge_cells(start_row=r + i, start_column=4, end_row=r + i, end_column=7)
-        put(r + i, 4, stxt, None, left)
+        put(r + i, 4, stxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
         if i < len(meta_rows):
-            put(r + i, 8, meta_rows[i][0], bold, left)
-            put(r + i, 9, meta_rows[i][1], None, left)
+            put(r + i, 8, meta_rows[i][0], bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, meta_rows[i][1], None, Alignment(horizontal="left", vertical="center", wrap_text=True))
         else:
-            put(r + i, 8, "", None, left)
-            put(r + i, 9, "", None, left)
+            put(r + i, 8, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
     r += max_lines + 1
 
     # ✅ Customer email from Customer doctype field: custom_customer_email
     customer_email = doc.get("custom_customer_email") or ""
-    put(r, 1, "Email Address:", bold, left)
+    put(r, 1, "Email Address:", bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=7)
-    put(r, 2, customer_email, None, left)
+    put(r, 2, customer_email, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
     r += 2
 
     # =========================
@@ -602,12 +602,10 @@ def download_sales_order_excel(sales_order):
         ]
 
         for c, v in enumerate(row_values, start=1):
-            align = left if c in (2, 4) else center
-            if c in (8, 9):
-                align = right
+            align = center  # Center align all columns by default
             put(r, c, v, None, align, border)
 
-        # ✅ Insert image into column C (webp safe)
+        # ✅ Insert image into column C (webp safe) - centered in cell
         img_path = resolve_image_path(it.get("image"))
         if img_path and os.path.exists(img_path):
             try:
@@ -615,9 +613,37 @@ def download_sales_order_excel(sales_order):
                 xl_img = XLImage(img_path)
                 xl_img.width = 45
                 xl_img.height = 45
-                ws.add_image(xl_img, f"C{r}")
+                
+                # Center image in cell - calculate pixel offsets
+                # Column C width is 12 (~84 pixels), Row height is 55 pixels
+                col_width_px = 84
+                row_height_px = 55
+                img_width = 45
+                img_height = 45
+                
+                # Calculate offset to center
+                x_offset_px = (col_width_px - img_width) // 2
+                y_offset_px = (row_height_px - img_height) // 2
+                
+                # Convert to EMUs (914400 EMUs per inch, ~9525 EMUs per pixel)
+                x_offset_emu = x_offset_px * 9525
+                y_offset_emu = y_offset_px * 9525
+                
+                from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
+                from openpyxl.drawing.xdr import XDRPositiveSize2D
+                from openpyxl.utils.units import pixels_to_EMU
+                
+                # Column C is index 2 (0-based), row is r-1 (0-based)
+                marker = AnchorMarker(col=2, colOff=x_offset_emu, row=r-1, rowOff=y_offset_emu)
+                size = XDRPositiveSize2D(pixels_to_EMU(img_width), pixels_to_EMU(img_height))
+                xl_img.anchor = OneCellAnchor(_from=marker, ext=size)
+                ws.add_image(xl_img)
             except Exception:
-                pass
+                # Fallback to simple placement
+                try:
+                    ws.add_image(xl_img, f"C{r}")
+                except:
+                    pass
 
         r += 1
         line_no += 1
@@ -639,7 +665,7 @@ def download_sales_order_excel(sales_order):
     put(r, 9, float(doc.grand_total or 0), bold, right)
 
     # Column widths
-    widths = [8, 18, 12, 40, 12, 10, 10, 12, 14]
+    widths = [18, 18, 14, 40, 14, 12, 12, 18, 24]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 

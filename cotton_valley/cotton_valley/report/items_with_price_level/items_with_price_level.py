@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+from warnings import filters
 import frappe
 
 def execute(filters=None):
@@ -36,6 +37,13 @@ def get_columns(price_lists):
             "label": "Item Name",
             "fieldtype": "Data",
             "width": 200
+        },
+        {
+            "fieldname": "disabled",
+            "label": "Status",
+            "fieldtype": "Select",
+            "options": "Enabled\nDisabled",
+            "width": 100
         },
         {
             "fieldname": "item_group", 
@@ -78,12 +86,16 @@ def get_data(filters, price_lists):
     if filters.get("item_code"):
         conditions += f" AND i.name = '{filters.get('item_code')}' "
 
+    if not filters.get("show_all_items"):
+        conditions += " AND i.disabled = 0 "
+
     sql = f"""
         SELECT
             i.name as item_code,
             i.item_name,
             i.item_group,
-            i.company as company
+            i.company as company,
+            i.disabled
         FROM
             `tabItem` i
         LEFT JOIN
@@ -96,7 +108,7 @@ def get_data(filters, price_lists):
             i.name ASC
     """
     
-    items = frappe.db.sql(sql, as_dict=True)
+    items = frappe.db.sql(sql, filters, as_dict=True)
 
     # Prices fetch karein
     # Optimization: Agar Price List filter laga hai to sirf ussi ke rates uthao
@@ -123,7 +135,8 @@ def get_data(filters, price_lists):
             "item_code": item.item_code,
             "item_name": item.item_name,
             "item_group": item.item_group,
-            "company": item.company
+            "company": item.company,
+            "disabled": "Disabled" if item.disabled == 1 else "Enabled"
         }
 
         for pl in price_lists:

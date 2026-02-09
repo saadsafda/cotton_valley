@@ -168,18 +168,18 @@ def download_sales_invoice_excel(sales_invoice):
     for i in range(max_lines):
         btxt = billing_lines[i] if i < len(billing_lines) else ""
         ws.merge_cells(start_row=r + i, start_column=1, end_row=r + i, end_column=3)
-        put(r + i, 1, btxt, None, left)
+        put(r + i, 1, btxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
         stxt = shipping_lines[i] if i < len(shipping_lines) else ""
         ws.merge_cells(start_row=r + i, start_column=4, end_row=r + i, end_column=7)
-        put(r + i, 4, stxt, None, left)
+        put(r + i, 4, stxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
         if i < len(meta_rows):
-            put(r + i, 8, meta_rows[i][0], bold, left)
-            put(r + i, 9, meta_rows[i][1], None, left)
+            put(r + i, 8, meta_rows[i][0], bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, meta_rows[i][1], None, Alignment(horizontal="left", vertical="center", wrap_text=True))
         else:
-            put(r + i, 8, "", None, left)
-            put(r + i, 9, "", None, left)
+            put(r + i, 8, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
 
     r += max_lines + 1
 
@@ -191,9 +191,9 @@ def download_sales_invoice_excel(sales_invoice):
         if not customer_email:
             customer_email = frappe.db.get_value("Customer", doc.customer, "custom_customer_email") or ""
 
-    put(r, 1, "Email Address:", bold, left)
+    put(r, 1, "Email Address:", bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
     ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=7)
-    put(r, 2, customer_email or "—", None, left)
+    put(r, 2, customer_email or "—", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
     r += 2
 
     # =========================
@@ -223,11 +223,10 @@ def download_sales_invoice_excel(sales_invoice):
         ]
 
         for c, v in enumerate(row_values, start=1):
-            align = left if c in (2, 4) else center
-            if c in (8, 9):
-                align = right
+            align = center  # Center align all columns by default
             put(r, c, v, None, align, border)
 
+        # ✅ Insert image into column C (webp safe) - centered in cell
         img_path = resolve_image_path(it.get("image"))
         if img_path and os.path.exists(img_path):
             try:
@@ -235,9 +234,28 @@ def download_sales_invoice_excel(sales_invoice):
                 xl_img = XLImage(img_path)
                 xl_img.width = 45
                 xl_img.height = 45
-                ws.add_image(xl_img, f"C{r}")
+
+                # Center image in cell
+                from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
+                from openpyxl.drawing.xdr import XDRPositiveSize2D
+                from openpyxl.utils.units import pixels_to_EMU
+
+                col_width_px = 84
+                row_height_px = 55
+                img_width = 45
+                img_height = 45
+                x_offset_emu = ((col_width_px - img_width) // 2) * 9525
+                y_offset_emu = ((row_height_px - img_height) // 2) * 9525
+
+                marker = AnchorMarker(col=2, colOff=x_offset_emu, row=r-1, rowOff=y_offset_emu)
+                size = XDRPositiveSize2D(pixels_to_EMU(img_width), pixels_to_EMU(img_height))
+                xl_img.anchor = OneCellAnchor(_from=marker, ext=size)
+                ws.add_image(xl_img)
             except Exception:
-                pass
+                try:
+                    ws.add_image(xl_img, f"C{r}")
+                except:
+                    pass
 
         r += 1
         line_no += 1
@@ -259,7 +277,7 @@ def download_sales_invoice_excel(sales_invoice):
     put(r, 9, float(doc.grand_total or 0), bold, right)
 
     # Column widths (includes image col)
-    widths = [8, 18, 12, 40, 12, 10, 10, 12, 14]
+    widths = [18, 18, 14, 40, 14, 12, 12, 18, 24]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
