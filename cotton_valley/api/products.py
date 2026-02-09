@@ -1875,7 +1875,7 @@ def sync_udc_price_batch(
                     if existing:
                         ip = frappe.get_doc("Item Price", existing)
                         ip.price_list_rate = float(rate)
-                        ip.save()
+                        ip.save(ignore_permissions=True)
                     else:
                         frappe.get_doc({
                             "doctype": "Item Price",
@@ -1883,7 +1883,7 @@ def sync_udc_price_batch(
                             "price_list": price_list,
                             "price_list_rate": float(rate),
                             "currency": "USD"
-                        }).insert()
+                        }).insert(ignore_permissions=True)
                 except Exception as e:
                     frappe.log_error(frappe.get_traceback(), f"UDC Price {item_code}: Error saving price: {str(e)}")
                     error_count += 1

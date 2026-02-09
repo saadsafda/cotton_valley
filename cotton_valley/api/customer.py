@@ -87,7 +87,7 @@ def sale_rep_as_customer(customer_id):
             password = customer.get_password('custom_password')
 
             result = customer_login(email, password)
-            return {"status": "success", "message": result}
+            return result
         else:
             return {"status": "error", "message": "Customer not found"}
     except Exception as e:
@@ -354,7 +354,7 @@ def customer_login(email, password):
         }).insert(ignore_permissions=True)
 
         return {
-            "status": 200,
+            "status": "success",
             "message": "Login successful",
             "access_token": token,   # Bearer token
             "token_type": "token",
@@ -385,6 +385,7 @@ def customer_logout():
         token_doc = frappe.db.get_value("Customer Token", {"token": token}, "name")
 
         customer_token = frappe.get_doc("Customer Token", token_doc)
+        frappe.db.set_value("Customer", customer_token.customer, "activity_status", "🔴", update_modified=False)
         customer_token.active = 0
         customer_token.save()
 
@@ -528,6 +529,14 @@ def get_current_customer(company=None):
         frappe.local.response["http_status_code"] = 500
         return {"status": "error", "message": str(e)}
 
+
+@frappe.whitelist(allow_guest=False)
+def heartbeat():
+    customer_id = get_customer_from_token()
+    # customer = Customer name like "CUST-0001" or actual customer id
+    frappe.db.set_value("Customer", customer_id, "activity_status", "🟢", update_modified=False)
+    frappe.db.commit()
+    return {"ok": True}
 
 
 @frappe.whitelist()

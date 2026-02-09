@@ -3,7 +3,7 @@ from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
-from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
+from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD, ERP_USERNAME, ERP_PASSWORD
 import requests
 
 @frappe.whitelist(allow_guest=True)
