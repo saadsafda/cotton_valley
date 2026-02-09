@@ -385,6 +385,7 @@ def customer_logout():
         token_doc = frappe.db.get_value("Customer Token", {"token": token}, "name")
 
         customer_token = frappe.get_doc("Customer Token", token_doc)
+        frappe.db.set_value("Customer", customer_token.customer, "activity_status", "🔴", update_modified=False)
         customer_token.active = 0
         customer_token.save()
 
@@ -528,6 +529,14 @@ def get_current_customer(company=None):
         frappe.local.response["http_status_code"] = 500
         return {"status": "error", "message": str(e)}
 
+
+@frappe.whitelist(allow_guest=False)
+def heartbeat():
+    customer_id = get_customer_from_token()
+    # customer = Customer name like "CUST-0001" or actual customer id
+    frappe.db.set_value("Customer", customer_id, "activity_status", "🟢", update_modified=False)
+    frappe.db.commit()
+    return {"ok": True}
 
 
 @frappe.whitelist()
