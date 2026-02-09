@@ -469,7 +469,7 @@ def push_to_erp(sales_orders):
                     frappe.throw("Please add erp customer id")
 
                 payload = {
-                    "order_date": so_doc.transaction_date.strftime("%d-%b-%y").lower(),
+                    "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
                     "customer_id": customer_erp_id,
                     "trnrefno": so_doc.name,
                     "customer_note": so_doc.get("custom_notes") or "",
