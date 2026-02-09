@@ -210,9 +210,9 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-# 	"all": [
-# 		"cotton_valley.tasks.all"
-# 	],
+	"all": [
+		"cotton_valley.api.customer.deactivate_inactive_customers"
+	],
 	"cron": {
 		"0 3 * * *": [
 			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_price_sync",

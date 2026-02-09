@@ -4,7 +4,7 @@ from frappe.auth import LoginManager # type: ignore
 from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.api.common import get_customer_from_token
-from frappe.utils.data import add_days, now_datetime
+from frappe.utils import add_days, now_datetime, add_to_date
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 
 
@@ -530,10 +530,11 @@ def get_current_customer(company=None):
         return {"status": "error", "message": str(e)}
 
 
-@frappe.whitelist(allow_guest=False)
+@frappe.whitelist(allow_guest=True)
 def heartbeat():
     customer_id = get_customer_from_token()
     # customer = Customer name like "CUST-0001" or actual customer id
+    frappe.db.set_value("Customer", customer_id, "last_seen", now_datetime(), update_modified=False)
     frappe.db.set_value("Customer", customer_id, "activity_status", "🟢", update_modified=False)
     frappe.db.commit()
     return {"ok": True}
@@ -1008,3 +1009,40 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
     frappe.logger().info(f"Created new address {new_address.name} for customer {customer_id}")
     
     return new_address.name
+
+
+
+@frappe.whitelist(allow_guest=True)
+def customer_offline():
+    try:
+        frappe.db.set_value("Customer", get_customer_from_token(), "activity_status", "", update_modified=False)
+        return {"status": "success", "message": "Customer offline status updated"}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Customer Offline Error")
+        return {"status": "error", "message": str(e)}
+
+
+
+@frappe.whitelist(allow_guest=True)
+def deactivate_inactive_customers():
+    try:
+        # Set activity_status to empty for customers who haven't sent heartbeat in the last 10 minutes
+        cutoff = add_to_date(now_datetime(), minutes=-5)
+
+        customers = frappe.get_all(
+            "Customer",
+            filters={
+                "activity_status": "🟢",
+                "last_seen": ("<=", cutoff),
+            },
+            fields=["name"],
+            order_by="last_seen desc",
+        )
+        for cust in customers:
+            frappe.db.set_value("Customer", cust.name, "activity_status", "", update_modified=False)
+        frappe.db.commit()
+        return {"status": "success", "message": f"Updated offline status for {len(customers)} customers"}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Customer Offline Scheduler Error")
+        return {"status": "error", "message": str(e)}
+        
