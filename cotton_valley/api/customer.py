@@ -534,6 +534,7 @@ def get_current_customer(company=None):
 def heartbeat():
     customer_id = get_customer_from_token()
     # customer = Customer name like "CUST-0001" or actual customer id
+    frappe.db.set_value("Customer", customer_id, "last_seen", now_datetime(), update_modified=False)
     frappe.db.set_value("Customer", customer_id, "activity_status", "🟢", update_modified=False)
     frappe.db.commit()
     return {"ok": True}
@@ -1008,3 +1009,15 @@ def create_new_address(customer_id, addr_data, address_type, rowid, company="Cot
     frappe.logger().info(f"Created new address {new_address.name} for customer {customer_id}")
     
     return new_address.name
+
+
+
+@frappe.whitelist(allow_guest=True)
+def customer_offline():
+    try:
+        frappe.db.set_value("Customer", get_customer_from_token(), "activity_status", "", update_modified=False)
+        return {"status": "success", "message": "Customer offline status updated"}
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Customer Offline Error")
+        return {"status": "error", "message": str(e)}
+
