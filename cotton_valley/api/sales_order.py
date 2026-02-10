@@ -266,6 +266,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                     "qty": row["qty"],
                     "rate": row["rate"],
                     "delivery_date": nowdate(),
+                    "warehouse": "Stores - U" if company == "UDC" else "Stores - CV"
                 })
             
             sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
@@ -336,6 +337,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                 "qty": row["qty"],
                 "rate": row["rate"],
                 "delivery_date": nowdate(),
+                "warehouse": "Stores - U" if company == "UDC" else "Stores - CV"
             })
 
         sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
