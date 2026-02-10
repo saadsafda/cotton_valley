@@ -203,7 +203,10 @@ doc_events = {
     },
     "Scheduled Job Log": {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
-	}
+	},
+    "Item Price": {
+        "before_save": "cotton_valley.server_scripts.item_price.before_save"
+    }
 }
 
 # Scheduled Tasks
