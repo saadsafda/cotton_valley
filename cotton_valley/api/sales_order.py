@@ -302,67 +302,98 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
         limit=1,
     )
 
-    so_doc = {}
+    def _populate_and_save(so_doc, is_new=False):
+        """Populate fields on the Sales Order and save it."""
+        if not is_new:
+            so_doc.items = []  # reset items
+
+        so_doc.delivery_date = nowdate()
+        so_doc.submit_datetime = submit_datetime
+        so_doc.company = company
+
+        if items is None or len(items) == 0:
+            so_doc.delete()
+            frappe.db.commit()
+            return None
+
+        if billing_address_id:
+            so_doc.customer_address = billing_address_id
+        if shipping_address_id:
+            so_doc.shipping_address_name = shipping_address_id
+        if delivery_description:
+            so_doc.custom_shipping_method = delivery_description
+        if payment_method:
+            so_doc.custom_mode_of_payment = payment_method
+
+        if client_ip:
+            so_doc.customer_ip = client_ip
+        if client_latitude and client_longitude:
+            so_doc.customer_lat__long = f"{client_latitude}, {client_longitude}"
+
+        for row in items:
+            so_doc.append("items", {
+                "item_code": row["item_code"],
+                "qty": row["qty"],
+                "rate": row["rate"],
+                "delivery_date": nowdate(),
+            })
+
+        sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
+        so_doc.custom_customer_sales_representative = sales_person
+        so_doc.customer_account_number = account_number
+        if company == "UDC":
+            sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+            account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
+            so_doc.custom_customer_sales_representative = sales_person
+            so_doc.customer_account_number = account_number
+        if sales_person:
+            so_doc.sales_team = []
+            so_doc.append("sales_team", {
+                "sales_person": sales_person,
+                "allocated_percentage": 100
+            })
+
+        so_doc.save(ignore_permissions=True)
+        if submit:
+            so_doc.submit()
+        frappe.db.commit()
+        return so_doc.name
+
+    so_doc = None
+    is_new = False
     if so:
         so_doc = frappe.get_doc("Sales Order", so[0].name)
-        so_doc.items = []  # reset items
     else:
         so_doc = frappe.new_doc("Sales Order")
         so_doc.customer = customer_id
         so_doc.customer_account_number = customer_account_number
         so_doc.order_type = "Shopping Cart"
         so_doc.selling_price_list = price_level
+        is_new = True
 
-    so_doc.delivery_date = nowdate()
-    so_doc.submit_datetime = submit_datetime
-    so_doc.company = company
-    if items is None or len(items) == 0:
-        so_doc.delete()
-        frappe.db.commit()
-        return None
-    
-    if billing_address_id:
-        so_doc.customer_address = billing_address_id
-    if shipping_address_id:
-        so_doc.shipping_address_name = shipping_address_id
-    if delivery_description:
-        so_doc.custom_shipping_method = delivery_description
-    if payment_method:
-        so_doc.custom_mode_of_payment = payment_method
+    try:
+        return _populate_and_save(so_doc, is_new=is_new)
+    except Exception:
+        # On conflict/error, reload the document and retry
+        frappe.db.rollback()
+        so = frappe.get_all(
+            "Sales Order",
+            filters={"customer": customer_id, "docstatus": 0, "company": company},
+            fields=["name"],
+            limit=1,
+        )
+        if so:
+            so_doc = frappe.get_doc("Sales Order", so[0].name)
+            is_new = False
+        else:
+            so_doc = frappe.new_doc("Sales Order")
+            so_doc.customer = customer_id
+            so_doc.customer_account_number = customer_account_number
+            so_doc.order_type = "Shopping Cart"
+            so_doc.selling_price_list = price_level
+            is_new = True
 
-    if client_ip:
-        so_doc.customer_ip = client_ip
-    if client_latitude and client_longitude:
-        so_doc.customer_lat__long = f"{client_latitude}, {client_longitude}"
-
-
-    for row in items:
-        so_doc.append("items", {
-            "item_code": row["item_code"],
-            "qty": row["qty"],
-            "rate": row["rate"],
-            "delivery_date": nowdate(),
-        })
-    sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
-    so_doc.custom_customer_sales_representative = sales_person
-    so_doc.customer_account_number = account_number
-    if company == "UDC":
-        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-        account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
-        so_doc.custom_customer_sales_representative = sales_person
-        so_doc.customer_account_number = account_number
-    if sales_person:
-        so_doc.sales_team = []
-        so_doc.append("sales_team", {
-            "sales_person": sales_person,
-            "allocated_percentage": 100
-        })
-
-    so_doc.save(ignore_permissions=True)
-    if submit:
-        so_doc.submit()
-    frappe.db.commit()
-    return so_doc.name
+        return _populate_and_save(so_doc, is_new=is_new)
 
 
 
