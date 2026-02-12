@@ -3,6 +3,7 @@ import mimetypes
 import frappe
 from frappe import _
 from io import BytesIO
+import json
 
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
@@ -675,3 +676,79 @@ def download_sales_order_excel(sales_order):
     frappe.response["filename"] = f"{doc.name}.xlsx"
     frappe.response["filecontent"] = bio.getvalue()
     frappe.response["type"] = "binary"
+
+
+
+@frappe.whitelist()
+def restore_items_from_history(doc_name):
+    doc = frappe.get_doc("Sales Order", doc_name)
+    current_item_names = [row.name for row in doc.items]
+    
+    # 2. Fetch the last 15 version logs to increase chances of finding the data
+    versions = frappe.get_all("Version", 
+        filters={
+            "ref_doctype": "Sales Order", 
+            "docname": doc_name
+        }, 
+        fields=["data", "creation"],
+        order_by="creation desc", 
+        limit=15
+    )
+
+    if not versions:
+        return {"status": "failed", "message": "No version history found."}
+
+    restored_count = 0
+    
+    # 3. Iterate through history
+    for v in versions:
+        if not v.data:
+            continue
+            
+        try:
+            version_data = json.loads(v.data)
+        except Exception:
+            continue
+        # Check for removed items
+        if "removed" in version_data and version_data["removed"]:
+            for removed_item in version_data["removed"]:
+                
+                # Safety Check: We need at least 2 elements: [Doctype, Name, DataDict]
+                if len(removed_item) < 2:
+                    continue
+
+                rd_doctype = removed_item[0]
+                rd_name = removed_item[1]
+                rd_data = removed_item[1]  # Fixed: get the data dict from index 2
+                
+                # Verify it is a Sales Order Item and NOT already in the table
+                if rd_doctype == "items" and rd_name not in current_item_names:
+                    
+                    # Additional check: Avoid duplicate item codes
+                    if isinstance(rd_data, dict):
+                        item_code = rd_data.get("item_code")
+                        existing_item_codes = [row.item_code for row in doc.items]
+                        
+                        # Skip if this item_code is already in the order
+                        if item_code and item_code in existing_item_codes:
+                            continue
+                    
+                    # Create a new row
+                    new_row = doc.append("items", {})
+                    
+                    # Restore data
+                    for key, value in rd_data.items():
+                        # Skip system fields
+                        if key not in ["name", "parent", "parentfield", "parenttype", "creation", "modified", "docstatus"]:
+                            new_row.set(key, value)
+                    
+                    # Track that we restored this ID so we don't duplicate
+                    current_item_names.append(rd_name) 
+                    restored_count += 1
+
+    # 4. Save and Return
+    if restored_count > 0:
+        doc.save()
+        return {"status": "success", "message": f"Restored {restored_count} item(s) from history."}
+    else:
+        return {"status": "empty", "message": "No valid deleted item data found in recent history."}
