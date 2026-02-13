@@ -70,7 +70,7 @@ frappe.ui.form.on('Sales Order', {
             }).addClass('btn-primary');
         }
 
-        if (frm.doc.docstatus === 1) {
+        if ([0, 1].includes(frm.doc.docstatus)) {
             frm.add_custom_button(__('Download Excel'), function () {
                 const url =
                     '/api/method/cotton_valley.server_scripts.sales_order.download_sales_order_excel' +
