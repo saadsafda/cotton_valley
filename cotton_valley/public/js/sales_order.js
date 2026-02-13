@@ -3,6 +3,39 @@ frappe.ui.form.on('Sales Order', {
         fetch_customer_details(frm);
     },
     refresh(frm) {
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Restore Last Deleted Items'), function() {
+                frappe.confirm(
+                    'This will check the last saved version and restore any items that are currently missing. Proceed?',
+                    function() {
+                        frappe.call({
+                            method: 'cotton_valley.server_scripts.sales_order.restore_items_from_history',
+                            args: {
+                                doc_name: frm.doc.name
+                            },
+                            freeze: true,
+                            freeze_message: __('Restoring items...'),
+                            callback: function(r) {
+                                if (r.message.status === 'success') {
+                                    frappe.msgprint({
+                                        title: __('Success'),
+                                        indicator: 'green',
+                                        message: r.message.message
+                                    });
+                                    frm.reload_doc();
+                                } else {
+                                    frappe.msgprint({
+                                        title: __('Notice'),
+                                        indicator: 'orange',
+                                        message: r.message.message
+                                    });
+                                }
+                            }
+                        });
+                    }
+                );
+            }, __('Actions'));
+        }
         if (frm.doc.push_to_erp === 1) {
             frm.set_df_property('push_to_erp', 'read_only', 1);
         }

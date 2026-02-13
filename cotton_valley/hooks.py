@@ -203,7 +203,10 @@ doc_events = {
     },
     "Scheduled Job Log": {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
-	}
+	},
+    "Item Price": {
+        "before_save": "cotton_valley.server_scripts.item_price.before_save"
+    }
 }
 
 # Scheduled Tasks
@@ -214,7 +217,7 @@ scheduler_events = {
 		"cotton_valley.api.customer.deactivate_inactive_customers"
 	],
 	"cron": {
-		"0 3 * * *": [
+		"0 23 * * *": [
 			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_price_sync",
 			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_price_sync",
 			"cotton_valley.server_scripts.sales_order.send_abandoned_cart_emails",

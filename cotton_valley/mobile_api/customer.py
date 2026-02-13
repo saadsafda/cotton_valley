@@ -84,23 +84,23 @@ def get_all_customers():
             
             # --- Base Customer Info ---
             customer_data = {
-                "id": customer.name,
-                "name": customer.customer_name,
-                "email": customer.custom_email_address,
-                "country_code": customer.custom_phone_number[:1] if customer.custom_phone_number else None,
-                "phone": customer.custom_phone_number,
-                "profile_image_id": customer.image,
+                "id": customer.name or '',
+                "name": customer.customer_name or '',
+                "email": customer.custom_email_address or '',
+                "country_code": customer.custom_phone_number[:1] if customer.custom_phone_number else '',
+                "phone": customer.custom_phone_number or '',
+                "profile_image_id": customer.image or '',
                 "status": 1 if not customer.disabled else 0,
-                "active_customer": active_customer,
-                "mode_of_payment": customer.mode_of_payment,
-                "company": customer.custom_company_name,
-                "account_number": customer.account_number,
-                "price_list_for_cv": customer.price_list_for_cv,
-                "price_list_for_udc": customer.price_list_for_udc,
-                "no_of_orders": customer.no_of_orders,
-                "orders_amount": customer.orders_amount,
-                "created_at": customer.creation,
-                "updated_at": customer.modified,
+                "active_customer": active_customer or 0,
+                "mode_of_payment": customer.mode_of_payment or '',
+                "company": customer.custom_company_name or '',
+                "account_number": customer.account_number or '',
+                "price_list_for_cv": customer.price_list_for_cv or '',
+                "price_list_for_udc": customer.price_list_for_udc or '',
+                "no_of_orders": customer.no_of_orders or 0,
+                "orders_amount": customer.orders_amount or 0.0,
+                "created_at": customer.creation or '',
+                "updated_at": customer.modified or '',
             }
             # --- Addresses (OPTIMIZED: Use pre-fetched data) ---
             addresses = []
@@ -112,17 +112,17 @@ def get_all_customers():
                     is_default = 1
 
                 addresses.append({
-                    "id": addr.name,
-                    "title": addr.address_title,
-                    "street": addr.address_line1,
-                    "address_type": addr.address_type,
-                    "city": addr.city,
-                    "pincode": addr.pincode,
-                    "is_default": is_default,
-                    "country_code": customer_data["country_code"],
-                    "phone": addr.phone,
-                    "country": addr.country,
-                    "state": addr.state,
+                    "id": addr.name or '',
+                    "title": addr.address_title or '',
+                    "street": addr.address_line1 or '',
+                    "address_type": addr.address_type or '',
+                    "city": addr.city or '',
+                    "pincode": addr.pincode or '',
+                    "is_default": is_default or 0,
+                    "country_code": customer_data["country_code"] or '',
+                    "phone": addr.phone or '',
+                    "country": addr.country or '',
+                    "state": addr.state or '',
                 })
             customer_data["address"] = addresses
 
