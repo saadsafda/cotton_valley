@@ -95,6 +95,7 @@ def export_dual_company_sales_orders(selected_so_names=None):
         ("name", "Order ID"),
         ("transaction_date", "Date"),
         ("submit_datetime", "Numeric Time"),
+        ("customer_id", "Customer ID"),
         ("customer_account_number", "Account"),
         ("shipping_address_details", "Shipping Address 1"),
         (None, "Shipping Address 2"), # Blank Column
@@ -131,7 +132,10 @@ def export_dual_company_sales_orders(selected_so_names=None):
     ]
     
     # Generate the list of actual fields to fetch
-    actual_header_fields = [item[0] for item in header_map if item[0] is not None]
+    actual_header_fields = [item[0] for item in header_map if item[0] is not None and item[0] != "customer_id"]
+    # Also fetch 'customer' field to look up customer IDs
+    if "customer" not in actual_header_fields:
+        actual_header_fields.append("customer")
 
     # 2b. Item Fields (Unchanged)
     actual_item_fields = ["parent", "idx", "item_code", "qty", "rate"]
@@ -171,7 +175,19 @@ def export_dual_company_sales_orders(selected_so_names=None):
         order_by="parent, idx"
     )
 
-    # 4. Process and Generate Files
+    # 4. Pre-fetch Customer IDs (cv_customer_id, udc_customer_id) for all customers
+    customer_names = list(set(so.get("customer") for so in all_sales_orders if so.get("customer")))
+    customer_id_map = {}
+    if customer_names:
+        cust_records = frappe.get_all(
+            "Customer",
+            filters={"name": ["in", customer_names]},
+            fields=["name", "cv_customer_id", "udc_customer_id"]
+        )
+        for c in cust_records:
+            customer_id_map[c.name] = c
+
+    # 5. Process and Generate Files
     file_urls = []
 
     for company_name, configs in export_configs.items():
@@ -192,6 +208,12 @@ def export_dual_company_sales_orders(selected_so_names=None):
                     is_type_match = so.get("product_type") == order_type_filter 
                 
                 if is_company_match and is_type_match:
+                    # Add the correct customer_id based on company
+                    cust_info = customer_id_map.get(so.get("customer"), {})
+                    if company_name == "Cotton Valley":
+                        so["customer_id"] = cust_info.get("cv_customer_id") or ""
+                    else:
+                        so["customer_id"] = cust_info.get("udc_customer_id") or ""
                     header_data.append(so)
                     target_so_names.append(so.name)
 

@@ -88,7 +88,7 @@ frappe.ui.form.on('Customer', {
             });
         }
         
-
+        
 
         // ===== EMAIL WITH TEMPLATE BUTTON =====
     //     if (!frm.is_new()) {
@@ -213,6 +213,15 @@ frappe.ui.form.on('Customer', {
             });
         }
         // ============================================================
+
+        if (!frm.is_new()) {
+            frm.add_custom_button(__('Download Customer Registration Form (PDF)'), function () {
+                const url =
+                    '/api/method/cotton_valley.server_scripts.customer.download_customer_registration_form_pdf_html' +
+                    '?customer=' + encodeURIComponent(frm.doc.name || '');
+                window.open(url);
+            });
+        }
 
     },
 
