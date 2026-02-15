@@ -206,7 +206,10 @@ doc_events = {
 	},
     "Item Price": {
         "before_save": "cotton_valley.server_scripts.item_price.before_save"
-    }
+    },
+    "File": {
+		"after_insert": "cotton_valley.server_scripts.file.after_save",
+	}
 }
 
 # Scheduled Tasks
