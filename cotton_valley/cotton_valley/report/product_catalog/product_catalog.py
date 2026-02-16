@@ -285,7 +285,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .card-box{
   border: 2px solid #bdbdbd;
   border-radius: 10px;
-  padding: 10px 10px 32px 10px;
+  padding: 10px 10px 58px 10px;
   min-height: 300px;
   position: relative;
   overflow: hidden;
@@ -304,10 +304,11 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .item-price-row td { padding: 0; vertical-align: baseline; }
 
 .item-td { white-space: nowrap; font-size: 11px; font-weight: 400; color: #4a4a4a; }
-.item-code { font-weight: 400; color: #000; font-size: 11px; }
+.item-code { font-weight: 700; color: #000; font-size: 11px; }
 
 .price-td { text-align: right; white-space: nowrap; }
 .case-price { color: #e53935; font-weight: 700; font-size: 11px; }
+.price-label { color: #555; font-weight: 700; font-size: 9px; }
 
 .sep-ca { color: #e53935; font-weight: 700; font-size: 9px; margin-left: 1px; }
 .unit-price { color: #e53935; font-weight: 700; font-size: 11px; }
@@ -365,21 +366,18 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
             {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
           </div>
 
-          <table class="item-price-row">
-            <tr>
-              <td class="item-td"><span class="label">Item:</span> <span class="item-code">{{ p.item_code }}</span></td>
-              <td class="price-td">
-                <span class="case-price">{{ p.case_price }}</span>{% if p.show_unit_price %}<span class="sep-ca">ca</span><span class="unit-price">{{ p.unit_price }}</span><span class="uom">{{ p.piece_uom | lower }}</span>{% endif %}
-              </td>
-            </tr>
-          </table>
+          <div style="font-size:12px; font-weight:700; color:#000; margin-bottom:3px;"><span class="label">Item:</span> {{ p.item_code }}</div>
 
-          <div class="desc"><span class="label">Desc:</span> {{ p.desc }}</div>
+          <div class="desc">{{ p.desc }}</div>
+
+          {% if p.category_name %}
+          <div style="font-size:10px; color:#4a4a4a; margin-bottom:4px;"><span class="label">Category:</span> {{ p.category_name }}</div>
+          {% endif %}
 
           <table class="detail-row">
             <tr>
               <td><span class="label">UPC:</span> {{ p.upc or "" }}</td>
-              <td style="text-align:right;" class="muted"><span class="label">CA:</span> {{ p.case_pack or "" }}</td>
+              <td style="text-align:right;" class="muted"><span class="label">Case Pack :</span> {{ p.case_pack or "" }}</td>
             </tr>
           </table>
 
@@ -396,6 +394,14 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                 </td>
               </tr>
             </table>
+            <div style="background:#b8d4e8; padding:3px 6px; border-radius:4px; margin-top:5px;">
+              <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                  <td style="padding:0; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">CA.P.:</span>{{ p.case_price }}</td>
+                  {% if p.show_unit_price %}<td style="padding:0; text-align:right; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">EA.P.:</span>{{ p.unit_price }}</td>{% endif %}
+                </tr>
+              </table>
+            </div>
           </div>
 
         </div>
