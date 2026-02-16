@@ -330,10 +330,10 @@ def download_customer_registration_form_pdf_html(customer=None):
     # -------------------------
     cust_doc = frappe.get_doc("Customer", customer) if customer else None
 
-    company_name = pick(cust_doc, ["company_name", "customer_name", "custom_company_name"], "")
-    phone = pick(cust_doc, ["phone", "mobile_no", "custom_phone"], "")
-    fax = pick(cust_doc, ["fax", "custom_fax"], "")
-    email = pick(cust_doc, ["email_id", "custom_email_address"], "")
+    company_name = pick(cust_doc, ["custom_company_name", "company_name", "customer_name"], "")
+    phone = pick(cust_doc, ["custom_phone_number", "phone", "mobile_no"], "")
+    fax = pick(cust_doc, ["custom_fax", "fax"], "")
+    email = pick(cust_doc, ["custom_email_address", "email_id"], "")
 
     reg_address = reg_city = reg_state = reg_zip = ""
 
@@ -413,17 +413,25 @@ def download_customer_registration_form_pdf_html(customer=None):
     # -------------------------
     # Logos (optional) - place in public/files
     # -------------------------
-    uni_logo = ""
-    cv_logo = ""
+    def get_company_logo_data_uri(company_name_val):
+        """Fetch company_logo from Company doctype and convert to base64 data URI."""
+        if not company_name_val:
+            return ""
+        logo_path = frappe.db.get_value("Company", company_name_val, "company_logo")
+        if not logo_path:
+            return ""
+        import mimetypes
+        site_path = frappe.get_site_path()
+        if logo_path.startswith("/files/"):
+            file_path = os.path.join(site_path, "public", logo_path.lstrip("/"))
+        elif logo_path.startswith("/private/"):
+            file_path = os.path.join(site_path, logo_path.lstrip("/"))
+        else:
+            return ""
+        return img_to_data_uri(file_path)
 
-    uni_site = frappe.get_site_path("public", "files", "universal.png")
-    cv_site = frappe.get_site_path("public", "files", "logo.webp")
-
-    uni_app = frappe.get_app_path("cotton_valley", "public", "files", "universal.png")
-    cv_app = frappe.get_app_path("cotton_valley", "public", "files", "logo.webp")
-
-    uni_logo = img_to_data_uri(uni_site) or img_to_data_uri(uni_app)
-    cv_logo = img_to_data_uri(cv_site) or img_to_data_uri(cv_app)
+    uni_logo = get_company_logo_data_uri("UDC")
+    cv_logo = get_company_logo_data_uri("Cotton Valley")
 
     uni_img_html = f'<img src="{uni_logo}" style="width:140px; height:auto;">' if uni_logo else ""
     cv_img_html = f'<img src="{cv_logo}" style="width:160px; height:auto;">' if cv_logo else ""
@@ -767,7 +775,7 @@ def download_customer_registration_form_pdf_html(customer=None):
       </colgroup>
       <tr>
         <td class="lbl">SIGNATURE</td>
-        <td class="lbl">NAME: {first_name} {last_name}</td>
+        <td class="lbl">NAME:</td>
         <td class="lbl">TITLE:</td>
         <td></td>
         <td class="lbl">DATE:</td>
