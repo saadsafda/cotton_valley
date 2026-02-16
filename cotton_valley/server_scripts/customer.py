@@ -358,20 +358,61 @@ def download_customer_registration_form_pdf_html(customer=None):
     except Exception:
         pass
 
-    business_commenced = pick(cust_doc, ["custom_business_commenced"], "")
-    parent_company = pick(cust_doc, ["custom_parent_company"], "")
-    primary_business_address = pick(cust_doc, ["custom_primary_business_address"], "") or reg_address
-    business_city = pick(cust_doc, ["custom_business_city"], "") or reg_city
-    business_state = pick(cust_doc, ["custom_business_state"], "") or reg_state
-    business_zip = pick(cust_doc, ["custom_business_zip"], "") or reg_zip
-    how_long_address = pick(cust_doc, ["custom_how_long_at_address"], "")
-    duns = pick(cust_doc, ["custom_duns", "duns"], "")
+    # Business info
+    business_type = pick(cust_doc, ["custom_type_of_buiness"], "")
+    how_long_years = pick(cust_doc, ["custom_how_long_have_you_been_in_years"], "")
+    store_area = pick(cust_doc, ["custom_storewarehouse_area_sqft"], "")
+    how_heard = pick(cust_doc, ["custom_how_did_you_hear_about_us"], "")
+    store_name = pick(cust_doc, ["custom_store_name"], "")
+    territory = pick(cust_doc, ["custom_territory", "territory"], "")
+    customer_name_full = pick(cust_doc, ["customer_name"], "")
+    first_name = customer_name_full
+    last_name = pick(cust_doc, ["custom_last_name"], "")
+
+    # Use primary address details from read-only fields if available
+    primary_business_address = pick(cust_doc, ["custom_customer_primary_address_details"], "") or reg_address
+    business_city = pick(cust_doc, ["custom_customer_primary_city"], "") or reg_city
+    business_state = pick(cust_doc, ["custom_customer_primary_state"], "") or reg_state
+    business_zip = pick(cust_doc, ["custom_customer_primary_zip_code"], "") or reg_zip
+    business_phone = pick(cust_doc, ["custom_customer_primary_phone"], "") or phone
+
+    # -------------------------
+    # Bank Reference fields
+    # -------------------------
+    bank_name = pick(cust_doc, ["custom_bank_name"], "")
+    bank_address = pick(cust_doc, ["custom_bank_address"], "")
+    bank_phone = pick(cust_doc, ["custom_bank_phone"], "")
+    bank_fax = pick(cust_doc, ["custom_bank_fax"], "")
+    bank_account_number = pick(cust_doc, ["custom_bank_account_number"], "")
+    bank_city = pick(cust_doc, ["custom_bank_city"], "")
+    bank_state = pick(cust_doc, ["custom_bank_state"], "")
+    bank_zip = pick(cust_doc, ["custom_bank_zip_code"], "")
+    bank_account_type = pick(cust_doc, ["custom_bank_account_type"], "")
+    bank_email = pick(cust_doc, ["custom_bank_email"], "")
+
+    # -------------------------
+    # Trade / Business References (child table)
+    # -------------------------
+    references = []
+    if cust_doc and cust_doc.get("custom_business_refereances"):
+        for ref in cust_doc.custom_business_refereances:
+            references.append({
+                "company_name": ref.get("company_name") or "",
+                "address": ref.get("address") or "",
+                "city": ref.get("city") or "",
+                "state": ref.get("state") or "",
+                "zip": ref.get("zip") or "",
+                "phone": ref.get("phone") or "",
+                "fax": ref.get("fax") or "",
+                "email": ref.get("email") or "",
+            })
+    # Ensure we always have 3 reference slots
+    while len(references) < 3:
+        references.append({"company_name": "", "address": "", "city": "", "state": "", "zip": "", "phone": "", "fax": "", "email": ""})
 
     # -------------------------
     # Logos (optional) - place in public/files
     # -------------------------
-    # sites/[site]/public/files/universal_logo.png
-    # sites/[site]/public/files/cotton_valley_logo.png
     uni_logo = ""
     cv_logo = ""
 
@@ -387,7 +428,9 @@ def download_customer_registration_form_pdf_html(customer=None):
     uni_img_html = f'<img src="{uni_logo}" style="width:140px; height:auto;">' if uni_logo else ""
     cv_img_html = f'<img src="{cv_logo}" style="width:160px; height:auto;">' if cv_logo else ""
 
-    # Escape values (safe)
+    # -------------------------
+    # Escape all values
+    # -------------------------
     company_name = escape_html(company_name or "")
     phone = escape_html(phone or "")
     fax = escape_html(fax or "")
@@ -397,14 +440,40 @@ def download_customer_registration_form_pdf_html(customer=None):
     reg_state = escape_html(reg_state or "")
     reg_zip = escape_html(reg_zip or "")
 
-    business_commenced = escape_html(business_commenced or "")
-    parent_company = escape_html(parent_company or "")
+    business_type = escape_html(str(business_type) or "")
+    how_long_years = escape_html(str(how_long_years) or "")
+    store_area = escape_html(str(store_area) or "")
+    how_heard = escape_html(str(how_heard) or "")
+    store_name = escape_html(store_name or "")
+    territory = escape_html(territory or "")
+    first_name = escape_html(first_name or "")
+    last_name = escape_html(last_name or "")
+
     primary_business_address = escape_html(primary_business_address or "")
     business_city = escape_html(business_city or "")
     business_state = escape_html(business_state or "")
     business_zip = escape_html(business_zip or "")
-    how_long_address = escape_html(how_long_address or "")
-    duns = escape_html(duns or "")
+    business_phone = escape_html(business_phone or "")
+
+    bank_name = escape_html(bank_name or "")
+    bank_address = escape_html(bank_address or "")
+    bank_phone = escape_html(bank_phone or "")
+    bank_fax = escape_html(bank_fax or "")
+    bank_account_number = escape_html(bank_account_number or "")
+    bank_city = escape_html(bank_city or "")
+    bank_state = escape_html(bank_state or "")
+    bank_zip = escape_html(bank_zip or "")
+    bank_account_type = escape_html(bank_account_type or "")
+    bank_email = escape_html(bank_email or "")
+
+    for ref in references:
+        for k in ref:
+            ref[k] = escape_html(ref[k] or "")
+
+    # Bank account type checkmarks
+    saving_chk = "&#10003;" if bank_account_type.lower() in ("saving", "savings") else ""
+    checking_chk = "&#10003;" if bank_account_type.lower() == "checking" else ""
+    other_chk = "&#10003;" if bank_account_type.lower() == "other" else ""
 
     # -------------------------
     # HTML (NO Jinja tags) - Matches your PDF layout
@@ -525,15 +594,14 @@ def download_customer_registration_form_pdf_html(customer=None):
       </tr>
       <tr>
         <td class="lbl">Date business commenced:</td>
-        <td colspan="2">{business_commenced}</td>
-        <td class="lbl" colspan="2">Parent Company names (if<br>applicable):</td>
-        <td>{parent_company}</td>
+        <td colspan="2">{how_long_years} {('years' if how_long_years else '')}</td>
+        <td class="lbl" colspan="2">Type of Business:</td>
+        <td>{business_type}</td>
       </tr>
       <tr>
-        <td><span class="lbl">Sole proprietorship:</span></td>
-        <td><span class="lbl">Partnership:</span></td>
-        <td colspan="2"><span class="lbl">Corporation:</span></td>
-        <td colspan="2"><span class="lbl">Other:</span></td>
+        <td><span class="lbl">Store Name:</span> {store_name}</td>
+        <td colspan="2"><span class="lbl">Territory:</span> {territory}</td>
+        <td colspan="3"><span class="lbl">How heard about us:</span> {how_heard}</td>
       </tr>
     </table>
 
@@ -561,12 +629,12 @@ def download_customer_registration_form_pdf_html(customer=None):
         <td><span class="lbl">ZIP Code:</span><br>{business_zip}</td>
       </tr>
       <tr>
-        <td class="lbl" colspan="3">How long at current address?&nbsp;&nbsp;{how_long_address}</td>
-        <td class="lbl" colspan="3">DUNS #:&nbsp;&nbsp;{duns}</td>
+        <td class="lbl" colspan="3">How long at current address?&nbsp;&nbsp;{how_long_years} {('years' if how_long_years else '')}</td>
+        <td class="lbl" colspan="3">Store/Warehouse Area:&nbsp;&nbsp;{store_area} {('sqft' if store_area else '')}</td>
       </tr>
       <tr>
         <td class="lbl">Telephone:</td>
-        <td>{phone}</td>
+        <td>{business_phone}</td>
         <td class="lbl">Fax:</td>
         <td>{fax}</td>
         <td class="lbl">E-mail:</td>
@@ -585,39 +653,39 @@ def download_customer_registration_form_pdf_html(customer=None):
       </colgroup>
       <tr>
         <td class="lbl">Bank name:</td>
-        <td colspan="3"></td>
+        <td colspan="3">{bank_name}</td>
       </tr>
       <tr>
         <td class="lbl">Bank address:</td>
-        <td></td>
+        <td>{bank_address}</td>
         <td class="lbl">Phone:</td>
-        <td></td>
+        <td>{bank_phone}</td>
       </tr>
       <tr>
         <td class="lbl">City:</td>
-        <td></td>
+        <td>{bank_city}</td>
         <td class="lbl">Fax:</td>
-        <td></td>
+        <td>{bank_fax}</td>
       </tr>
       <tr>
         <td class="lbl">State:</td>
-        <td></td>
+        <td>{bank_state}</td>
         <td class="lbl">ZIP Code:</td>
-        <td></td>
+        <td>{bank_zip}</td>
       </tr>
       <tr>
         <td class="lbl">E-mail:</td>
-        <td colspan="3"></td>
+        <td colspan="3">{bank_email}</td>
       </tr>
       <tr>
         <td class="lbl">Type of account</td>
-        <td>Savings</td>
-        <td>Checking</td>
-        <td>Other</td>
+        <td>Savings {saving_chk}</td>
+        <td>Checking {checking_chk}</td>
+        <td>Other {other_chk}</td>
       </tr>
       <tr>
         <td class="lbl">Account number:</td>
-        <td colspan="3"></td>
+        <td colspan="3">{bank_account_number}</td>
       </tr>
     </table>
 
@@ -634,47 +702,47 @@ def download_customer_registration_form_pdf_html(customer=None):
       </colgroup>
 
       <!-- Reference 1 -->
-      <tr><td class="lbl">Company name:</td><td colspan="5"></td></tr>
-      <tr><td class="lbl">Address:</td><td colspan="5"></td></tr>
+      <tr><td class="lbl">Company name:</td><td colspan="5">{references[0]["company_name"]}</td></tr>
+      <tr><td class="lbl">Address:</td><td colspan="5">{references[0]["address"]}</td></tr>
       <tr>
-        <td class="lbl">City:</td><td></td><td></td>
-        <td class="lbl">State:</td><td></td>
-        <td class="lbl">ZIP Code:</td>
+        <td class="lbl">City:</td><td>{references[0]["city"]}</td><td></td>
+        <td class="lbl">State:</td><td>{references[0]["state"]}</td>
+        <td><span class="lbl">ZIP Code:</span> {references[0]["zip"]}</td>
       </tr>
       <tr>
-        <td class="lbl">Phone:</td><td></td>
-        <td class="lbl">Fax:</td><td></td>
-        <td class="lbl">E-mail:</td><td></td>
+        <td class="lbl">Phone:</td><td>{references[0]["phone"]}</td>
+        <td class="lbl">Fax:</td><td>{references[0]["fax"]}</td>
+        <td class="lbl">E-mail:</td><td>{references[0]["email"]}</td>
       </tr>
       <tr><td class="lbl">Type of account:</td><td colspan="5"></td></tr>
 
       <!-- Reference 2 -->
-      <tr><td class="lbl">Company name:</td><td colspan="5"></td></tr>
-      <tr><td class="lbl">Address:</td><td colspan="5"></td></tr>
+      <tr><td class="lbl">Company name:</td><td colspan="5">{references[1]["company_name"]}</td></tr>
+      <tr><td class="lbl">Address:</td><td colspan="5">{references[1]["address"]}</td></tr>
       <tr>
-        <td class="lbl">City:</td><td></td><td></td>
-        <td class="lbl">State:</td><td></td>
-        <td class="lbl">ZIP Code:</td>
+        <td class="lbl">City:</td><td>{references[1]["city"]}</td><td></td>
+        <td class="lbl">State:</td><td>{references[1]["state"]}</td>
+        <td><span class="lbl">ZIP Code:</span> {references[1]["zip"]}</td>
       </tr>
       <tr>
-        <td class="lbl">Phone:</td><td></td>
-        <td class="lbl">Fax:</td><td></td>
-        <td class="lbl">E-mail:</td><td></td>
+        <td class="lbl">Phone:</td><td>{references[1]["phone"]}</td>
+        <td class="lbl">Fax:</td><td>{references[1]["fax"]}</td>
+        <td class="lbl">E-mail:</td><td>{references[1]["email"]}</td>
       </tr>
       <tr><td class="lbl">Type of account:</td><td colspan="5"></td></tr>
 
       <!-- Reference 3 -->
-      <tr><td class="lbl">Company name:</td><td colspan="5"></td></tr>
-      <tr><td class="lbl">Address:</td><td colspan="5"></td></tr>
+      <tr><td class="lbl">Company name:</td><td colspan="5">{references[2]["company_name"]}</td></tr>
+      <tr><td class="lbl">Address:</td><td colspan="5">{references[2]["address"]}</td></tr>
       <tr>
-        <td class="lbl">City:</td><td></td><td></td>
-        <td class="lbl">State:</td><td></td>
-        <td class="lbl">ZIP Code:</td>
+        <td class="lbl">City:</td><td>{references[2]["city"]}</td><td></td>
+        <td class="lbl">State:</td><td>{references[2]["state"]}</td>
+        <td><span class="lbl">ZIP Code:</span> {references[2]["zip"]}</td>
       </tr>
       <tr>
-        <td class="lbl">Phone:</td><td></td>
-        <td class="lbl">Fax:</td><td></td>
-        <td class="lbl">E-mail:</td><td></td>
+        <td class="lbl">Phone:</td><td>{references[2]["phone"]}</td>
+        <td class="lbl">Fax:</td><td>{references[2]["fax"]}</td>
+        <td class="lbl">E-mail:</td><td>{references[2]["email"]}</td>
       </tr>
       <tr><td class="lbl">Type of account:</td><td colspan="5"></td></tr>
     </table>
@@ -699,7 +767,7 @@ def download_customer_registration_form_pdf_html(customer=None):
       </colgroup>
       <tr>
         <td class="lbl">SIGNATURE</td>
-        <td class="lbl">NAME:</td>
+        <td class="lbl">NAME: {first_name} {last_name}</td>
         <td class="lbl">TITLE:</td>
         <td></td>
         <td class="lbl">DATE:</td>

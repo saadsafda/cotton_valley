@@ -6,7 +6,6 @@ import frappe
 import pdfkit
 from frappe import _
 from frappe.utils import get_url, formatdate, today
-from frappe.utils.file_manager import save_file
 
 SEP = "||"
 PCS_CANDIDATES = frozenset({
@@ -121,39 +120,51 @@ def get_data(filters):
     sub_codes_select = "''"
 
     if child_dt and cat_field:
+        # Always LEFT JOIN for data retrieval
         join_cat = f"""
             LEFT JOIN `tab{child_dt}` cat
               ON cat.parent = it.name
              AND cat.parenttype = 'Item'
              AND cat.parentfield = 'custom_product_categories'
         """
+
         cat_codes_select = f"""
             IFNULL(GROUP_CONCAT(DISTINCT cat.`{cat_field}` ORDER BY cat.`{cat_field}` SEPARATOR '{SEP}'), '')
         """
 
-        if filters.get("category"):
-            conditions.append(f"cat.`{cat_field}` = %(category)s")
+        if subcat_child_field:
+            sub_codes_select = f"""
+                IFNULL(GROUP_CONCAT(DISTINCT cat.`{subcat_child_field}` ORDER BY cat.`{subcat_child_field}` SEPARATOR '{SEP}'), '')
+            """
+        elif subcat_item_field:
+            sub_codes_select = f"IFNULL(it.`{subcat_item_field}`, '')"
+        else:
+            sub_codes_select = "''"
 
+        # Independent category filter
+        if filters.get("category"):
+            conditions.append(f"""
+                it.name IN (
+                    SELECT cf.parent FROM `tab{child_dt}` cf
+                    WHERE cf.parenttype = 'Item'
+                      AND cf.parentfield = 'custom_product_categories'
+                      AND cf.`{cat_field}` = %(category)s
+                )
+            """)
+
+        # Independent subcategory filter
         if filters.get("subcategory"):
             if subcat_child_field:
-                sub_codes_select = f"""
-                    IFNULL(GROUP_CONCAT(DISTINCT cat.`{subcat_child_field}` ORDER BY cat.`{subcat_child_field}` SEPARATOR '{SEP}'), '')
-                """
-                conditions.append(f"cat.`{subcat_child_field}` = %(subcategory)s")
+                conditions.append(f"""
+                    it.name IN (
+                        SELECT sf.parent FROM `tab{child_dt}` sf
+                        WHERE sf.parenttype = 'Item'
+                          AND sf.parentfield = 'custom_product_categories'
+                          AND sf.`{subcat_child_field}` = %(subcategory)s
+                    )
+                """)
             elif subcat_item_field:
-                sub_codes_select = f"IFNULL(it.`{subcat_item_field}`, '')"
                 conditions.append(f"it.`{subcat_item_field}` = %(subcategory)s")
-            else:
-                sub_codes_select = "''"
-        else:
-            if subcat_child_field:
-                sub_codes_select = f"""
-                    IFNULL(GROUP_CONCAT(DISTINCT cat.`{subcat_child_field}` ORDER BY cat.`{subcat_child_field}` SEPARATOR '{SEP}'), '')
-                """
-            elif subcat_item_field:
-                sub_codes_select = f"IFNULL(it.`{subcat_item_field}`, '')"
-            else:
-                sub_codes_select = "''"
     else:
         join_cat = ""
         cat_codes_select = "''"
@@ -288,20 +299,19 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 /* LABELS (not bold) */
 .label { color: #6b6b6b; font-weight: 400; }
 
-/* ITEM + PRICE */
-.item-price-row { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+/* ITEM + PRICE ROW */
+.item-price-row { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
 .item-price-row td { padding: 0; vertical-align: baseline; }
 
-.item-td { font-size: 14px; font-weight: 400; white-space: nowrap; color: #4a4a4a; }
-.item-code { font-weight: 400; color: #000; font-size: 14px; }
+.item-td { white-space: nowrap; font-size: 11px; font-weight: 400; color: #4a4a4a; }
+.item-code { font-weight: 400; color: #000; font-size: 11px; }
 
 .price-td { text-align: right; white-space: nowrap; }
-.case-price { color: #e53935; font-weight: 700; font-size: 14px; }
+.case-price { color: #e53935; font-weight: 700; font-size: 11px; }
 
-/* exact like screenshot: $16.25 ca$0.65 pcs (no text spaces) */
-.sep-ca { color: #e53935; font-weight: 700; font-size: 11px; margin-left: 6px; }
-.unit-price { color: #e53935; font-weight: 700; font-size: 14px; }
-.uom { color: #e53935; font-weight: 400; font-size: 11px; margin-left: 3px; }
+.sep-ca { color: #e53935; font-weight: 700; font-size: 9px; margin-left: 1px; }
+.unit-price { color: #e53935; font-weight: 700; font-size: 11px; }
+.uom { color: #e53935; font-weight: 400; font-size: 9px; margin-left: 1px; }
 
 /* DESC */
 .desc { color: #4a4a4a; font-size: 11px; font-weight: 400; height: 30px; overflow: hidden; margin: 3px 0 10px 0; line-height: 1.4; }
@@ -546,19 +556,50 @@ def _get_products_for_pdf(filters):
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 
     join_cat = ""
+    cat_codes_select = "''"
+    sub_codes_select = "''"
     if child_dt and cat_field:
+        # Always LEFT JOIN for data retrieval
         join_cat = f"""
             LEFT JOIN `tab{child_dt}` cat
               ON cat.parent = it.name
              AND cat.parenttype = 'Item'
              AND cat.parentfield = 'custom_product_categories'
         """
-        if filters.get("category"):
-            conditions.append(f"cat.`{cat_field}` = %(category)s")
 
+        cat_codes_select = f"""
+            IFNULL(GROUP_CONCAT(DISTINCT cat.`{cat_field}` ORDER BY cat.`{cat_field}` SEPARATOR '{SEP}'), '')
+        """
+
+        if subcat_child_field:
+            sub_codes_select = f"""
+                IFNULL(GROUP_CONCAT(DISTINCT cat.`{subcat_child_field}` ORDER BY cat.`{subcat_child_field}` SEPARATOR '{SEP}'), '')
+            """
+        elif subcat_item_field:
+            sub_codes_select = f"IFNULL(it.`{subcat_item_field}`, '')"
+
+        # Independent category filter
+        if filters.get("category"):
+            conditions.append(f"""
+                it.name IN (
+                    SELECT cf.parent FROM `tab{child_dt}` cf
+                    WHERE cf.parenttype = 'Item'
+                      AND cf.parentfield = 'custom_product_categories'
+                      AND cf.`{cat_field}` = %(category)s
+                )
+            """)
+
+        # Independent subcategory filter
         if filters.get("subcategory"):
             if subcat_child_field:
-                conditions.append(f"cat.`{subcat_child_field}` = %(subcategory)s")
+                conditions.append(f"""
+                    it.name IN (
+                        SELECT sf.parent FROM `tab{child_dt}` sf
+                        WHERE sf.parenttype = 'Item'
+                          AND sf.parentfield = 'custom_product_categories'
+                          AND sf.`{subcat_child_field}` = %(subcategory)s
+                    )
+                """)
             elif subcat_item_field:
                 conditions.append(f"it.`{subcat_item_field}` = %(subcategory)s")
 
@@ -572,7 +613,10 @@ def _get_products_for_pdf(filters):
             it.image as image_path,
             {upc_select}
             ip.price_list_rate,
-            ip.currency
+            ip.currency,
+            IFNULL(it.custom_case_pack, 0) as case_pack,
+            {cat_codes_select} as category_codes,
+            {sub_codes_select} as subcategory_codes
         FROM `tabItem` it
         INNER JOIN `tabItem Price` ip
             ON ip.item_code = it.name
@@ -583,8 +627,18 @@ def _get_products_for_pdf(filters):
         ORDER BY it.item_name
     """, filters, as_dict=1)
 
+    # Resolve category / subcategory titles
+    all_cat = set()
+    all_sub = set()
+    for r in rows:
+        for c in _split_codes(r.get("category_codes")):
+            all_cat.add(c)
+        for s in _split_codes(r.get("subcategory_codes")):
+            all_sub.add(s)
+    cat_titles = _get_titles_map("Product Category", all_cat)
+    sub_titles = _get_titles_map("Product Subcategory", all_sub)
+
     item_codes = [r.item_code for r in rows]
-    case_pack_map, piece_uom_map = _get_case_pack_map(item_codes)
     stock_map = _get_stock_map(item_codes, filters.get("company"))
 
     products = []
@@ -592,27 +646,36 @@ def _get_products_for_pdf(filters):
         price = r.price_list_rate or 0
         currency = r.currency or None
 
-        case_pack = case_pack_map.get(r.item_code) 
-        piece_uom = piece_uom_map.get(r.item_code) or "PCS"
+        # Case pack from custom_case_pack field on Item
+        case_pack = r.get("case_pack") or 0
+        try:
+            cp_num = float(case_pack) if case_pack else 0.0
+        except (ValueError, TypeError):
+            cp_num = 0.0
 
-        cp_num = float(case_pack) if case_pack not in (None, "", 0) else 0.0
         unit_price_val = (price / cp_num) if cp_num > 0 else None
 
-        # ✅ ONLY show unit price when CA > 1
+        # ONLY show unit price when CA > 1
         show_unit_price = (cp_num > 1 and unit_price_val is not None)
 
         stock_qty = stock_map.get(r.item_code, 0) or 0
         in_stock = stock_qty > 0
+
+        # Resolve category / subcategory names
+        cat_codes = _split_codes(r.get("category_codes"))
+        sub_codes = _split_codes(r.get("subcategory_codes"))
+        category_name = ", ".join([cat_titles.get(x, x) for x in cat_codes])
+        subcategory_name = ", ".join([sub_titles.get(x, x) for x in sub_codes])
 
         products.append({
             "item_code": r.item_code,
             "desc": r.item_name or "",
             "image_url": _abs_url(r.image_path),
             "upc": r.upc,
-            "case_pack": int(case_pack) if case_pack and float(case_pack).is_integer() else case_pack,
-            "piece_uom": piece_uom,
+            "case_pack": int(cp_num) if cp_num and float(cp_num).is_integer() else (cp_num if cp_num else ""),
+            "piece_uom": "PCS",
 
-            # ✅ remove "$ " space
+            # remove "$ " space
             "case_price": _fmt_money_compact(price, currency=currency),
 
             # unit price string only if needed
@@ -621,6 +684,9 @@ def _get_products_for_pdf(filters):
 
             "stock_qty": int(stock_qty) if float(stock_qty).is_integer() else stock_qty,
             "in_stock": in_stock,
+
+            "category_name": category_name,
+            "subcategory_name": subcategory_name,
         })
 
     return products
@@ -661,6 +727,40 @@ def download_product_catalog_pdf(filters=None):
 
     pdf = pdfkit.from_string(html, False, options=pdf_options)
 
+    # Stream PDF directly as download (avoids 10MB save_file limit)
     filename = f"Product Catalog - {filters.get('company') or ''}.pdf".replace("/", "-")
-    file_doc = save_file(filename, pdf, dt=None, dn=None, is_private=0)
-    return {"file_url": file_doc.file_url}
+    frappe.local.response["filename"] = filename
+    frappe.local.response["filecontent"] = pdf
+    frappe.local.response["type"] = "download"
+
+
+@frappe.whitelist()
+def get_subcategories(doctype, txt, searchfield, start, page_len, filters):
+    """Return Product Subcategory names, optionally filtered by company and category."""
+    conds = ["sc.name LIKE %(txt)s"]
+    params = {"txt": f"%{txt}%", "start": int(start), "page_len": int(page_len)}
+
+    if filters.get("company"):
+        conds.append("sc.company = %(company)s")
+        params["company"] = filters["company"]
+
+    if filters.get("category"):
+        conds.append("""
+            sc.name IN (
+                SELECT sub.product_subcategory
+                FROM `tabSubCategories` sub
+                WHERE sub.parenttype = 'Product Category'
+                  AND sub.parent = %(category)s
+            )
+        """)
+        params["category"] = filters["category"]
+
+    where = " AND ".join(conds)
+    return frappe.db.sql(
+        f"""SELECT sc.name, sc.title
+           FROM `tabProduct Subcategory` sc
+           WHERE {where}
+           ORDER BY sc.title
+           LIMIT %(start)s, %(page_len)s""",
+        params,
+    )
