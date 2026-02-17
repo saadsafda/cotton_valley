@@ -3335,7 +3335,7 @@
   "insert_after": "last_login_date",
   "is_system_generated": 0,
   "is_virtual": 0,
-  "label": "LOV",
+  "label": "CV Remarks",
   "length": 0,
   "link_filters": null,
   "mandatory_depends_on": null,
