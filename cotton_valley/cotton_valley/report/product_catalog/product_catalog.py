@@ -368,7 +368,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 
           <div style="font-size:12px; font-weight:700; color:#000; margin-bottom:3px;"><span class="label">Item:</span> {{ p.item_code }}</div>
 
-          <div class="desc">{{ p.desc }}</div>
+          <div class="desc"><span class="label">Desc:</span> {{ p.desc }}</div>
 
           {% if p.category_name %}
           <div style="font-size:10px; color:#4a4a4a; margin-bottom:4px;"><span class="label">Category:</span> {{ p.category_name }}</div>
@@ -661,8 +661,8 @@ def _get_products_for_pdf(filters):
 
         unit_price_val = (price / cp_num) if cp_num > 0 else None
 
-        # ONLY show unit price when CA > 1
-        show_unit_price = (cp_num > 1 and unit_price_val is not None)
+        # Show unit price when CA >= 1
+        show_unit_price = (cp_num >= 1 and unit_price_val is not None)
 
         stock_qty = stock_map.get(r.item_code, 0) or 0
         in_stock = stock_qty > 0
