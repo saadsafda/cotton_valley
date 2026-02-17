@@ -220,7 +220,7 @@ scheduler_events = {
 		"cotton_valley.api.customer.deactivate_inactive_customers"
 	],
 	"cron": {
-		"0 23 * * *": [
+		"0 14 * * *": [
 			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_price_sync",
 			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_price_sync",
 			"cotton_valley.server_scripts.sales_order.send_abandoned_cart_emails",
