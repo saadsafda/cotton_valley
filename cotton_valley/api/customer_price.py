@@ -3,7 +3,7 @@ from cotton_valley.api.common import check_customer_token, get_customer_from_tok
 
 
 @frappe.whitelist(allow_guest=True)
-def get_price_filters(company=None):
+def get_price_filters(company=None, category=None, sub_category=None):
     """
     Get price filter ranges for product filtering based on actual product prices.
     Returns two sets of filters: filterPrice (for case prices) and filterPCSPrice (for piece prices).
@@ -16,6 +16,8 @@ def get_price_filters(company=None):
         # Determine price list based on customer and company
         price_list = "Retail"
         company = "Cotton Valley" if not company or company == "null" else company
+        category = category if category and category != "null" else None
+        sub_category = sub_category if sub_category and sub_category != "null" else None
         
         if check_customer_token():
             customer = get_customer_from_token()
@@ -37,17 +39,29 @@ def get_price_filters(company=None):
         
         # Get min and max prices from actual Item Price data
         # Filter by price list and company
-        price_data = frappe.db.sql("""
+        conditions = ["ip.price_list_rate > 0", "ip.price_list = %s", "i.company = %s", "i.disabled = 0"]
+        values = [price_list, company]
+        
+        # Build joins based on filters
+        joins = "INNER JOIN `tabItem` i ON i.name = ip.item_code"
+        
+        if category:
+            joins += " INNER JOIN `tabProduct Categoris` c ON c.parent = i.name"
+            conditions.append("c.product_category = %s")
+            values.append(category)
+        
+        if sub_category:
+            conditions.append("i.custom_sub_category = %s")
+            values.append(sub_category)
+        
+        price_data = frappe.db.sql(f"""
             SELECT 
                 MIN(ip.price_list_rate) as min_price,
                 MAX(ip.price_list_rate) as max_price
             FROM `tabItem Price` ip
-            INNER JOIN `tabItem` i ON i.name = ip.item_code
-            WHERE ip.price_list_rate > 0 
-                AND ip.price_list = %s
-                AND i.company = %s
-                AND i.disabled = 0
-        """, (price_list, company), as_dict=True)
+            {joins}
+            WHERE {' AND '.join(conditions)}
+        """, tuple(values), as_dict=True)
         
         min_price = (price_data[0].get('min_price') or 0) if price_data else 0
         max_price = (price_data[0].get('max_price') or 100) if price_data else 100
@@ -104,18 +118,29 @@ def get_price_filters(company=None):
         
         # For PCS (piece) prices - typically lower prices
         # Check if there are items with very low prices (< 20)
-        pcs_price_data = frappe.db.sql("""
+        pcs_conditions = ["ip.price_list_rate > 0", "ip.price_list_rate < 20", "ip.price_list = %s", "i.company = %s", "i.disabled = 0"]
+        pcs_values = [price_list, company]
+        
+        # Build joins based on filters
+        pcs_joins = "INNER JOIN `tabItem` i ON i.name = ip.item_code"
+        
+        if category:
+            pcs_joins += " INNER JOIN `tabProduct Categoris` c ON c.parent = i.name"
+            pcs_conditions.append("c.product_category = %s")
+            pcs_values.append(category)
+        
+        if sub_category:
+            pcs_conditions.append("i.custom_sub_category = %s")
+            pcs_values.append(sub_category)
+        
+        pcs_price_data = frappe.db.sql(f"""
             SELECT 
                 MIN(ip.price_list_rate) as min_price,
                 MAX(ip.price_list_rate) as max_price
             FROM `tabItem Price` ip
-            INNER JOIN `tabItem` i ON i.name = ip.item_code
-            WHERE ip.price_list_rate > 0 
-                AND ip.price_list_rate < 20 
-                AND ip.price_list = %s
-                AND i.company = %s
-                AND i.disabled = 0
-        """, (price_list, company), as_dict=True)
+            {pcs_joins}
+            WHERE {' AND '.join(pcs_conditions)}
+        """, tuple(pcs_values), as_dict=True)
         
         pcs_min = (pcs_price_data[0].get('min_price') or 0.5) if pcs_price_data else 0.5
         pcs_max = (pcs_price_data[0].get('max_price') or 10) if pcs_price_data else 10

@@ -88,7 +88,7 @@ def get_product_ids(search=None, company=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def get_all_products(ids=None, category=None, subcategory=None, brand=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcs_price=None):
+def get_all_products(ids=None, category=None, subcategory=None, brand=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcsPrice=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
     attribute = None if not attribute or attribute == "null" else get_categories_from_string(attribute)
@@ -100,7 +100,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     company = "Cotton Valley" if not company or company == "null" else company
     brand = None if not brand or brand == "null" else get_categories_from_string(brand)
     price = None if not price or price == "null" else get_categories_from_string(price)
-    pcs_price = None if not pcs_price or pcs_price == "null" else get_categories_from_string(pcs_price)
+    pcs_price = None if not pcsPrice or pcsPrice == "null" else get_categories_from_string(pcsPrice)
 
     filters = {"disabled": 0}  # only active products
 
@@ -545,7 +545,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
                 if "-" in str(price_filter):
                     # Range filter: "10-20"
                     min_price, max_price = map(float, str(price_filter).split("-"))
-                    if min_price <= product_price <= max_price:
+                    if min_price >= product_price <= max_price:
                         price_match = True
                         break
                 else:
@@ -577,9 +577,10 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
             for pcs_filter in pcs_price:
                 # Parse PCS price filter format
                 if "-" in str(pcs_filter):
+
                     # Range filter: "1-2"
                     min_pcs_price, max_pcs_price = map(float, str(pcs_filter).split("-"))
-                    if min_pcs_price <= pcs_product_price <= max_pcs_price:
+                    if min_pcs_price >= pcs_product_price <= max_pcs_price:
                         pcs_price_match = True
                         break
                 else:
