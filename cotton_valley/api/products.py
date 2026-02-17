@@ -545,7 +545,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
                 if "-" in str(price_filter):
                     # Range filter: "10-20"
                     min_price, max_price = map(float, str(price_filter).split("-"))
-                    if min_price <= product_price <= max_price:
+                    if min_price >= product_price <= max_price:
                         price_match = True
                         break
                 else:
@@ -577,9 +577,10 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
             for pcs_filter in pcs_price:
                 # Parse PCS price filter format
                 if "-" in str(pcs_filter):
+
                     # Range filter: "1-2"
                     min_pcs_price, max_pcs_price = map(float, str(pcs_filter).split("-"))
-                    if min_pcs_price <= pcs_product_price <= max_pcs_price:
+                    if min_pcs_price >= pcs_product_price <= max_pcs_price:
                         pcs_price_match = True
                         break
                 else:
