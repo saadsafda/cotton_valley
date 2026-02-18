@@ -23,15 +23,33 @@ frappe.query_reports["Product Catalog"] = {
           filters: { company: company || "", category: category || "" }
         };
       }
-    }
+    },
+    { fieldname: "hide_price", label: __("Hide Price in PDF"), fieldtype: "Check", default: 0 }
   ],
 
   onload: function (report) {
   report.page.add_inner_button(__("Download PDF"), function () {
-    const filters = report.get_values();
-    const args = encodeURIComponent(JSON.stringify(filters));
-    const url = `/api/method/cotton_valley.cotton_valley.report.product_catalog.product_catalog.download_product_catalog_pdf?filters=${args}`;
-    window.open(url, "_blank");
+    let d = new frappe.ui.Dialog({
+      title: __("Download Product Catalog PDF"),
+      fields: [
+        {
+          fieldname: "header_note",
+          fieldtype: "Small Text",
+          label: __("Header Note"),
+          description: __("This text will appear below the heading in the PDF")
+        }
+      ],
+      primary_action_label: __("Download"),
+      primary_action: function (values) {
+        d.hide();
+        const filters = report.get_values();
+        filters.header_note = values.header_note || "";
+        const args = encodeURIComponent(JSON.stringify(filters));
+        const url = `/api/method/cotton_valley.cotton_valley.report.product_catalog.product_catalog.download_product_catalog_pdf?filters=${args}`;
+        window.open(url, "_blank");
+      }
+    });
+    d.show();
   }).addClass("btn-primary");
 }
 };

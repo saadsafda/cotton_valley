@@ -351,6 +351,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
         <td class="hdr-center">
           <div class="header-title">PRODUCT CATALOG</div>
           <div class="header-sub">Total Products: {{ total_products }}</div>
+          {% if header_note %}<div style="margin-top:4px; font-size:12px; color:#333; font-weight:600;">{{ header_note }}</div>{% endif %}
         </td>
         <td class="hdr-right">{{ print_date }}</td>
       </tr>
@@ -394,6 +395,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                 </td>
               </tr>
             </table>
+            {% if not hide_price %}
             <div style="background:#b8d4e8; padding:3px 6px; border-radius:4px; margin-top:5px;">
               <table style="width:100%; border-collapse:collapse;">
                 <tr>
@@ -402,6 +404,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                 </tr>
               </table>
             </div>
+            {% endif %}
           </div>
 
         </div>
@@ -706,11 +709,16 @@ def download_product_catalog_pdf(filters=None):
 
     products = _get_products_for_pdf(filters)
 
+    hide_price = filters.get("hide_price", 0)
+    header_note = (filters.get("header_note") or "").strip()
+
     context = {
         "products": products,
         "total_products": len(products),
         "print_date": formatdate(today()),
         "company_logo": _get_company_logo(filters.get("company")),
+        "hide_price": int(hide_price),
+        "header_note": header_note,
     }
 
     html = frappe.render_template(PDF_TEMPLATE, context)
