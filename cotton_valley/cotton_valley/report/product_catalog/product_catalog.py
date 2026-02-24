@@ -260,7 +260,7 @@ PDF_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <style>
-@page { size: Letter; margin: 10mm 10mm 14mm 10mm; }
+@page { size: Letter; margin: 10mm 10mm 40mm 10mm; }
 
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
@@ -278,18 +278,22 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .hdr-right { width: 155px; text-align: right; font-size: 11px; color: #6b6b6b; line-height: 1.2; }
 
 /* GRID */
-.grid { margin-top: 14px; margin-left: -5px; margin-right: -5px; }
+.grid { margin-top: 14px; margin-left: -5px; margin-right: -5px; padding-bottom: 88px; }
 .grid::after { content: ''; display: table; clear: both; }
 .card { float: left; width: 25%; padding: 0 5px 10px 5px; page-break-inside: avoid; }
 
 .card-box{
-  border: 2px solid #bdbdbd;
-  border-radius: 10px;
-  padding: 10px 10px 58px 10px;
-  min-height: 300px;
-  position: relative;
-  overflow: hidden;
-  background: #fff;
+    border: 2px solid #bdbdbd;
+    border-radius: 12px;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+    background: #f9fbfd;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 0 2px 8px rgba(180,200,220,0.08);
+    padding: 10px;
 }
 
 /* IMAGE */
@@ -319,7 +323,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 
 /* UPC/CA */
 .detail-row { width: 100%; border-collapse: collapse; }
-.detail-row td { padding: 3px 0; vertical-align: top; font-size: 11px; font-weight: 400; color: #4a4a4a; }
+.detail-row td { padding: 2px 0; vertical-align: middle; font-size: 11px; font-weight: 400; color: #4a4a4a; }
 .muted { color: #6b6b6b; }
 
 /* STOCK */
@@ -330,87 +334,84 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .stock-badge { text-align: right; }
 
 .badge {
-  display: inline-block;
-  padding: 3px 12px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
+    display: inline-block;
+    padding: 4px 16px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(180,200,220,0.10);
 }
-.badge.out { background: #f8d7da; color: #b42323; border: 1px solid #f1aeb5; }
-.badge.in  { background: #d1e7dd; color: #0f5132; border: 1px solid #a3cfbb; }
+.badge.out { background: #fbeaea; color: #b42323; border: 1px solid #f1aeb5; }
+.badge.in  { background: #e6f4ea; color: #0f5132; border: 1px solid #a3cfbb; }
 </style>
 </head>
 
 <body>
-  <div class="header-wrap">
+    <div class="header-wrap">
     <table>
       <tr>
         <td class="hdr-left">{% if company_logo %}<img src="{{ company_logo }}">{% endif %}</td>
-        <td class="hdr-center">
-          <div class="header-title">PRODUCT CATALOG</div>
-          <div class="header-sub">Total Products: {{ total_products }}</div>
-          {% if header_note %}<div style="margin-top:4px; font-size:12px; color:#333; font-weight:600;">{{ header_note }}</div>{% endif %}
-        </td>
+                <td class="hdr-center">
+                    <div class="header-title">{{ header_title }}</div>
+                    {% if header_sub %}<div class="header-sub">{{ header_sub }}</div>{% endif %}
+                    {% if header_note %}<div style="margin-top:4px; font-size:12px; color:#333; font-weight:600;">{{ header_note }}</div>{% endif %}
+                </td>
         <td class="hdr-right">{{ print_date }}</td>
       </tr>
     </table>
   </div>
 
-  <div class="grid">
-    {% for p in products %}
-      <div class="card">
-        <div class="card-box">
-
-          <div class="imgbox">
-            {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
-          </div>
-
-          <div style="font-size:12px; font-weight:700; color:#000; margin-bottom:3px;"><span class="label">Item:</span> {{ p.item_code }}</div>
-
-          <div class="desc"><span class="label">Desc:</span> {{ p.desc }}</div>
-
-          {% if p.category_name %}
-          <div style="font-size:10px; color:#4a4a4a; margin-bottom:4px;"><span class="label">Category:</span> {{ p.category_name }}</div>
-          {% endif %}
-
-          <table class="detail-row">
-            <tr>
-              <td><span class="label">UPC:</span> {{ p.upc or "" }}</td>
-              <td style="text-align:right;" class="muted"><span class="label">Case Pack :</span> {{ p.case_pack or "" }}</td>
-            </tr>
-          </table>
-
-          <div class="stock-row">
-            <table>
-              <tr>
-                <td class="stock-label"><span class="label">Stock:</span></td>
-                <td class="stock-badge">
-                  {% if p.in_stock %}
-                    <span class="badge in">{{ p.stock_qty }}</span>
-                  {% else %}
-                    <span class="badge out">Out of Stock</span>
-                  {% endif %}
-                </td>
-              </tr>
-            </table>
-            {% if not hide_price %}
-            <div style="background:#b8d4e8; padding:3px 6px; border-radius:4px; margin-top:5px;">
-              <table style="width:100%; border-collapse:collapse;">
-                <tr>
-                  <td style="padding:0; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">CA.P.:</span>{{ p.case_price }}</td>
-                  {% if p.show_unit_price %}<td style="padding:0; text-align:right; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">EA.P.:</span>{{ p.unit_price }}</td>{% endif %}
-                </tr>
-              </table>
+    <div class="grid">
+        {% for p in products %}
+            <div class="card">
+                <div class="card-box">
+                    <div class="imgbox" style="margin-bottom: 10px;">
+                        {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
+                    </div>
+                    <div style="font-size:12px; font-weight:700; color:#000; margin-bottom:6px;"><span class="label">Item:</span> {{ p.item_code }}</div>
+                    <div class="desc" style="margin-bottom:8px;"><span class="label">Desc:</span> {{ p.desc }}</div>
+                    {% if p.category_name %}
+                    <div style="font-size:10px; color:#4a4a4a; margin-bottom:6px;"><span class="label">Category:</span> {{ p.category_name }}</div>
+                    {% endif %}
+                    <table class="detail-row" style="margin-bottom:4px; width:100%;">
+                        <tr>
+                            <td style="width:55%;"><span class="label">UPC:</span> {{ p.upc or "" }}</td>
+                            <td style="text-align:right; width:45%;" class="muted"><span class="label">Case Pack :</span> {{ p.case_pack or "" }}</td>
+                        </tr>
+                    </table>
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
+                        <tr>
+                            <td class="stock-label" style="padding:0; font-size:11px; color:#6b6b6b; font-weight:400; width:55%;"><span class="label">Stock:</span></td>
+                            <td class="stock-badge" style="padding:0; text-align:right; width:45%;">
+                                {% if p.in_stock %}
+                                    <span class="badge in">{{ p.stock_qty }}</span>
+                                {% else %}
+                                    <span class="badge out">Out of Stock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                    {% if not hide_price %}
+                    <div style="background:#b8d4e8; padding:4px 8px; border-radius:4px; margin-top:4px;">
+                        <table style="width:100%; border-collapse:collapse;">
+                            <tr>
+                                <td style="padding:0; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">CA.P.:</span>{{ p.case_price }}</td>
+                                {% if p.show_unit_price %}<td style="padding:0; text-align:right; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">EA.P.:</span>{{ p.unit_price }}</td>{% endif %}
+                            </tr>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-            {% endif %}
-          </div>
+        {% endfor %}
+    </div>
 
-        </div>
-      </div>
-    {% endfor %}
-  </div>
+    <!-- HTML Footer for every page -->
+    <div style="position: fixed; left: 0; right: 0; bottom: 0; height: 44px; background: #f3f6fa; color: #222; font-size: 15px; font-weight: 600; border-radius: 0 0 8px 8px; box-shadow: none; display: flex; align-items: center; padding-left: 16px; letter-spacing: 0.2px; z-index: 9999; width: 100%; text-align: left;">
+        {{ footer_left or ("Total Products: " ~ total_products) }}
+    </div>
 </body>
 </html>
 """
@@ -719,6 +720,9 @@ def download_product_catalog_pdf(filters=None):
         "company_logo": _get_company_logo(filters.get("company")),
         "hide_price": int(hide_price),
         "header_note": header_note,
+        # editable header fields (can be passed in `filters`)
+        "header_title": (filters.get("header_title") or "PRODUCT CATALOG"),
+        "header_sub": (filters.get("header_sub") or ""),
     }
 
     html = frappe.render_template(PDF_TEMPLATE, context)
@@ -734,8 +738,8 @@ def download_product_catalog_pdf(filters=None):
         "print-media-type": "",
         "enable-local-file-access": "",
 
-        "footer-left": "Generated by Cotton Valley",
-        "footer-right": "Page [page] of [toPage]",
+        # footer values can be overridden via filters
+        "footer-left": (filters.get("footer_left") or f"Total Products: {len(products)}"),
         "footer-font-size": "8",
     }
 
