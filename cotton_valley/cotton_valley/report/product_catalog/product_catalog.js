@@ -29,21 +29,26 @@ frappe.query_reports["Product Catalog"] = {
 
   onload: function (report) {
   report.page.add_inner_button(__("Download PDF"), function () {
+    const current = report.get_values();
     let d = new frappe.ui.Dialog({
       title: __("Download Product Catalog PDF"),
       fields: [
-        {
-          fieldname: "header_note",
-          fieldtype: "Small Text",
-          label: __("Header Note"),
-          description: __("This text will appear below the heading in the PDF")
-        }
+        { fieldname: "header_title", fieldtype: "Data", label: __("Header Title"), default: (current.header_title || "PRODUCT CATALOG") },
+        { fieldname: "header_sub", fieldtype: "Data", label: __("Header Subtitle"), default: (current.header_sub || "") },
+        { fieldname: "header_note", fieldtype: "Small Text", label: __("Header Note"), description: __("This text will appear below the heading in the PDF"), default: (current.header_note || "") },
+        { fieldname: "footer_left", fieldtype: "Data", label: __("Footer Left"), description: __("Default: Total Products: <count>"), default: (current.footer_left || "") },
+        { fieldname: "hide_price", fieldtype: "Check", label: __("Hide Price in PDF"), default: (current.hide_price || 0) },
       ],
       primary_action_label: __("Download"),
       primary_action: function (values) {
         d.hide();
         const filters = report.get_values();
+        // copy dialog values into filters (override or add)
+        filters.header_title = values.header_title || "PRODUCT CATALOG";
+        filters.header_sub = values.header_sub || "";
         filters.header_note = values.header_note || "";
+        if (values.footer_left) filters.footer_left = values.footer_left;
+        filters.hide_price = values.hide_price ? 1 : 0;
         const args = encodeURIComponent(JSON.stringify(filters));
         const url = `/api/method/cotton_valley.cotton_valley.report.product_catalog.product_catalog.download_product_catalog_pdf?filters=${args}`;
         window.open(url, "_blank");
