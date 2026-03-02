@@ -11,7 +11,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
     try:
         product_ids = None if not product_ids or product_ids == "null" else get_categories_from_string(product_ids)
         # Build filter conditions
-        filter_conditions = ["i.disabled_in_app = 0"]
+        filter_conditions = []
         filter_values = []
         
         if product_ids:
@@ -42,6 +42,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
             SELECT 
                 i.name as id,
                 i.item_name as name,
+                i.disabled_in_app,
                 i.custom_short_description as short_description,
                 i.description,
                 i.item_group as type,
