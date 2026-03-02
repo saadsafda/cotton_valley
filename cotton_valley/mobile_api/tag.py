@@ -14,7 +14,7 @@ def get_tag_info():
 
         tag_list = frappe.db.get_all(
             "Tag",
-            fields=["name", "company", "description"],
+            fields=["name", "company", "product_type", "description"],
         )
 
         if not tag_list:

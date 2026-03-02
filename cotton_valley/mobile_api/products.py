@@ -11,7 +11,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
     try:
         product_ids = None if not product_ids or product_ids == "null" else get_categories_from_string(product_ids)
         # Build filter conditions
-        filter_conditions = ["i.disabled = 0"]
+        filter_conditions = ["i.disabled_in_app = 0"]
         filter_values = []
         
         if product_ids:
