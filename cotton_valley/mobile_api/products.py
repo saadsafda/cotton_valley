@@ -35,7 +35,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
             filter_conditions.append("i.custom_sub_category = %s")
             filter_values.append(subcategory)
         
-        where_clause = " AND ".join(filter_conditions)
+        where_clause = " AND ".join(filter_conditions) if filter_conditions else "1=1"
         
         # Single optimized query to get all data at once
         products_data = frappe.db.sql(f"""
