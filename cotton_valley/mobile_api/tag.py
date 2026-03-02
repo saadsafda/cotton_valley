@@ -27,7 +27,7 @@ def get_tag_info():
         for tag in tag_list:
             try:
 
-                tag['image'] = frappe.utils.get_url() + tag['image'] if tag['image'] else None
+                tag['image'] = frappe.utils.get_url(tag['image']) if tag['image'] else None
                 # Fetch data from the Child Table
                 tag['products'] = frappe.db.get_all(
                     "Recommended Products", 
