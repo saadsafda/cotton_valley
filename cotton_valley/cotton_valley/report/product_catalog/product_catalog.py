@@ -1,9 +1,6 @@
 import os
-import tempfile
-from urllib.request import pathname2url
 
 import frappe
-import pdfkit
 from frappe import _
 from frappe.utils import get_url, formatdate, today
 
@@ -252,139 +249,260 @@ def _fmt_money_compact(value, currency=None):
     return s
 
 
-# -----------------------------
-# ✅ PDF TEMPLATE (bold removed, colors like screenshot, price correct)
-# -----------------------------
+# -----------------------------------------------------------------------
+# ✅ PDF TEMPLATE – WeasyPrint with CSS running elements for header/footer
+# -----------------------------------------------------------------------
 PDF_TEMPLATE = """<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
 <style>
-@page { size: Letter; margin: 10mm 10mm 40mm 10mm; }
+@page {
+    size: Letter;
+    margin: 34mm 8mm 20mm 8mm;
+
+    @top-center {
+        content: element(page-header);
+        width: 100%;
+    }
+    @bottom-center {
+        content: element(page-footer);
+        width: 100%;
+    }
+}
 
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
 body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0; padding: 0; }
 
-/* HEADER */
-.header-wrap { border: 1px solid #444; padding: 10px 14px; }
-.header-wrap table { width: 100%; border-collapse: collapse; }
-.header-wrap td { vertical-align: middle; padding: 0; }
+/* RUNNING HEADER */
+.page-header {
+    position: running(page-header);
+    width: 100%;
+    background: #fff;
+    border: 2px solid #444;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: Arial, sans-serif;
+}
+.page-header table { width: 100%; border-collapse: collapse; }
+.page-header td { vertical-align: middle; padding: 0; }
 .hdr-left { width: 155px; }
 .hdr-left img { height: 44px; }
 .hdr-center { text-align: center; line-height: 1.15; }
 .header-title { font-size: 20px; font-weight: 800; letter-spacing: 0.6px; color: #111; }
 .header-sub { margin-top: 4px; font-size: 11px; color: #6b6b6b; }
-.hdr-right { width: 155px; text-align: right; font-size: 11px; color: #6b6b6b; line-height: 1.2; }
+.hdr-right { width: 155px; text-align: right; font-size: 11px; color: #6b6b6b; line-height: 1.4; }
+
+/* RUNNING FOOTER */
+.page-footer {
+    position: running(page-footer);
+    width: 100%;
+    border-top: 1px solid #ccc;
+    padding: 6px 16px;
+    font-family: Arial, sans-serif;
+    font-size: 8.5px;
+    font-weight: 500;
+    color: #222;
+    letter-spacing: 0.2px;
+}
+.footer-note { font-size: 10px; font-weight: 600; color: #555; margin-top: 2px; text-align: center; }
 
 /* GRID */
-.grid { margin-top: 14px; margin-left: -5px; margin-right: -5px; padding-bottom: 88px; }
-.grid::after { content: ''; display: table; clear: both; }
-.card { float: left; width: 25%; padding: 0 5px 10px 5px; page-break-inside: avoid; }
+.grid {
+    margin-top: 6px;
+    margin-left: -5px;
+    margin-right: -5px;
+}
+.grid::after {
+    content: '';
+    display: table;
+    clear: both;
+}
+.card {
+    float: left;
+    width: 25%;
+    padding: 0 5px 10px 5px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+}
 
-.card-box{
-    border: 2px solid #bdbdbd;
-    border-radius: 12px;
-    min-height: 300px;
-    position: relative;
+.card-box {
+    border: 1.5px solid #c8c8c8;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 8px;
     overflow: hidden;
-    background: #f9fbfd;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    box-shadow: 0 2px 8px rgba(180,200,220,0.08);
-    padding: 10px;
 }
 
 /* IMAGE */
-.imgbox { height: 170px; border-radius: 8px; text-align: center; margin-bottom: 6px; background: #fff; overflow: hidden; }
-.imgbox img { max-width: 100%; max-height: 170px; }
+.imgbox {
+    text-align: center;
+    margin-bottom: 7px;
+    height: 125px;
+    overflow: hidden;
+}
+.imgbox img {
+    max-width: 100%;
+    max-height: 121px;
+    object-fit: contain;
+}
 
-/* LABELS (not bold) */
-.label { color: #6b6b6b; font-weight: 400; }
+/* LABELS */
+.lbl-gray {
+    color: #7f7f7f;
+    font-weight: 400;
+}
 
-/* ITEM + PRICE ROW */
-.item-price-row { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
-.item-price-row td { padding: 0; vertical-align: baseline; }
-
-.item-td { white-space: nowrap; font-size: 11px; font-weight: 400; color: #4a4a4a; }
-.item-code { font-weight: 700; color: #000; font-size: 11px; }
-
-.price-td { text-align: right; white-space: nowrap; }
-.case-price { color: #e53935; font-weight: 700; font-size: 11px; }
-.price-label { color: #555; font-weight: 700; font-size: 9px; }
-
-.sep-ca { color: #e53935; font-weight: 700; font-size: 9px; margin-left: 1px; }
-.unit-price { color: #e53935; font-weight: 700; font-size: 11px; }
-.uom { color: #e53935; font-weight: 400; font-size: 9px; margin-left: 1px; }
+/* ITEM CODE */
+.item-line {
+    font-size: 9px;
+    font-weight: 400;
+    color: #333;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+.item-line b {
+    font-weight: 700;
+    color: #111;
+}
 
 /* DESC */
-.desc { color: #4a4a4a; font-size: 11px; font-weight: 400; height: 30px; overflow: hidden; margin: 3px 0 10px 0; line-height: 1.4; }
+.desc-line {
+    font-size: 8.5px;
+    color: #333;
+    margin-bottom: 3px;
+    line-height: 1.35;
+    height: 34px;
+    overflow: hidden;
+}
 
-/* UPC/CA */
-.detail-row { width: 100%; border-collapse: collapse; }
-.detail-row td { padding: 2px 0; vertical-align: middle; font-size: 11px; font-weight: 400; color: #4a4a4a; }
-.muted { color: #6b6b6b; }
+/* CATEGORY */
+.cat-line {
+    font-size: 8.5px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cat-line .lbl-gray { color: #888; }
+.cat-line .cat-val {
+    color: #222;
+    font-weight: 400;
+}
 
-/* STOCK */
-.stock-row { position: absolute; left: 10px; right: 10px; bottom: 8px; }
-.stock-row table { width: 100%; border-collapse: collapse; }
-.stock-row td { padding: 0; vertical-align: middle; font-size: 11px; }
-.stock-label { color: #6b6b6b; font-weight: 400; }
-.stock-badge { text-align: right; }
+/* UPC / CASE PACK / STOCK rows */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 3px;
+    table-layout: fixed;
+}
+.info-table td {
+    padding: 1px 0;
+    font-size: 8.5px;
+    color: #333;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.info-table .col-left  { width: 50%; }
+.info-table .col-right { width: 50%; text-align: right; overflow: visible; white-space: normal; }
+.info-table .lbl-gray  { color: #888; }
 
+/* BADGE */
 .badge {
     display: inline-block;
-    padding: 4px 16px;
-    border-radius: 16px;
-    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 8px;
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.4;
     white-space: nowrap;
-    box-shadow: 0 1px 2px rgba(180,200,220,0.10);
 }
-.badge.out { background: #fbeaea; color: #b42323; border: 1px solid #f1aeb5; }
-.badge.in  { background: #e6f4ea; color: #0f5132; border: 1px solid #a3cfbb; }
+.badge.out {
+    background: #fbeaea;
+    color: #c0392b;
+    border: 1px solid #f1aeb5;
+}
+.badge.in {
+    background: #e2f5e9;
+    color: #1e7e34;
+    border: 1px solid #a3cfbb;
+}
+
+/* PRICE BAR */
+.price-bar {
+    background: #b8d4e8;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-top: 5px;
+}
+.price-bar table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.price-bar td {
+    padding: 0;
+    font-size: 8.5px;
+    font-weight: 700;
+    color: #1a2a3a;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.price-bar .lbl {
+    font-size: 7px;
+    font-weight: 600;
+    color: #2c4a6a;
+}
+.price-bar .right {
+    text-align: right;
+}
 </style>
 </head>
 
 <body>
-    <div class="header-wrap">
-    <table>
-      <tr>
-        <td class="hdr-left">{% if company_logo %}<img src="{{ company_logo }}">{% endif %}</td>
+    <!-- Running header – WeasyPrint places this on every page via @top-left -->
+    <div class="page-header">
+        <table>
+            <tr>
+                <td class="hdr-left">{% if company_logo %}<img src="{{ company_logo }}">{% endif %}</td>
                 <td class="hdr-center">
                     <div class="header-title">{{ header_title }}</div>
                     {% if header_sub %}<div class="header-sub">{{ header_sub }}</div>{% endif %}
-                    {% if header_note %}<div style="margin-top:4px; font-size:12px; color:#333; font-weight:600;">{{ header_note }}</div>{% endif %}
+                    {% if header_note %}<div style="margin-top:4px;font-size:11px;color:#333;font-weight:600;">{{ header_note }}</div>{% endif %}
                 </td>
-        <td class="hdr-right">{{ print_date }}</td>
-      </tr>
-    </table>
-  </div>
+                <td class="hdr-right">{{ print_date }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Running footer – WeasyPrint places this on every page via @bottom-left -->
+    <div class="page-footer">
+        Total Products: {{ total_products }}
+        {% if footer_note %}<div class="footer-note">{{ footer_note }}</div>{% endif %}
+    </div>
 
     <div class="grid">
         {% for p in products %}
             <div class="card">
                 <div class="card-box">
-                    <div class="imgbox" style="margin-bottom: 10px;">
+                    <div class="imgbox">
                         {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
                     </div>
-                    <div style="font-size:12px; font-weight:700; color:#000; margin-bottom:6px;"><span class="label">Item:</span> {{ p.item_code }}</div>
-                    <div class="desc" style="margin-bottom:8px;"><span class="label">Desc:</span> {{ p.desc }}</div>
+                    <div class="item-line"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></div>
+                    <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
                     {% if p.category_name %}
-                    <div style="font-size:10px; color:#4a4a4a; margin-bottom:6px;"><span class="label">Category:</span> {{ p.category_name }}</div>
+                    <div class="cat-line"><span class="lbl-gray">Category: </span><span class="cat-val">{{ p.category_name }}</span></div>
                     {% endif %}
-                    <table class="detail-row" style="margin-bottom:4px; width:100%;">
+                    <table class="info-table">
                         <tr>
-                            <td style="width:55%;"><span class="label">UPC:</span> {{ p.upc or "" }}</td>
-                            <td style="text-align:right; width:45%;" class="muted"><span class="label">Case Pack :</span> {{ p.case_pack or "" }}</td>
+                            <td class="col-left"><span class="lbl-gray">UPC: </span>{{ p.upc or "" }}</td>
+                            <td class="col-right"><span class="lbl-gray">Case Pack : </span>{{ p.case_pack or "" }}</td>
                         </tr>
-                    </table>
-                    <table style="width:100%; border-collapse:collapse; margin-bottom:4px;">
                         <tr>
-                            <td class="stock-label" style="padding:0; font-size:11px; color:#6b6b6b; font-weight:400; width:55%;"><span class="label">Stock:</span></td>
-                            <td class="stock-badge" style="padding:0; text-align:right; width:45%;">
+                            <td class="col-left"><span class="lbl-gray">Stock: </span></td>
+                            <td class="col-right">
                                 {% if p.in_stock %}
                                     <span class="badge in">{{ p.stock_qty }}</span>
                                 {% else %}
@@ -394,11 +512,11 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                         </tr>
                     </table>
                     {% if not hide_price %}
-                    <div style="background:#b8d4e8; padding:4px 8px; border-radius:4px; margin-top:4px;">
-                        <table style="width:100%; border-collapse:collapse;">
+                    <div class="price-bar">
+                        <table>
                             <tr>
-                                <td style="padding:0; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">CA.P.:</span>{{ p.case_price }}</td>
-                                {% if p.show_unit_price %}<td style="padding:0; text-align:right; font-size:11px; font-weight:700; color:#333; white-space:nowrap;"><span style="font-size:9px;">EA.P.:</span>{{ p.unit_price }}</td>{% endif %}
+                                <td><span class="lbl">CA.P.:</span>{{ p.case_price }}</td>
+                                {% if p.show_unit_price %}<td class="right"><span class="lbl">EA.P.:</span>{{ p.unit_price }}</td>{% endif %}
                             </tr>
                         </table>
                     </div>
@@ -408,10 +526,6 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
         {% endfor %}
     </div>
 
-    <!-- HTML Footer for every page -->
-    <div style="position: fixed; left: 0; right: 0; bottom: 0; height: 44px; background: #f3f6fa; color: #222; font-size: 15px; font-weight: 600; border-radius: 0 0 8px 8px; box-shadow: none; display: flex; align-items: center; padding-left: 16px; letter-spacing: 0.2px; z-index: 9999; width: 100%; text-align: left;">
-        {{ footer_left or ("Total Products: " ~ total_products) }}
-    </div>
 </body>
 </html>
 """
@@ -723,27 +837,14 @@ def download_product_catalog_pdf(filters=None):
         # editable header fields (can be passed in `filters`)
         "header_title": (filters.get("header_title") or "PRODUCT CATALOG"),
         "header_sub": (filters.get("header_sub") or ""),
+        "footer_note": (filters.get("footer_note") or ""),
     }
 
     html = frappe.render_template(PDF_TEMPLATE, context)
 
-    pdf_options = {
-        "page-size": "Letter",
-        "margin-top": "14mm",
-        "margin-bottom": "12mm",
-        "margin-left": "8mm",
-        "margin-right": "8mm",
-        "encoding": "UTF-8",
-        "quiet": "",
-        "print-media-type": "",
-        "enable-local-file-access": "",
-
-        # footer values can be overridden via filters
-        "footer-left": (filters.get("footer_left") or f"Total Products: {len(products)}"),
-        "footer-font-size": "8",
-    }
-
-    pdf = pdfkit.from_string(html, False, options=pdf_options)
+    # Use WeasyPrint – supports CSS running elements for header/footer on every page
+    from weasyprint import HTML as WeasyHTML
+    pdf = WeasyHTML(string=html, base_url=frappe.get_site_path()).write_pdf()
 
     # Stream PDF directly as download (avoids 10MB save_file limit)
     filename = f"Product Catalog - {filters.get('company') or ''}.pdf".replace("/", "-")
