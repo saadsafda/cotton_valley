@@ -88,7 +88,7 @@
   },
   {
    "fieldname": "customer_service",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Markdown Editor",
    "label": "Customer Service"
   },
   {
@@ -97,7 +97,7 @@
   },
   {
    "fieldname": "product_order",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Markdown Editor",
    "label": "Product & Order"
   },
   {
@@ -106,7 +106,7 @@
   },
   {
    "fieldname": "pickup_hours",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Markdown Editor",
    "label": "Pickup Hours"
   },
   {
@@ -115,7 +115,7 @@
   },
   {
    "fieldname": "address",
-   "fieldtype": "Text Editor",
+   "fieldtype": "Markdown Editor",
    "label": "Address"
   }
  ],
@@ -123,7 +123,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-23 03:05:32.914994",
+ "modified": "2026-03-05 12:18:34.167635",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Contact Page",
