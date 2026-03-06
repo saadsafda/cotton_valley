@@ -70,7 +70,7 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
                 i.application_ranking as app_ranking,
                 i.po_qty,
                 i.eta,
-                COALESCE(i.threshold_stock, 0) as stock,
+                CASE WHEN i.set_threshold = 1 THEN COALESCE(i.threshold_stock, 0) ELSE COALESCE(i.available_stock, 0) END as stock,
                 i.tag_color,
                 i.tag_name
             FROM `tabItem` i
@@ -141,7 +141,9 @@ def get_all_products_with_price_levels(product_ids=None, company=None, category=
             product["categories"] = categories_by_item.get(product_id, [])
 
             # Stock status
-            product["stock_status"] = "in_stock" if product["stock"] > 0 else "out_of_stock"
+            stock_val = float(product.get("stock") or 0)
+            product["stock"] = stock_val
+            product["stock_status"] = "in_stock" if stock_val > 0 else "out_of_stock"
 
             # Images with base64 encoding
             if product["product_thumbnail_id"]:
