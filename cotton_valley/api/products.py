@@ -707,7 +707,7 @@ def get_product(product_id, company=None):
         return {"error": "Product not found"}
 
     # Compute stock based on set_threshold flag
-    product["stock"] = product["threshold_stock"] if product.get("set_threshold") else product.get("available_stock", 0)
+    product["stock"] = flt(product["threshold_stock"]) if product.get("set_threshold") else flt(product.get("available_stock", 0))
     
     if product["sub_category"]:
         subcat_data = frappe.db.get_value(
@@ -764,7 +764,7 @@ def get_product(product_id, company=None):
     #     WHERE item_code = %s
     # """, (product_id,), as_dict=True)
     # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
-    product["quantity"] = product.get("stock", 0)
+    product["quantity"] = flt(product.get("stock", 0))
 
     if product["quantity"] > 0:
             product["stock_status"] = "in_stock"
