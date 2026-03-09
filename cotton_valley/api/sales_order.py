@@ -566,10 +566,6 @@ def push_to_erp(sales_orders):
                         if result.returncode == 0 and http_status and 200 <= http_status < 300:
                             # Success
                             pushed_items.append(item.item_code)
-                            frappe.log_error(
-                                message=f"Successfully pushed item {item.item_code} for order {so_name}.\nHTTP Status: {http_status}\nResponse: {response_body}\nDebug: {result.stderr}",
-                                title="ERP Push Success"
-                            )
                             break  # Success, exit retry loop
                         else:
                             # Determine error type

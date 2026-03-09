@@ -132,11 +132,9 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
 
         filters["name"] = ["in", product_ids]
     # --- Stock Filter ---
-    if attribute:
-        if attribute == ["in_stock"]:
-            filters["threshold_stock"] = [">", 0]
-        if attribute == ["out_stock"]:
-            filters["threshold_stock"] = ["<=", 0]
+    # Stock filtering is handled via raw SQL using:
+    # CASE WHEN set_threshold = 1 THEN threshold_stock ELSE available_stock END
+    # So we don't add stock filter to ORM filters dict here.
 
     # --- Subcategory Filter ---
     if subcategory:
@@ -175,14 +173,17 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         total_count = frappe.db.count("Item", filters=filters)
 
     
+    # --- Stock Expression: use threshold_stock if set_threshold is checked, else available_stock ---
+    STOCK_EXPR = "CASE WHEN set_threshold = 1 THEN threshold_stock ELSE available_stock END"
+
     in_stock_count = 0
     out_of_stock_count = 0
     if search:
         # For search, we need to count in-stock and out-of-stock separately
-        stock_data = frappe.db.sql("""
+        stock_data = frappe.db.sql(f"""
             SELECT 
-                SUM(CASE WHEN threshold_stock > 0 THEN 1 ELSE 0 END) as in_stock,
-                SUM(CASE WHEN threshold_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock
+                SUM(CASE WHEN {STOCK_EXPR} > 0 THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN {STOCK_EXPR} <= 0 THEN 1 ELSE 0 END) as out_of_stock
             FROM `tabItem`
             WHERE item_name LIKE %s OR item_code LIKE %s
         """, (f"%{search}%", f"%{search}%"), as_dict=True)
@@ -190,14 +191,41 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
             in_stock_count = stock_data[0]["in_stock"] or 0
             out_of_stock_count = stock_data[0]["out_of_stock"] or 0
     else:
-        # For non-search, we can use the filters directly
-        in_stock_filters = filters.copy()
-        in_stock_filters["threshold_stock"] = [">", 0]
-        in_stock_count = frappe.db.count("Item", filters=in_stock_filters)
+        # For non-search, use raw SQL with conditional stock expression
+        # Build base conditions from filters (excluding stock)
+        base_conditions = ["disabled = 0"]
+        base_values = []
+        if company:
+            base_conditions.append("company = %s")
+            base_values.append(company)
+        if ids:
+            base_conditions.append("name IN %s")
+            base_values.append(ids)
+        if producttype:
+            base_conditions.append("item_group IN %s")
+            base_values.append(producttype)
+        if brand:
+            base_conditions.append("brand IN %s")
+            base_values.append(brand)
+        if category and "name" in filters:
+            base_conditions.append("name IN %s")
+            base_values.append(filters["name"][1])
+        if subcategory:
+            base_conditions.append("custom_sub_category IN %s")
+            base_values.append(subcategory)
 
-        out_of_stock_filters = filters.copy()
-        out_of_stock_filters["threshold_stock"] = ["<=", 0]
-        out_of_stock_count = frappe.db.count("Item", filters=out_of_stock_filters)
+        base_where = " AND ".join(base_conditions)
+
+        stock_counts = frappe.db.sql(f"""
+            SELECT
+                SUM(CASE WHEN {STOCK_EXPR} > 0 THEN 1 ELSE 0 END) as in_stock,
+                SUM(CASE WHEN {STOCK_EXPR} <= 0 THEN 1 ELSE 0 END) as out_of_stock
+            FROM `tabItem`
+            WHERE {base_where}
+        """, tuple(base_values), as_dict=True)
+        if stock_counts:
+            in_stock_count = stock_counts[0]["in_stock"] or 0
+            out_of_stock_count = stock_counts[0]["out_of_stock"] or 0
 
     # --- Pagination ---
     limit_start = (page - 1) * 100 if page and page > 0 else None
@@ -236,7 +264,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         custom_new_arrivals as new_arrivals,
         tag_color,
         tag_name,
-        threshold_stock as stock
+        CASE WHEN set_threshold = 1 THEN threshold_stock ELSE available_stock END as stock
     """.strip()
     
     ITEM_FIELDS_LIST = [
@@ -271,7 +299,9 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         "custom_new_arrivals as new_arrivals",
         "tag_color",
         "tag_name",
-        "threshold_stock as stock"
+        "set_threshold",
+        "threshold_stock",
+        "available_stock"
     ]
     
     # --- Helper function to build filter conditions ---
@@ -316,9 +346,9 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
 
         if attribute:
             if attribute == ["in_stock"]:
-                conditions.append(f"{prefix}threshold_stock > 0")
+                conditions.append(f"CASE WHEN {prefix}set_threshold = 1 THEN {prefix}threshold_stock ELSE {prefix}available_stock END > 0")
             elif attribute == ["out_stock"]:
-                conditions.append(f"{prefix}threshold_stock <= 0")
+                conditions.append(f"CASE WHEN {prefix}set_threshold = 1 THEN {prefix}threshold_stock ELSE {prefix}available_stock END <= 0")
         
         conditions.append(f"{prefix}disabled = 0")
         
@@ -345,16 +375,27 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     items = []
     
     if sort_clause:
-        # Standard sorting (asc, desc, a-z, z-a)
-        items = frappe.get_all(
-            "Item",
-            filters=filters,
-            or_filters=or_filters,
-            fields=ITEM_FIELDS_LIST,
-            order_by=sort_clause,
-            limit_start=limit_start,
-            limit_page_length=limit_page_length
-        )
+        # Standard sorting (asc, desc, a-z, z-a) - use raw SQL to support conditional stock expression
+        filter_conditions, filter_values = build_filter_conditions("")
+        if filter_conditions is None:
+            return {"data": [], "total": 0}
+
+        search_condition = ""
+        if search:
+            search_condition = f"AND (item_name LIKE %s OR name LIKE %s)"
+            filter_values.extend([f"%{search}%", f"%{search}%"])
+
+        where_clause = " AND ".join(filter_conditions)
+        limit_clause = build_limit_clause()
+
+        query = f"""
+            SELECT {ITEM_FIELDS}
+            FROM `tabItem`
+            WHERE {where_clause} {search_condition}
+            ORDER BY {sort_clause}
+            {limit_clause}
+        """
+        items = frappe.db.sql(query, tuple(filter_values), as_dict=True)
     else:
         # Build conditions for raw SQL queries (price sort or default sort)
         table_alias = "i" if price_sort else ""
@@ -417,7 +458,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
                     i.custom_new_arrivals as new_arrivals,
                     i.tag_color,
                     i.tag_name,
-                    i.threshold_stock as stock,
+                    CASE WHEN i.set_threshold = 1 THEN i.threshold_stock ELSE i.available_stock END as stock,
                     COALESCE(ip.price_list_rate, 0) as sort_price
                 FROM `tabItem` i
                 LEFT JOIN `tabItem Price` ip ON ip.item_code = i.name AND ip.price_list = %s
@@ -523,7 +564,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
 
         # Stock
         # qty = stock_map.get(product_id, 0)
-        qty = product.get("stock", 0)
+        qty = flt(product.get("stock", 0))
 
         product["quantity"] = qty
         product["stock_status"] = "in_stock" if qty > 0 else "out_of_stock"
@@ -655,13 +696,18 @@ def get_product(product_id, company=None):
             "custom_item_weight_lbs as item_weight",
             "custom_coming_soon as coming_soon",
             "custom_new_arrivals as new_arrivals",
-            "threshold_stock as stock",
+            "set_threshold",
+            "threshold_stock",
+            "available_stock",
         ],
         as_dict=True
     )
 
     if not product:
         return {"error": "Product not found"}
+
+    # Compute stock based on set_threshold flag
+    product["stock"] = flt(product["threshold_stock"]) if product.get("set_threshold") else flt(product.get("available_stock", 0))
     
     if product["sub_category"]:
         subcat_data = frappe.db.get_value(
@@ -718,7 +764,7 @@ def get_product(product_id, company=None):
     #     WHERE item_code = %s
     # """, (product_id,), as_dict=True)
     # product["quantity"] = 0 if qty_data[0]["qty"] < 0 else qty_data[0]["qty"] if qty_data else 0
-    product["quantity"] = product.get("stock", 0)
+    product["quantity"] = flt(product.get("stock", 0))
 
     if product["quantity"] > 0:
             product["stock_status"] = "in_stock"
