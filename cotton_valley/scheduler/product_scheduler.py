@@ -6,7 +6,7 @@ from typing import List, Optional
 
 ITEM_LOCK_KEY_CV = "cv_sync_items_lock"
 ITEM_LOCK_KEY_UDC = "udc_sync_items_lock"
-DEFAULT_BATCH_SIZE = 400
+DEFAULT_BATCH_SIZE = 500
 DEFAULT_MAX_BATCHES_PER_RUN = 10  # Max batches per scheduler invocation
 
 
