@@ -35,10 +35,6 @@ def get_location_from_ip(doc, method):
                         'custom_country': country,
                         'custom_city': city
                     })
-                    frappe.log_error(
-                        title='IP Location Update Success',
-                        message=f"IP: {doc.ip_address}, Location: {city}, {country}"
-                    )
                 except Exception as db_error:
                     frappe.log_error(
                         title='IP Location DB Update Failed',
