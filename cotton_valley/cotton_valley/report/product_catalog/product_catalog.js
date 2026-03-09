@@ -1,4 +1,4 @@
-frappe.dom.set_style(`
+﻿frappe.dom.set_style(`
   .dt-cell--col-0 { min-width: 55px !important; width: 55px !important; }
   .dt-cell--col-0 .dt-cell__content { overflow: visible !important; }
 `);
@@ -29,7 +29,22 @@ frappe.query_reports["Product Catalog"] = {
         };
       }
     },
-    { fieldname: "hide_price", label: __("Hide Price in PDF"), fieldtype: "Check", default: 0 }
+    { fieldname: "hide_price", label: __("Hide Price in PDF"), fieldtype: "Check", default: 0 },
+    {
+      fieldname: "sort",
+      label: __("Sort"),
+      fieldtype: "Select",
+      options: [
+        "",
+        "Ascending Order",
+        "Descending Order",
+        "Low-High Price",
+        "High-Low Price",
+        "A-Z Order",
+        "Z-A Order"
+      ].join("\n"),
+      default: ""
+    }
   ],
 
   onload: function (report) {
