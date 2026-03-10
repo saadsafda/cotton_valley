@@ -291,6 +291,7 @@ def get_website_theme_settings(company=None):
             "newsletter_modal": {
                 "image": get_file(settings.half_banner),
                 "description": settings.description,
+                "show_newsletter": settings.show_newsletter,
             },
             "contact_us": {
             "contact_image_url": "https://react.pixelstrap.net/fastkart/assets/contact-us.png",
