@@ -64,6 +64,7 @@
   "news_letter_tab",
   "half_banner_view",
   "half_banner",
+  "show_newsletter",
   "column_break_udst",
   "description",
   "order_tab",
@@ -402,13 +403,19 @@
    "fieldtype": "Int",
    "label": "Month Invoice ",
    "non_negative": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "show_newsletter",
+   "fieldtype": "Check",
+   "label": "Show Newsletter"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-01-15 00:38:40.171009",
+ "modified": "2026-03-12 05:18:54.939508",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "UDC Website Theme Settings",
