@@ -1,7 +1,7 @@
 import frappe
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def create_sales_invoice(sales_order, items, discount_percentage=0):
     """
     Create a Sales Invoice from a Sales Order with specified items.
@@ -62,6 +62,9 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
             si.apply_discount_on = "Grand Total"
             si.additional_discount_percentage = discount_percentage
         si.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        so.db_set("order_status", "Shipped", update_modified=True)
         frappe.db.commit()
         
         return {
