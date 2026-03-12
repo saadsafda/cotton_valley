@@ -1,4 +1,4 @@
-import os
+﻿import os
 
 import frappe
 from frappe import _
@@ -14,6 +14,25 @@ PCS_CANDIDATES = frozenset({
 def _normalize_uom(uom):
     """Strip dots, trailing 's', extra whitespace; uppercase."""
     return (uom or "").strip().upper().rstrip(".")
+
+
+# -----------------------------
+# ✅ SORT MAP (safe whitelist)
+# -----------------------------
+SORT_MAP = {
+    "Ascending Order":  "it.name ASC",
+    "Descending Order": "it.name DESC",
+    "Low-High Price":   "MAX(ip.price_list_rate) ASC",
+    "High-Low Price":   "MAX(ip.price_list_rate) DESC",
+    "A-Z Order":        "it.item_name ASC",
+    "Z-A Order":        "it.item_name DESC",
+}
+
+
+def _get_order_clause(filters):
+    """Return a safe, whitelisted ORDER BY expression from the sort filter."""
+    sort = (filters.get("sort") or "").strip()
+    return SORT_MAP.get(sort, "it.item_name ASC")
 
 
 # -----------------------------
@@ -192,7 +211,7 @@ def get_data(filters):
         {join_cat}
         {where_clause}
         GROUP BY it.name
-        ORDER BY it.item_name
+        ORDER BY {_get_order_clause(filters)}
         """,
         filters,
         as_dict=1,
@@ -381,9 +400,8 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .cat-line {
     font-size: 8.5px;
     margin-bottom: 3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
 }
 .cat-line .lbl-gray { color: #888; }
 .cat-line .cat-val {
@@ -748,7 +766,7 @@ def _get_products_for_pdf(filters):
         {join_cat}
         {where_clause}
         GROUP BY it.name
-        ORDER BY it.item_name
+        ORDER BY {_get_order_clause(filters)}
     """, filters, as_dict=1)
 
     # Resolve category / subcategory titles
