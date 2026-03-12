@@ -28,11 +28,13 @@ SORT_MAP = {
     "Z-A Order":        "it.item_name DESC",
 }
 
+DEFAULT_ORDER = "CASE WHEN it.website_ranking IS NULL OR it.website_ranking = 0 THEN 1 ELSE 0 END ASC, it.website_ranking ASC"
+
 
 def _get_order_clause(filters):
     """Return a safe, whitelisted ORDER BY expression from the sort filter."""
     sort = (filters.get("sort") or "").strip()
-    return SORT_MAP.get(sort, "it.item_name ASC")
+    return SORT_MAP.get(sort, DEFAULT_ORDER)
 
 
 # -----------------------------
