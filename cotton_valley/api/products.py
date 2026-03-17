@@ -538,13 +538,12 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
 
     # OPTIMIZATION: Batch fetch retail prices for all items in ONE query (instead of N queries in loop)
     retail_price_map = {}
-    if check_customer_token():
-        retail_price_data = frappe.db.sql("""
-            SELECT item_code, price_list_rate
-            FROM `tabItem Price`
-            WHERE item_code IN %s AND price_list = %s
-        """, (item_ids, "Retail"), as_dict=True)
-        retail_price_map = {p["item_code"]: p["price_list_rate"] for p in retail_price_data}
+    retail_price_data = frappe.db.sql("""
+        SELECT item_code, price_list_rate
+        FROM `tabItem Price`
+        WHERE item_code IN %s AND price_list = %s
+    """, (item_ids, "Retail"), as_dict=True)
+    retail_price_map = {p["item_code"]: p["price_list_rate"] for p in retail_price_data}
 
     # --- Final Assembly ---
     products = []
@@ -552,15 +551,19 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         product_id = product["id"]
 
         # Price - OPTIMIZED: Use pre-fetched retail prices instead of query per item
+        retail_price = retail_price_map.get(product_id, 0)
         if check_customer_token():
-            retail_price = retail_price_map.get(product_id, 0)
             customer_price = price_map.get(product_id, 0)
-
             product["price"] = customer_price if customer_price > 0 else retail_price
-            product["sale_price"] = product["price"]
-            product["discount"] = 0
         else:
-            product["price"] = product["sale_price"] = product["discount"] = 0
+            product["price"] = retail_price
+
+        # Fallback: if selected/customer price is 0, return retail price for this item.
+        if flt(product["price"]) <= 0:
+            product["price"] = retail_price
+
+        product["sale_price"] = product["price"]
+        product["discount"] = 0
 
         # Stock
         # qty = stock_map.get(product_id, 0)
