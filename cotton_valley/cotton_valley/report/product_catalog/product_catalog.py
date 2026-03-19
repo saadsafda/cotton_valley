@@ -131,6 +131,9 @@ def get_data(filters):
         "(pl.buying = 0 OR pl.selling = 1)",
     ]
 
+    if filters.get("item_group"):
+        conditions.append("it.item_group = %(item_group)s")
+
     child_dt, cat_field, subcat_child_field, subcat_item_field = _resolve_table_multiselect()
 
     join_cat = ""
@@ -723,6 +726,8 @@ def _get_products_for_pdf(filters):
     ]
     if filters.get("company"):
         conditions.append("it.company = %(company)s")
+    if filters.get("item_group"):
+        conditions.append("it.item_group = %(item_group)s")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 
@@ -898,6 +903,51 @@ def download_product_catalog_pdf(filters=None):
     frappe.local.response["filename"] = filename
     frappe.local.response["filecontent"] = pdf
     frappe.local.response["type"] = "download"
+
+
+@frappe.whitelist()
+def get_product_types(doctype, txt, searchfield, start, page_len, filters):
+    """Return Product Type (Item Group) values associated with report-eligible Item records."""
+    filters = filters or {}
+
+    conds = [
+        "ig.name LIKE %(txt)s",
+        "it.disabled = 0",
+        "(it.image IS NOT NULL AND it.image != '')",
+    ]
+    params = {
+        "txt": f"%{txt}%",
+        "start": int(start),
+        "page_len": int(page_len),
+    }
+
+    if filters.get("company"):
+        conds.append("it.company = %(company)s")
+        params["company"] = filters["company"]
+
+    if filters.get("price_list"):
+        conds.append("""
+            EXISTS (
+                SELECT 1
+                FROM `tabItem Price` ip
+                LEFT JOIN `tabPrice List` pl ON pl.name = ip.price_list
+                WHERE ip.item_code = it.name
+                  AND ip.price_list = %(price_list)s
+                  AND (pl.buying = 0 OR pl.selling = 1)
+            )
+        """)
+        params["price_list"] = filters["price_list"]
+
+    where = " AND ".join(conds)
+    return frappe.db.sql(
+        f"""SELECT DISTINCT ig.name, ig.name
+            FROM `tabItem Group` ig
+            INNER JOIN `tabItem` it ON it.item_group = ig.name
+            WHERE {where}
+            ORDER BY ig.name
+            LIMIT %(start)s, %(page_len)s""",
+        params,
+    )
 
 
 @frappe.whitelist()
