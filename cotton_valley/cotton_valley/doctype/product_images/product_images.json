@@ -7,7 +7,6 @@
  "engine": "InnoDB",
  "field_order": [
   "list_index",
-  "add_video",
   "column_break_ztje",
   "image"
  ],
@@ -30,20 +29,13 @@
    "label": "Index",
    "non_negative": 1,
    "reqd": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "add_video",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Add Video"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-03-11 11:29:29.062013",
+ "modified": "2026-03-17 03:53:09.144720",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Images",

@@ -131,6 +131,9 @@ def get_data(filters):
         "(pl.buying = 0 OR pl.selling = 1)",
     ]
 
+    if filters.get("item_group"):
+        conditions.append("it.item_group = %(item_group)s")
+
     child_dt, cat_field, subcat_child_field, subcat_item_field = _resolve_table_multiselect()
 
     join_cat = ""
@@ -354,6 +357,9 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     background: #ffffff;
     padding: 8px;
     overflow: hidden;
+    height: 252px;
+    display: flex;
+    flex-direction: column;
 }
 
 /* IMAGE */
@@ -392,16 +398,26 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .desc-line {
     font-size: 8.5px;
     color: #333;
-    margin-bottom: 3px;
+    margin-bottom: 0;
     line-height: 1.35;
     height: 34px;
     overflow: hidden;
 }
 
+/* Reserve consistent vertical space for description + category text */
+.text-block {
+    min-height: 58px;
+    margin-bottom: 3px;
+}
+
 /* CATEGORY */
 .cat-line {
     font-size: 8.5px;
-    margin-bottom: 3px;
+    margin-top: 3px;
+    min-height: 22px;
+    max-height: 22px;
+    line-height: 1.25;
+    overflow: hidden;
     white-space: normal;
     word-break: break-word;
 }
@@ -455,20 +471,27 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .price-bar {
     background: #b8d4e8;
     border-radius: 4px;
-    padding: 4px 8px;
-    margin-top: 5px;
+    padding: 4px 8px 4px 6px;
+    margin-top: auto;
 }
 .price-bar table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
 }
 .price-bar td {
     padding: 0;
-    font-size: 8.5px;
+    width: 50%;
+    max-width: 50%;
+    font-size: 8px;
     font-weight: 700;
     color: #1a2a3a;
     white-space: nowrap;
+    overflow: hidden;
     vertical-align: middle;
+}
+.price-bar td:first-child {
+    padding-right: 3px;
 }
 .price-bar .lbl {
     font-size: 7px;
@@ -476,7 +499,14 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     color: #2c4a6a;
 }
 .price-bar .right {
+    padding-left: 3px;
+    padding-right: 2px;
     text-align: right;
+}
+.price-bar.single td {
+    width: 100%;
+    max-width: 100%;
+    padding-right: 0;
 }
 </style>
 </head>
@@ -511,10 +541,10 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                         {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
                     </div>
                     <div class="item-line"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></div>
-                    <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
-                    {% if p.category_name %}
-                    <div class="cat-line"><span class="lbl-gray">Category: </span><span class="cat-val">{{ p.category_name }}</span></div>
-                    {% endif %}
+                    <div class="text-block">
+                        <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
+                        <div class="cat-line"><span class="lbl-gray">Category: </span><span class="cat-val">{{ p.category_name or '' }}</span></div>
+                    </div>
                     <table class="info-table">
                         <tr>
                             <td class="col-left"><span class="lbl-gray">UPC: </span>{{ p.upc or "" }}</td>
@@ -532,7 +562,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                         </tr>
                     </table>
                     {% if not hide_price %}
-                    <div class="price-bar">
+                    <div class="price-bar{% if not p.show_unit_price %} single{% endif %}">
                         <table>
                             <tr>
                                 <td><span class="lbl">CA.P.:</span>{{ p.case_price }}</td>
@@ -696,6 +726,8 @@ def _get_products_for_pdf(filters):
     ]
     if filters.get("company"):
         conditions.append("it.company = %(company)s")
+    if filters.get("item_group"):
+        conditions.append("it.item_group = %(item_group)s")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 
@@ -871,6 +903,51 @@ def download_product_catalog_pdf(filters=None):
     frappe.local.response["filename"] = filename
     frappe.local.response["filecontent"] = pdf
     frappe.local.response["type"] = "download"
+
+
+@frappe.whitelist()
+def get_product_types(doctype, txt, searchfield, start, page_len, filters):
+    """Return Product Type (Item Group) values associated with report-eligible Item records."""
+    filters = filters or {}
+
+    conds = [
+        "ig.name LIKE %(txt)s",
+        "it.disabled = 0",
+        "(it.image IS NOT NULL AND it.image != '')",
+    ]
+    params = {
+        "txt": f"%{txt}%",
+        "start": int(start),
+        "page_len": int(page_len),
+    }
+
+    if filters.get("company"):
+        conds.append("it.company = %(company)s")
+        params["company"] = filters["company"]
+
+    if filters.get("price_list"):
+        conds.append("""
+            EXISTS (
+                SELECT 1
+                FROM `tabItem Price` ip
+                LEFT JOIN `tabPrice List` pl ON pl.name = ip.price_list
+                WHERE ip.item_code = it.name
+                  AND ip.price_list = %(price_list)s
+                  AND (pl.buying = 0 OR pl.selling = 1)
+            )
+        """)
+        params["price_list"] = filters["price_list"]
+
+    where = " AND ".join(conds)
+    return frappe.db.sql(
+        f"""SELECT DISTINCT ig.name, ig.name
+            FROM `tabItem Group` ig
+            INNER JOIN `tabItem` it ON it.item_group = ig.name
+            WHERE {where}
+            ORDER BY ig.name
+            LIMIT %(start)s, %(page_len)s""",
+        params,
+    )
 
 
 @frappe.whitelist()

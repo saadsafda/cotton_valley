@@ -8,11 +8,22 @@ frappe.query_reports["Product Catalog"] = {
     { fieldname: "company", label: __("Company"), fieldtype: "Link", options: "Company", reqd: 1,
       on_change: function () {
         // Clear dependent filters when company changes
+        frappe.query_report.set_filter_value("item_group", "");
         frappe.query_report.set_filter_value("category", "");
         frappe.query_report.set_filter_value("subcategory", "");
       }
     },
     { fieldname: "price_list", label: __("Price List"), fieldtype: "Link", options: "Price List", reqd: 1 },
+    { fieldname: "item_group", label: __("Product Type"), fieldtype: "Link", options: "Item Group",
+      get_query: function () {
+        var company = frappe.query_report.get_filter_value("company");
+        var price_list = frappe.query_report.get_filter_value("price_list");
+        return {
+          query: "cotton_valley.cotton_valley.report.product_catalog.product_catalog.get_product_types",
+          filters: { company: company || "", price_list: price_list || "" }
+        };
+      }
+    },
     { fieldname: "category", label: __("Category"), fieldtype: "Link", options: "Product Category",
       get_query: function () {
         var company = frappe.query_report.get_filter_value("company");

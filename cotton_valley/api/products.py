@@ -720,6 +720,13 @@ def get_product(product_id, company=None):
             product["sub_category_name"] = subcat_data.title
 
     # Example: handle prices (if you have Price List / Item Price doctype)
+    retail_price_data = frappe.db.sql("""
+        SELECT price_list_rate
+        FROM `tabItem Price`
+        WHERE item_code = %s and price_list = %s
+        LIMIT 1
+    """, (product_id, "Retail"), as_dict=True)
+    retail_price = flt(retail_price_data[0]["price_list_rate"]) if retail_price_data else 0
 
     if check_customer_token():
         customer = get_customer_from_token()
@@ -740,22 +747,14 @@ def get_product(product_id, company=None):
             WHERE item_code = %s and price_list = %s
             LIMIT 1
         """, (product_id, price_list), as_dict=True)
-        default_price_data = frappe.db.sql("""
-            SELECT price_list_rate
-            FROM `tabItem Price`
-            WHERE item_code = %s and price_list = %s
-            LIMIT 1
-        """, (product_id, "Retail"), as_dict=True)
-        if not price_data and default_price_data:
-            price_data = default_price_data
 
-        product["price"] = price_data[0]["price_list_rate"] if price_data else 0
-        product["sale_price"] = product["price"]  # adjust if you have discount rules
-        product["discount"] = 0  # calculate discount if needed
+        selected_price = flt(price_data[0]["price_list_rate"]) if price_data else 0
+        product["price"] = selected_price if selected_price > 0 else retail_price
     else:
-        product["price"] = None
-        product["sale_price"] = None
-        product["discount"] = None
+        product["price"] = retail_price
+
+    product["sale_price"] = product["price"]  # adjust if you have discount rules
+    product["discount"] = 0  # calculate discount if needed
 
     # quantity (stock across all warehouses)
     # qty_data = frappe.db.sql("""
