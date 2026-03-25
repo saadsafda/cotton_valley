@@ -8,7 +8,14 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
     
     Args:
         sales_order: Sales Order ID
-        items: List of items to include in the Sales Invoice
+        items: List of items to include in the Sales Invoice. Each item can have:
+               - item_code: Item code
+               - qty: Quantity
+               - rate: Rate per unit
+               - amount: Total amount
+               - discount_percentage (optional): Item-wise discount percentage
+               - discount_amount (optional): Item-wise discount amount
+        discount_percentage: Global discount percentage (applied to Grand Total)
     """
     try:
         if isinstance(items, str):
@@ -48,15 +55,24 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
                     "allocated_amount": member.allocated_amount
                 })
 
-        # Add specified items to Sales Invoice
+        # Add specified items to Sales Invoice with item-wise discounts
         for item in items:
-            si.append("items", {
+            item_dict = {
                 "item_code": item.get("item_code"),
                 "qty": item.get("qty"),
                 "rate": item.get("rate"),
                 "amount": item.get("amount"),
                 "sales_order": sales_order
-            })
+            }
+            
+            # Handle item-wise discount
+            if item.get("discount_percentage"):
+                item_dict["discount_percentage"] = item.get("discount_percentage")
+            
+            if item.get("discount_amount"):
+                item_dict["discount_amount"] = item.get("discount_amount")
+            
+            si.append("items", item_dict)
         # Apply discount if provided
         if discount_percentage > 0:
             si.apply_discount_on = "Grand Total"
