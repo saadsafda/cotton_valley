@@ -906,13 +906,13 @@ def get_prices(item_code, company=None):
                 rgnid = item.get("rgnid")
 
                 # Validate item data
-                if not region_name or not rate or not rgnid:
+                if not region_name or rate in (None, "") or rgnid in (None, ""):
                     skipped_count += 1
                     continue
                 
                 try:
                     rate_float = float(rate)
-                    if rate_float <= 0:
+                    if rate_float < 0:
                         skipped_count += 1
                         continue
                 except (ValueError, TypeError):
@@ -1059,7 +1059,7 @@ def sync_item_from_api(item_code, company=None):
     updated = False
     for field, value in field_mapping.items():
         try:
-            if value not in [None, "", 0, "0", "null"]:
+            if value not in [None, "", "null"]:
                 item_doc.set(field, value)
                 updated = True
             else:
@@ -1742,7 +1742,14 @@ def sync_cv_price_batch(
                 rate = item.get("rate")
                 rgnid = item.get("rgnid")
 
-                if not region_name or not rate or not rgnid or float(rate) <= 0:
+                if not region_name or rate in (None, "") or rgnid in (None, ""):
+                    continue
+
+                try:
+                    rate_float = float(rate)
+                    if rate_float < 0:
+                        continue
+                except (ValueError, TypeError):
                     continue
 
                 # Fetch price list using price_id for Cotton Valley
@@ -1758,14 +1765,14 @@ def sync_cv_price_batch(
                 try:
                     if existing:
                         ip = frappe.get_doc("Item Price", existing)
-                        ip.price_list_rate = float(rate)
+                        ip.price_list_rate = rate_float
                         ip.save()
                     else:
                         frappe.get_doc({
                             "doctype": "Item Price",
                             "item_code": item_code,
                             "price_list": price_list,
-                            "price_list_rate": float(rate),
+                            "price_list_rate": rate_float,
                             "currency": "USD"
                         }).insert()
                 except Exception as e:
@@ -1904,7 +1911,14 @@ def sync_udc_price_batch(
                 rate = item.get("rate")
                 rgnid = item.get("rgnid")
 
-                if not region_name or not rate or not rgnid or float(rate) <= 0:
+                if not region_name or rate in (None, "") or rgnid in (None, ""):
+                    continue
+
+                try:
+                    rate_float = float(rate)
+                    if rate_float < 0:
+                        continue
+                except (ValueError, TypeError):
                     continue
 
                 # Fetch price list using udc_price_id for UDC
@@ -1920,14 +1934,14 @@ def sync_udc_price_batch(
                 try:
                     if existing:
                         ip = frappe.get_doc("Item Price", existing)
-                        ip.price_list_rate = float(rate)
+                        ip.price_list_rate = rate_float
                         ip.save(ignore_permissions=True)
                     else:
                         frappe.get_doc({
                             "doctype": "Item Price",
                             "item_code": item_code,
                             "price_list": price_list,
-                            "price_list_rate": float(rate),
+                            "price_list_rate": rate_float,
                             "currency": "USD"
                         }).insert(ignore_permissions=True)
                 except Exception as e:
