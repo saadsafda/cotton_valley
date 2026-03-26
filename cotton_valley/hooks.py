@@ -172,9 +172,9 @@ doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/j
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Item": "cotton_valley.overrides.item.CustomItem"
+}
 
 # Document Events
 # ---------------
@@ -201,6 +201,10 @@ doc_events = {
     "Customer": {
         "before_save": "cotton_valley.server_scripts.customer.get_location_from_ip"
     },
+	"Item": {
+		"validate": "cotton_valley.server_scripts.item.validate",
+		"before_save": "cotton_valley.server_scripts.item.before_save"
+	},
     "Scheduled Job Log": {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
 	},

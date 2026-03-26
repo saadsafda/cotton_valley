@@ -1,0 +1,59 @@
+import frappe
+from frappe.utils import get_datetime
+
+
+def _clear_product_tags_if_requested(doc):
+	clear_requested = doc.get("clear_product_tags") or doc.get("custom_clear_product_tags")
+	if not clear_requested:
+		return
+
+	# Clear all Item table fields that point to Product Tags.
+	for df in doc.meta.get_table_fields():
+		if df.options == "Product Tags":
+			doc.set(df.fieldname, [])
+
+	# Also clear already-persisted rows to avoid stale child inserts.
+	if doc.name:
+		frappe.db.delete("Product Tags", {
+			"parenttype": "Item",
+			"parent": doc.name,
+		})
+
+	if doc.meta.get_field("clear_product_tags"):
+		doc.set("clear_product_tags", 0)
+	if doc.meta.get_field("custom_clear_product_tags"):
+		doc.set("custom_clear_product_tags", 0)
+
+
+def _sanitize_submit_datetime(doc):
+	"""
+	Protect Item saves/imports from non-datetime strings in submit_datetime.
+	"""
+	if not doc.meta.get_field("submit_datetime"):
+		return
+
+	value = doc.get("submit_datetime")
+	if not value:
+		return
+
+	try:
+		parsed = get_datetime(value)
+		doc.set("submit_datetime", parsed)
+	except Exception:
+		doc.set("submit_datetime", None)
+
+
+def validate(doc, method):
+	"""
+	Handle Data Import and form saves.
+	"""
+	_sanitize_submit_datetime(doc)
+	_clear_product_tags_if_requested(doc)
+
+
+def before_save(doc, method):
+	"""
+	Handle regular saves from form/API.
+	"""
+	_sanitize_submit_datetime(doc)
+	_clear_product_tags_if_requested(doc)
