@@ -274,7 +274,7 @@ body {
 				<div class="name-line">{{ p.title_line }}</div>
 				{% if not hide_price %}
 				<div class="price-line">RS.P.: {{ p.case_price }} | EA.P:{{ p.ea_price }}</div>
-				<div class="avg-line">AVG.S.:{{ p.avg_sales }} <span class="black">| LC.EA.:{{ p.last_cost_ea }} | LC.CA.:{{ p.last_cost_case }}</span></div>
+				<div class="avg-line">AVG.S.:{{ p.avg_sales }} <span class="black">| LC.EA.:{{ p.last_cost_ea }} | LLC.EA.:{{ p.last_cost_case }}</span></div>
 				{% else %}
 				<div class="avg-line">AVG.S.:{{ p.avg_sales }}</div>
 				{% endif %}
@@ -653,12 +653,16 @@ def _build_product_rows(filters):
 			it.image AS image_path,
 			it.custom_case_pack,
 			it.custom_upc,
-			it.custom_carton_upc,
+			it.custom_vendor_code,
 			{grade_select}
 			it.custom_new_arrivals,
 			it.custom_cbm,
 			it.custom_case_per_pallet,
-			it.custom_case_trucking,
+			it.custom_pcs_container,
+			it.custom_avaerage_sale,
+			it.custom_lc,
+			it.custom_llc,
+			it.custom_case_pallet_warehouse,
 			it.custom_package_length_inch,
 			it.custom_package_width_inch,
 			it.custom_package_height_inch,
@@ -709,14 +713,14 @@ def _build_product_rows(filters):
 		case_pack = flt(r.custom_case_pack) or 1.0
 		case_price = flt(r.price_list_rate)
 		ea_price = case_price / case_pack if case_pack > 0 else 0
-		last_cost_ea = flt(r.last_purchase_rate)
-		last_cost_case = last_cost_ea * case_pack if case_pack > 0 else 0
+		last_cost_ea = flt(r.custom_lc if r.custom_lc not in (None, "") else r.last_purchase_rate)
+		last_cost_case = flt(r.custom_llc) if r.custom_llc not in (None, "") else (last_cost_ea * case_pack if case_pack > 0 else 0)
 
 		available_qty = flt(r.available_stock)
 		po_qty = flt(po_map.get(r.item_code, 0))
 		total_qty = available_qty + po_qty
 
-		upc_token = (r.custom_carton_upc or r.custom_upc or "-")
+		upc_token = (r.custom_vendor_code or "-")
 
 		grade_raw = r.get("grade_value")
 		if isinstance(grade_raw, str):
@@ -734,7 +738,14 @@ def _build_product_rows(filters):
 		if not grade_tag and flt(r.custom_new_arrivals):
 			grade_tag = "NEW"
 
-		pcs_cont = flt(r.custom_case_trucking or r.custom_case_per_pallet or 0)
+		avg_sales_val = r.custom_avaerage_sale if r.custom_avaerage_sale not in (None, "") else avg_sales_map.get(r.item_code, 0)
+		case_wh_val = (
+			r.custom_case_pallet_warehouse
+			if r.custom_case_pallet_warehouse not in (None, "")
+			else r.custom_case_per_pallet
+		)
+
+		pcs_cont = flt(r.custom_pcs_container or 0)
 		case_lwh = (
 			f"{_fmt_num(r.custom_package_length_inch)}"
 			f"/{_fmt_num(r.custom_package_width_inch)}"
@@ -757,7 +768,7 @@ def _build_product_rows(filters):
 				"case_pack_display": _fmt_num(case_pack, 0),
 				"case_price": _money_number(case_price),
 				"ea_price": _money_number(ea_price),
-				"avg_sales": _fmt_num(avg_sales_map.get(r.item_code, 0), 2),
+				"avg_sales": _fmt_num(avg_sales_val, 2),
 				"last_cost_ea": _fmt_num(last_cost_ea, 2),
 				"last_cost_case": _fmt_num(last_cost_case, 2),
 				"total_qty": _fmt_num(total_qty, 0),
@@ -767,7 +778,7 @@ def _build_product_rows(filters):
 				"pcs_cont": _fmt_num(pcs_cont, 0),
 				"case_lwh": case_lwh,
 				"case_weight": _fmt_num(r.custom_weight_lbs, 1),
-				"case_wh": _fmt_num(r.custom_case_per_pallet, 2),
+				"case_wh": _fmt_num(case_wh_val, 2),
 				"currency": r.currency,
 			}
 		)
