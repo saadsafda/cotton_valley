@@ -57,42 +57,27 @@ body {
 
 .page-header {
 	position: running(page-header);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
 	width: 100%;
 	background: #fff;
-	border-bottom: 2px solid #2c2c2c;
-	padding: 1px 4px 5px 4px;
+	padding: 4px 6px;
 }
-
+.page-header table { width: 100%; border-collapse: collapse; }
+.page-header td { vertical-align: middle; padding: 0; }
+.hdr-left { flex: 1; text-align: left; }
+.hdr-right { width: 100px; text-align: right; }
+.hdr-right img { height: 44px; max-width: 100%; object-fit: contain; display: block; }
 .header-title {
-	font-size: 22px;
-	line-height: 1.02;
+	font-size: 28px;
+	line-height: 1.05;
 	font-weight: 900;
 	letter-spacing: 0;
 	text-transform: uppercase;
 	color: #101010;
+	margin: 0;
 }
 
-.brand {
-	width: 95px;
-	height: 48px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-	background: transparent;
-	overflow: hidden;
-}
-
-.brand img {
-	width: 100%;
-	height: 100%;
-	object-fit: contain;
-	object-position: center;
-	display: block;
-}
+.brand { display: none; }
+.brand img { display: none; }
 
 .brand-fallback {
 	font-size: 10px;
@@ -131,22 +116,33 @@ body {
 .page-wrap {
 	border: 1px solid #4b4b4b;
 	padding: 7px 6px 4px 6px;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
 }
 
-.grid {
-	margin: 0 -6px;
+.grid-table {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	table-layout: fixed;
 }
 
-.grid::after {
-	content: "";
-	display: table;
-	clear: both;
+.grid-table tr {
+	vertical-align: top;
+}
+
+.card-cell {
+	width: 33.3333%;
+	padding: 0 6px 6px 6px;
+	vertical-align: top;
+}
+
+.card-cell.empty {
+	padding: 0 6px 6px 6px;
 }
 
 .card {
-	float: left;
-	width: 33.3333%;
-	padding: 0 6px 8px 6px;
+	display: block;
 	page-break-inside: avoid;
 	break-inside: avoid;
 }
@@ -155,6 +151,9 @@ body {
 	height: 118px;
 	text-align: center;
 	margin-bottom: 3px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .imgbox img {
@@ -164,7 +163,7 @@ body {
 }
 
 .sku-line {
-	font-size: 9px;
+	font-size: 9.5px;
 	line-height: 1.15;
 	font-weight: 900;
 	text-align: center;
@@ -177,7 +176,7 @@ body {
 .sku-line .teal { color: #00a7c8; }
 
 .name-line {
-	font-size: 8px;
+	font-size: 8.5px;
 	line-height: 1.2;
 	font-weight: 700;
 	display: block;
@@ -196,7 +195,7 @@ body {
 }
 
 .price-line {
-	font-size: 8.5px;
+	font-size: 9px;
 	line-height: 1.15;
 	font-weight: 900;
 	text-align: center;
@@ -205,7 +204,7 @@ body {
 }
 
 .avg-line {
-	font-size: 8px;
+	font-size: 8.5px;
 	line-height: 1.15;
 	font-weight: 800;
 	text-align: center;
@@ -217,14 +216,14 @@ body {
 
 .metrics,
 .dims {
-	font-size: 7px;
+	font-size: 7.5px;
 	line-height: 1.2;
 	font-weight: 700;
 	text-align: center;
 	margin-bottom: 1px;
 }
 
-.dims { font-size: 6.5px; }
+.dims { font-size: 7px; }
 
 .footer {
 	padding-top: 5px;
@@ -244,12 +243,12 @@ body {
 </head>
 <body>
 	<div class="page-header">
-		<div class="header-title">{{ header_title }}</div>
-		{% if company_logo %}
-		<div class="brand"><img src="{{ company_logo }}"></div>
-		{% elif show_logo %}
-		<div class="brand"><div class="brand-fallback">{{ company_name }}</div></div>
-		{% endif %}
+		<table>
+			<tr>
+				<td class="hdr-left"><div class="header-title">{{ header_title }}</div></td>
+				<td class="hdr-right">{% if company_logo %}<img src="{{ company_logo }}">{% endif %}</td>
+			</tr>
+		</table>
 	</div>
 
 	<div class="page-footer">
@@ -259,32 +258,48 @@ body {
 	<div class="page-wrap">
 		<div class="section-ribbon">{{ section_title }}</div>
 
-		<div class="grid">
-			{% for p in products %}
-			<div class="card">
-				{% if p.image_url %}
-				<div class="imgbox"><img src="{{ p.image_url }}"></div>
+		<table class="grid-table">
+			<tbody>
+				{% for p in products %}
+				{% if loop.index0 % 3 == 0 %}
+				<tr>
 				{% endif %}
-				<div class="sku-line">
-					<span class="orange">#{{ p.item_code }}</span>
-					<span class="blue">|{{ p.upc_token }}</span>
-					<span class="orange">|{{ p.new_tag }}</span>
-					<span class="teal">|CP:{{ p.case_pack_display }}</span>
-				</div>
-				<div class="name-line">{{ p.title_line }}</div>
-				{% if not hide_price %}
-				<div class="price-line">RS.P.: {{ p.case_price }} | EA.P:{{ p.ea_price }}</div>
-				<div class="avg-line">AVG.S.:{{ p.avg_sales }} <span class="black">| LC.EA.:{{ p.last_cost_ea }} | LLC.EA.:{{ p.last_cost_case }}</span></div>
-				{% else %}
-				<div class="avg-line">AVG.S.:{{ p.avg_sales }}</div>
+					<td class="card-cell">
+						<div class="card">
+							<div class="imgbox">
+								{% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
+							</div>
+							<div class="sku-line">
+								<span class="orange">#{{ p.item_code }}</span>
+								<span class="blue">|{{ p.upc_token }}</span>
+								<span class="orange">|{{ p.new_tag }}</span>
+								<span class="teal">|CP:{{ p.case_pack_display }}</span>
+							</div>
+							<div class="name-line">{{ p.title_line }}</div>
+							{% if not hide_price %}
+							<div class="price-line">RS.P.: {{ p.case_price }} | EA.P:{{ p.ea_price }}</div>
+							<div class="avg-line">AVG.S.:{{ p.avg_sales }} <span class="black">| LC.EA.:{{ p.last_cost_ea }} | LLC.EA.:{{ p.last_cost_case }}</span></div>
+							{% else %}
+							<div class="avg-line">AVG.S.:{{ p.avg_sales }}</div>
+							{% endif %}
+							<div class="metrics">Total: {{ p.total_qty }} | Avai.Q: {{ p.available_qty }} | PO: {{ p.po_qty }}</div>
+							<div class="metrics">CBM: {{ p.cbm }} | PCS-Cont: {{ p.pcs_cont }}</div>
+							<div class="dims">Case L/W/H : {{ p.case_lwh }} | ETA : {{ p.eta_display }}</div>
+							<div class="dims">Case Weight:{{ p.case_weight }} | Case WH: {{ p.case_wh }}</div>
+						</div>
+					</td>
+				{% if loop.index0 % 3 == 2 %}
+				</tr>
+				{% elif loop.last %}
+				{% set missing = 2 - (loop.index0 % 3) %}
+				{% for _ in range(missing) %}
+					<td class="card-cell empty"></td>
+				{% endfor %}
+				</tr>
 				{% endif %}
-				<div class="metrics">Total: {{ p.total_qty }} | Avai.Q: {{ p.available_qty }} | PO: {{ p.po_qty }}</div>
-				<div class="metrics">CBM: {{ p.cbm }} | PCS-Cont: {{ p.pcs_cont }}</div>
-				<div class="dims">Case L/W/H : {{ p.case_lwh }} | ETA : -</div>
-				<div class="dims">Case Weight:{{ p.case_weight }} | Case WH: {{ p.case_wh }}</div>
-			</div>
-			{% endfor %}
-		</div>
+				{% endfor %}
+			</tbody>
+		</table>
 	</div>
 
 </body>
@@ -368,7 +383,14 @@ def _money_number(value):
 def _abs_url(path):
 	if not path:
 		return ""
-	return get_url(path) if path.startswith("/") else path
+	path = str(path).strip()
+	if not path:
+		return ""
+	if path.startswith(("http://", "https://", "data:")):
+		return path
+	if path.startswith("/"):
+		return get_url(path)
+	return get_url("/" + path)
 
 
 def _to_logo_src(logo_path):
@@ -422,6 +444,51 @@ def _get_company_letterhead_logo(company):
 				return img
 	except Exception:
 		pass
+
+	return ""
+
+
+def _is_image_file(path):
+	if not path:
+		return False
+	if str(path).strip().startswith("data:image/"):
+		return True
+	mime = mimetypes.guess_type(str(path))[0] or ""
+	return mime.startswith("image/")
+
+
+def _get_company_attachment_logo(company):
+	"""Return best image attachment from Company doc (sidebar image/attachments)."""
+	if not company:
+		return ""
+
+	try:
+		rows = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Company",
+				"attached_to_name": company,
+				"is_folder": 0,
+			},
+			fields=["file_url", "attached_to_field", "creation"],
+			order_by="creation desc",
+			limit_page_length=50,
+		)
+	except Exception:
+		return ""
+
+	if not rows:
+		return ""
+
+	# Prefer images explicitly linked to likely logo fields.
+	for r in rows:
+		if (r.get("attached_to_field") or "") in ("company_logo", "image") and _is_image_file(r.get("file_url")):
+			return r.get("file_url") or ""
+
+	# Fallback: any image attachment on Company.
+	for r in rows:
+		if _is_image_file(r.get("file_url")):
+			return r.get("file_url") or ""
 
 	return ""
 
@@ -526,10 +593,22 @@ def _get_company_logo(company):
 	if company:
 		# 1) Company doctype logo (highest priority)
 		candidates.append(frappe.db.get_value("Company", company, "company_logo"))
-		# 2) Company's default letter head image
+
+		# 2) Company image field (if present in this site)
+		try:
+			company_meta = frappe.get_meta("Company")
+			if company_meta.get_field("image"):
+				candidates.append(frappe.db.get_value("Company", company, "image"))
+		except Exception:
+			pass
+
+		# 3) Company doc attachments (sidebar image / attachment list)
+		candidates.append(_get_company_attachment_logo(company))
+
+		# 4) Company's default letter head image
 		candidates.append(_get_company_letterhead_logo(company))
 
-	# 3) Company-specific website theme settings logos
+	# 5) Company-specific website theme settings logos
 	if company_key == "udc":
 		theme_doctypes = ["UDC Website Theme Settings"]
 	else:
@@ -542,13 +621,13 @@ def _get_company_logo(company):
 		except Exception:
 			pass
 
-	# 4) Global app logo fallback
+	# 6) Global app logo fallback
 	try:
 		candidates.append(frappe.db.get_single_value("Website Settings", "app_logo"))
 	except Exception:
 		pass
 
-	# 5) Last-resort static files by company
+	# 7) Last-resort static files by company
 	if company_key == "udc":
 		candidates.extend([
 			"/files/CottonValley_UDC_logo.jpg",
@@ -667,6 +746,8 @@ def _build_product_rows(filters):
 			it.custom_package_width_inch,
 			it.custom_package_height_inch,
 			it.custom_weight_lbs,
+			it.po_qty,
+			it.eta,
 			it.available_stock,
 			it.last_purchase_rate,
 			MAX(ip.price_list_rate) AS price_list_rate,
@@ -717,7 +798,7 @@ def _build_product_rows(filters):
 		last_cost_case = flt(r.custom_llc) if r.custom_llc not in (None, "") else (last_cost_ea * case_pack if case_pack > 0 else 0)
 
 		available_qty = flt(r.available_stock)
-		po_qty = flt(po_map.get(r.item_code, 0))
+		po_qty = flt(r.po_qty) if r.po_qty not in (None, "") else flt(po_map.get(r.item_code, 0))
 		total_qty = available_qty + po_qty
 
 		upc_token = (r.custom_vendor_code or "-")
@@ -746,6 +827,7 @@ def _build_product_rows(filters):
 		)
 
 		pcs_cont = flt(r.custom_pcs_container or 0)
+		eta_display = formatdate(r.eta) if r.eta else "-"
 		case_lwh = (
 			f"{_fmt_num(r.custom_package_length_inch)}"
 			f"/{_fmt_num(r.custom_package_width_inch)}"
@@ -779,6 +861,7 @@ def _build_product_rows(filters):
 				"case_lwh": case_lwh,
 				"case_weight": _fmt_num(r.custom_weight_lbs, 1),
 				"case_wh": _fmt_num(case_wh_val, 2),
+				"eta_display": eta_display,
 				"currency": r.currency,
 			}
 		)
