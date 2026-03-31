@@ -1176,7 +1176,7 @@ def sync_item_from_api(item_code, company=None):
 CHUNK_SIZE = 200  # adjust as needed
 
 def _is_valid_value(val):
-    return val not in (None, "", "0", 0, "null")
+    return val not in (None, "", "null")
 
 def sync_cv_item_batch(
     batch,
@@ -1280,6 +1280,7 @@ def sync_cv_item_batch(
             item_data = data["items"][0]
             item_doc = frappe.get_doc("Item", item_code)
 
+
             field_mapping = {
                 "item_name": item_data.get("itmdsc"),
                 "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
@@ -1298,6 +1299,8 @@ def sync_cv_item_batch(
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
                 "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
+
+            frappe.log_error(f"Processing item {item_code}", f"{item_data.get("qty_avlbl")} available stock")
 
             updated = False
             invalid_fields = []
