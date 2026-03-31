@@ -1300,7 +1300,8 @@ def sync_cv_item_batch(
                 "available_stock": float(item_data.get("qty_avlbl") or 0),
             }
 
-            frappe.logger().info(f"item={item_code} qty_avlbl={item_data.get('qty_avlbl')}")
+            frappe.log_error(f"Processing item {item_code}", f"{item_data.get("qty_avlbl")} available stock")
+
             updated = False
             invalid_fields = []
 
