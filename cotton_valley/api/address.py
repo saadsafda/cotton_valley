@@ -4,8 +4,9 @@ from cotton_valley.api.common import get_customer_from_token
 
 
 @frappe.whitelist(allow_guest=True)
-def add_address(address):
+def add_address(address, company=None):
     customer = get_customer_from_token()
+    company = "Cotton Valley" if not company or company == "null" else company
     addre = frappe.get_doc({
         "doctype": "Address",
         "address_title": f"{customer}-{address.get('address_type')}",
@@ -17,6 +18,7 @@ def add_address(address):
         "pincode": address.get("pincode"),
         "country": address.get("country"),
         "phone": address.get("phone"),
+        "company": company,
         "links": [{
             "link_doctype": "Customer",
             "link_name": customer
@@ -39,12 +41,15 @@ def add_address(address):
                 "phone": addre.phone,
                 "country": {"id": addre.country, "name": addre.country},
                 "state": {"id": addre.state, "name": addre.state},
-                "is_default": address.get("is_default")
+                "is_default": address.get("is_default"),
+                "company": addre.company
             }
 
 @frappe.whitelist(allow_guest=True)
-def update_address(address):
+def update_address(address, company=None):
     customer = get_customer_from_token()
+    company = "Cotton Valley" if not company or company == "null" else company
+
     addr = frappe.get_doc("Address", address.get("id"))
     addr.address_type = address.get("address_type")
     addr.address_line1 = address.get("address_line1")
@@ -54,6 +59,7 @@ def update_address(address):
     addr.pincode = address.get("pincode")
     addr.country = address.get("country")
     addr.phone = address.get("phone")
+    addr.company = company
     addr.save(ignore_permissions=True)
 
     if address.get("is_default") and addr.address_type == "Shipping":
@@ -72,7 +78,8 @@ def update_address(address):
                 "phone": addr.phone,
                 "country": {"id": addr.country, "name": addr.country},
                 "state": {"id": addr.state, "name": addr.state},
-                "is_default": address.get("is_default")
+                "is_default": address.get("is_default"),
+                "company": addr.company
             }
 
 
