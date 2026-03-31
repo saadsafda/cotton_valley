@@ -6,7 +6,7 @@ from cotton_valley.api.website_theme_setting import get_file, get_categories_fro
 import requests
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
 from cotton_valley.api.common import check_customer_token, get_customer_from_token
-from frappe.utils import flt
+from frappe.utils import flt, getdate
 import xlsxwriter
 import io
 import os
@@ -995,6 +995,15 @@ def get_prices(item_code, company=None):
         raise
 
 
+def _safe_getdate(value):
+    if value in (None, "", "null"):
+        return None
+    try:
+        return getdate(value)
+    except Exception:
+        return None
+
+
 @frappe.whitelist()
 def sync_item_from_api(item_code, company=None):
     url = ""
@@ -1036,6 +1045,8 @@ def sync_item_from_api(item_code, company=None):
     item_doc = frappe.get_doc("Item", item_code)
 
     # Map and update relevant fields
+    eta_dt = item_data.get("eta_dt") or item_data.get("ETA_DT")
+
     field_mapping = {
         "item_name": item_data.get("itmdsc"),
         # "item_group": item_data.get("itmgrpdsc") or "COD",
@@ -1047,6 +1058,7 @@ def sync_item_from_api(item_code, company=None):
         "custom_cbm": float(item_data.get("casecbm") or 0),
         "custom_case_pack": int(item_data.get("itmpack") or 0),
         "custom_case_per_pallet": int(item_data.get("pall_case") or 0),
+        "custom_case_pallet_warehouse": int(item_data.get("pall_case") or item_data.get("PALL_CASE") or 0),
         "custom_case_trucking": int(item_data.get("pall_case_tr") or 0),
         "custom_short_description": item_data.get("itmdscpur"),
         "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
@@ -1054,6 +1066,16 @@ def sync_item_from_api(item_code, company=None):
         "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
         "custom_weight_lbs": float(item_data.get("casewt") or 0),
         "available_stock": float(item_data.get("qty_avlbl") or 0),
+        "po_qty": float(item_data.get("vpo_bal") or 0),
+        "custom_avaerage_sale": float(item_data.get("avg_mnt_sal") or 0),
+        "custom_lc": float(item_data.get("purrate") or 0),
+        "custom_llc": float(item_data.get("last_llc_per_case") or 0),
+        "custom_pcs_container": item_data.get("itm_chr5"),
+        "custom_eta_qty": float(item_data.get("eta_qty") or 0),
+        "eta": _safe_getdate(eta_dt),
+        "custom_vendor_code": item_data.get("last_vndcode") or item_data.get("LAST_VNDCODE"),
+        "custom_grade": item_data.get("itmbrk4") or item_data.get("ITMBRK4"),
+        "custom_total_stock": float(item_data.get("stk_qty") or item_data.get("STK_QTY") or 0),
     }
 
     updated = False
@@ -1281,6 +1303,8 @@ def sync_cv_item_batch(
             item_doc = frappe.get_doc("Item", item_code)
 
 
+            eta_dt = item_data.get("eta_dt") or item_data.get("ETA_DT")
+
             field_mapping = {
                 "item_name": item_data.get("itmdsc"),
                 "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
@@ -1291,6 +1315,7 @@ def sync_cv_item_batch(
                 "custom_cbm": float(item_data.get("casecbm") or 0),
                 "custom_case_pack": int(float(item_data.get("itmpack") or 0)),
                 "custom_case_per_pallet": int(float(item_data.get("pall_case") or 0)),
+                "custom_case_pallet_warehouse": int(float(item_data.get("pall_case") or item_data.get("PALL_CASE") or 0)),
                 "custom_case_trucking": int(float(item_data.get("pall_case_tr") or 0)),
                 "custom_short_description": item_data.get("itmdscpur"),
                 "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
@@ -1298,6 +1323,16 @@ def sync_cv_item_batch(
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
                 "available_stock": float(item_data.get("qty_avlbl") or 0),
+                "po_qty": float(item_data.get("vpo_bal") or 0),
+                "custom_avaerage_sale": float(item_data.get("avg_mnt_sal") or 0),
+                "custom_lc": float(item_data.get("purrate") or 0),
+                "custom_llc": float(item_data.get("last_llc_per_case") or 0),
+                "custom_pcs_container": item_data.get("itm_chr5"),
+                "custom_eta_qty": float(item_data.get("eta_qty") or 0),
+                "eta": _safe_getdate(eta_dt),
+                "custom_vendor_code": item_data.get("last_vndcode") or item_data.get("LAST_VNDCODE"),
+                "custom_grade": item_data.get("itmbrk4") or item_data.get("ITMBRK4"),
+                "custom_total_stock": float(item_data.get("stk_qty") or item_data.get("STK_QTY") or 0),
             }
 
             # frappe.log_error(f"Processing item {item_code}", f"{item_data.get("qty_avlbl")} available stock")
@@ -1518,6 +1553,8 @@ def sync_udc_item_batch(
             item_data = data["items"][0]
             item_doc = frappe.get_doc("Item", item_code)
 
+            eta_dt = item_data.get("eta_dt") or item_data.get("ETA_DT")
+
             field_mapping = {
                 "item_name": item_data.get("itmdsc"),
                 "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
@@ -1528,6 +1565,7 @@ def sync_udc_item_batch(
                 "custom_cbm": float(item_data.get("casecbm") or 0),
                 "custom_case_pack": int(float(item_data.get("itmpack") or 0)),
                 "custom_case_per_pallet": int(float(item_data.get("pall_case") or 0)),
+                "custom_case_pallet_warehouse": int(float(item_data.get("pall_case") or item_data.get("PALL_CASE") or 0)),
                 "custom_case_trucking": int(float(item_data.get("pall_case_tr") or 0)),
                 "custom_short_description": item_data.get("itmdscpur"),
                 "custom_package_length_inch": float(item_data.get("casesizlen") or 0),
@@ -1535,6 +1573,16 @@ def sync_udc_item_batch(
                 "custom_package_height_inch": float(item_data.get("casesizthk") or 0),
                 "custom_weight_lbs": float(item_data.get("casewt") or 0),
                 "available_stock": float(item_data.get("qty_avlbl") or 0),
+                "po_qty": float(item_data.get("vpo_bal") or 0),
+                "custom_avaerage_sale": float(item_data.get("avg_mnt_sal") or 0),
+                "custom_lc": float(item_data.get("purrate") or 0),
+                "custom_llc": float(item_data.get("last_llc_per_case") or 0),
+                "custom_pcs_container": item_data.get("itm_chr5"),
+                "custom_eta_qty": float(item_data.get("eta_qty") or 0),
+                "eta": _safe_getdate(eta_dt),
+                "custom_vendor_code": item_data.get("last_vndcode") or item_data.get("LAST_VNDCODE"),
+                "custom_grade": item_data.get("itmbrk4") or item_data.get("ITMBRK4"),
+                "custom_total_stock": float(item_data.get("stk_qty") or item_data.get("STK_QTY") or 0),
             }
 
             updated = False

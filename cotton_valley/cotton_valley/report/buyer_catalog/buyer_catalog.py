@@ -749,6 +749,7 @@ def _build_product_rows(filters):
 			it.po_qty,
 			it.eta,
 			it.available_stock,
+			it.custom_total_stock,
 			it.last_purchase_rate,
 			MAX(ip.price_list_rate) AS price_list_rate,
 			MAX(ip.currency) AS currency,
@@ -799,7 +800,7 @@ def _build_product_rows(filters):
 
 		available_qty = flt(r.available_stock)
 		po_qty = flt(r.po_qty) if r.po_qty not in (None, "") else flt(po_map.get(r.item_code, 0))
-		total_qty = available_qty + po_qty
+		total_qty = flt(r.custom_total_stock)
 
 		upc_token = (r.custom_vendor_code or "-")
 
