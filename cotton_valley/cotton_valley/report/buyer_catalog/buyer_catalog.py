@@ -115,7 +115,7 @@ body {
 
 .page-wrap {
 	border: 1px solid #4b4b4b;
-	padding: 7px 6px 4px 6px;
+	padding: 7px 6px 2px 6px;
 	-webkit-box-decoration-break: clone;
 	box-decoration-break: clone;
 }
@@ -133,12 +133,12 @@ body {
 
 .card-cell {
 	width: 33.3333%;
-	padding: 0 6px 6px 6px;
+	padding: 0 6px 3px 6px;
 	vertical-align: top;
 }
 
 .card-cell.empty {
-	padding: 0 6px 6px 6px;
+	padding: 0 6px 3px 6px;
 }
 
 .card {
@@ -363,13 +363,41 @@ def _get_titles_map(doctype, names):
 
 def _fmt_num(value, precision=2):
 	if value is None or value == "":
-		return "0"
+		return "-"
 	v = flt(value)
+	if v == 0:
+		return "-"
 	fmt = f"{{0:.{precision}f}}"
 	s = fmt.format(v)
 	if precision > 0:
 		s = s.rstrip("0").rstrip(".")
 	return s
+
+
+def _fmt_num_fixed(value, precision=2):
+	"""Format number with fixed decimal places (no stripping trailing zeros) and '-' for blank values."""
+	if value is None or value == "":
+		return "-"
+	v = flt(value)
+	if v == 0:
+		return "-"
+	fmt = f"{{0:.{precision}f}}"
+	return fmt.format(v)
+
+
+def _fmt_date(date_val):
+	"""Format date as DD MMM YYYY (e.g., 04 APR 2026)."""
+	if not date_val:
+		return "-"
+	try:
+		from datetime import datetime
+		if isinstance(date_val, str):
+			date_obj = datetime.strptime(date_val[:10], "%Y-%m-%d")
+		else:
+			date_obj = date_val
+		return date_obj.strftime("%d %b %Y").upper()
+	except Exception:
+		return "-"
 
 
 def _fmt_money(value):
@@ -828,7 +856,7 @@ def _build_product_rows(filters):
 		)
 
 		pcs_cont = flt(r.custom_pcs_container or 0)
-		eta_display = formatdate(r.eta) if r.eta else "-"
+		eta_display = _fmt_date(r.eta)
 		case_lwh = (
 			f"{_fmt_num(r.custom_package_length_inch)}"
 			f"/{_fmt_num(r.custom_package_width_inch)}"
@@ -846,22 +874,22 @@ def _build_product_rows(filters):
 				"image_url": _abs_url(r.image_path),
 				"title_line": (r.item_name or "").upper(),
 				"upc_token": upc_token,
-				"new_tag": grade_tag,
+				"new_tag": grade_tag or "-",
 				"case_pack": case_pack,
-				"case_pack_display": _fmt_num(case_pack, 0),
+				"case_pack_display": _fmt_num_fixed(case_pack, 0),
 				"case_price": _money_number(case_price),
 				"ea_price": _money_number(ea_price),
-				"avg_sales": _fmt_num(avg_sales_val, 2),
-				"last_cost_ea": _fmt_num(last_cost_ea, 2),
-				"last_cost_case": _fmt_num(last_cost_case, 2),
-				"total_qty": _fmt_num(total_qty, 0),
-				"available_qty": _fmt_num(available_qty, 0),
-				"po_qty": _fmt_num(po_qty, 0),
-				"cbm": _fmt_num(r.custom_cbm, 3),
-				"pcs_cont": _fmt_num(pcs_cont, 0),
-				"case_lwh": case_lwh,
-				"case_weight": _fmt_num(r.custom_weight_lbs, 1),
-				"case_wh": _fmt_num(case_wh_val, 2),
+				"avg_sales": _fmt_num_fixed(avg_sales_val, 2),
+				"last_cost_ea": _fmt_num_fixed(last_cost_ea, 2),
+				"last_cost_case": _fmt_num_fixed(last_cost_case, 2),
+				"total_qty": _fmt_num(total_qty, 0) if total_qty > 0 else "-",
+				"available_qty": _fmt_num(available_qty, 0) if available_qty > 0 else "-",
+				"po_qty": _fmt_num(po_qty, 0) if po_qty > 0 else "-",
+				"cbm": _fmt_num_fixed(r.custom_cbm, 4),
+				"pcs_cont": _fmt_num_fixed(pcs_cont, 0) if pcs_cont > 0 else "-",
+				"case_lwh": case_lwh if case_lwh and case_lwh != "-/-/-" else "-",
+				"case_weight": _fmt_num_fixed(r.custom_weight_lbs, 4),
+				"case_wh": _fmt_num_fixed(case_wh_val, 2),
 				"eta_display": eta_display,
 				"currency": r.currency,
 			}
