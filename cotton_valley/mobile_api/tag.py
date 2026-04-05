@@ -15,6 +15,7 @@ def get_tag_info():
         tag_list = frappe.db.get_all(
             "Tag",
             fields=["name", "company", "product_type", "description", "image"],
+            order_by="rank desc"
         )
 
         if not tag_list:
@@ -37,7 +38,8 @@ def get_tag_info():
                         "parentfield": "products"
                     },
                     fields=["product_name"],
-                    pluck="product_name"
+                    pluck="product_name",
+                    order_by="idx"
                 )
                 
                 # Handle case where no products are found
