@@ -37,7 +37,7 @@ def get_tag_info():
                         "parenttype": "Tag",
                         "parentfield": "products"
                     },
-                    fields=["product_name"],
+                    fields=["product_name", "idx"],
                     pluck="product_name",
                     order_by="idx"
                 )
