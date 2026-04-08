@@ -45,18 +45,28 @@ def get_columns():
             "label": "Subcategory Name",
             "fieldtype": "Data",
             "width": 150
+        },
+        {
+            "fieldname": "item_count",
+            "label": "Item Count",
+            "fieldtype": "Int",
+            "width": 120
         }
     ]
 
 def get_data(filters):
-    # Base query
+    # Base query with item count
     query = """
         SELECT
             p.company as company,
             p.name as category_id,
             p.title as category_title,
             c.product_subcategory as subcategory_id,
-            c.subcategory_name as subcategory_name
+            c.subcategory_name as subcategory_name,
+            COALESCE(
+                (SELECT COUNT(*) FROM `tabItem` WHERE custom_sub_category = c.product_subcategory AND disabled = 0),
+                0
+            ) as item_count
         FROM
             `tabProduct Category` p
         JOIN
