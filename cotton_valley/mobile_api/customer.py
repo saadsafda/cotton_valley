@@ -6,9 +6,31 @@ from datetime import datetime, timedelta
 def get_all_customers():
     """Fetch all customers from the database."""
     try:
-        customers = frappe.get_list("Customer",
+        current_user = frappe.session.user
+        
+        employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, "name")
+        sales_person = None
+        
+        if employee:
+            sales_person = frappe.db.get_value("Sales Person", {"employee": employee, "enabled": 1}, "name")
+            
+        if not sales_person:
+            return {
+                "status": "success",
+                "message": "No sales person linked to current user",
+                "data": [],
+                "count": 0
+            }
+
+        or_filters = {
+            "sales_person": sales_person,
+            "udc_sales_person": sales_person
+        }
+
+        customers = frappe.get_all("Customer",
+            or_filters=or_filters,
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
-                    "mode_of_payment", "sales_person", "custom_company_name", "creation", "modified",
+                    "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
                     "no_of_orders", "orders_amount"]
         )
@@ -16,7 +38,7 @@ def get_all_customers():
         new_opt_customers = frappe.get_all("Customer",
             filters={"customer_name": "New Opportunity"},
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
-                    "mode_of_payment", "sales_person", "custom_company_name", "creation", "modified",
+                    "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
                     "no_of_orders", "orders_amount"]
         )
@@ -91,6 +113,8 @@ def get_all_customers():
                 "phone": customer.custom_phone_number or '',
                 "profile_image_id": customer.image or '',
                 "status": 1 if not customer.disabled else 0,
+                "sales_person": customer.sales_person or '',
+                "udc_sales_person": customer.udc_sales_person or '',
                 "active_customer": active_customer or 0,
                 "mode_of_payment": customer.mode_of_payment or '',
                 "company": customer.custom_company_name or '',
