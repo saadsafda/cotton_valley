@@ -32,31 +32,41 @@ def get_columns():
             "fieldname": "category_title",
             "label": "Category",
             "fieldtype": "Data",
-            "width": 200
+            "width": 170
         },
         {
             "fieldname": "subcategory_id",
             "label": "Subcategory ID",
             "fieldtype": "Data",
-            "width": 150
+            "width": 120
         },
         {
             "fieldname": "subcategory_name",
             "label": "Subcategory Name",
             "fieldtype": "Data",
-            "width": 150
+            "width": 200
+        },
+        {
+            "fieldname": "item_count",
+            "label": "Item Count",
+            "fieldtype": "Int",
+            "width": 90
         }
     ]
 
 def get_data(filters):
-    # Base query
+    # Base query with item count
     query = """
         SELECT
             p.company as company,
             p.name as category_id,
             p.title as category_title,
             c.product_subcategory as subcategory_id,
-            c.subcategory_name as subcategory_name
+            c.subcategory_name as subcategory_name,
+            COALESCE(
+                (SELECT COUNT(*) FROM `tabItem` WHERE custom_sub_category = c.product_subcategory AND disabled = 0),
+                0
+            ) as item_count
         FROM
             `tabProduct Category` p
         JOIN
@@ -86,7 +96,7 @@ def get_data(filters):
         query_values["subcategory"] = filters.get("subcategory")
 
     # Combine query and conditions
-    final_query = query + conditions
+    final_query = query + conditions + " ORDER BY p.company ASC, p.name ASC, c.product_subcategory ASC"
 
     # Execute and return
     return frappe.db.sql(final_query, query_values, as_dict=True)
