@@ -125,3 +125,170 @@ def upsert_item_from_client():
 		frappe.log_error(frappe.get_traceback(), "Upsert Item From Client API")
 		frappe.local.response["http_status_code"] = 500
 		return {"status": "error", "message": str(exc)}
+
+
+@frappe.whitelist()
+def update_item_price_from_client():
+	"""Update Item Price using price_id, item_code, and item_rate."""
+	try:
+		data = frappe.request.get_data(as_text=True)
+		if not data:
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "No data provided"}
+
+		payload = json.loads(data)
+
+		price_id = payload.get("price_id")
+		udc_price_id = payload.get("udc_price_id")
+		item_code = payload.get("item_code")
+		item_rate = payload.get("item_rate")
+
+		if not price_id and not udc_price_id:
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "price_id or udc_price_id is required"}
+		if not item_code:
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "item_code is required"}
+		if item_rate in (None, "", "null"):
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "item_rate is required"}
+
+		if not frappe.db.exists("Item", item_code):
+			frappe.local.response["http_status_code"] = 404
+			return {"status": "error", "message": f"Item {item_code} not found"}
+
+		price_list_filters = {"price_id": price_id} if price_id else {"udc_price_id": udc_price_id}
+		price_list = frappe.db.get_value("Price List", price_list_filters, "name")
+		if not price_list:
+			frappe.local.response["http_status_code"] = 404
+			missing_key = "price_id" if price_id else "udc_price_id"
+			missing_value = price_id or udc_price_id
+			return {
+				"status": "error",
+				"message": f"Price List not found for {missing_key} {missing_value}",
+			}
+
+		existing = frappe.db.exists(
+			"Item Price",
+			{"item_code": item_code, "price_list": price_list},
+		)
+		if not existing:
+			frappe.local.response["http_status_code"] = 404
+			return {
+				"status": "error",
+				"message": f"Item Price not found for item {item_code} and price list {price_list}",
+			}
+
+		price_doc = frappe.get_doc("Item Price", existing)
+		price_doc.item_code = item_code
+		price_doc.price_list = price_list
+		price_doc.price_list_rate = flt(item_rate)
+		price_doc.save(ignore_permissions=True)
+		frappe.db.commit()
+
+		return {
+			"status": "success",
+			"message": f"Item price for {item_code} updated successfully",
+			"price_id": price_id,
+			"udc_price_id": udc_price_id,
+			"price_list": price_list,
+			"item_code": item_code,
+			"item_rate": price_doc.price_list_rate,
+		}
+
+	except Exception as exc:
+		frappe.log_error(frappe.get_traceback(), "Update Item Price From Client API")
+		frappe.local.response["http_status_code"] = 500
+		return {"status": "error", "message": str(exc)}
+
+
+@frappe.whitelist()
+def update_item_price_from_client_batch():
+	"""Update multiple Item Price records using an array payload."""
+	try:
+		data = frappe.request.get_data(as_text=True)
+		if not data:
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "No data provided"}
+
+		payload = json.loads(data)
+		items = payload.get("items") if isinstance(payload, dict) else payload
+		if not isinstance(items, list) or not items:
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "items must be a non-empty array"}
+
+		results = []
+		for entry in items:
+			if not isinstance(entry, dict):
+				results.append({"status": "error", "message": "Invalid item payload"})
+				continue
+
+			price_id = entry.get("price_id")
+			udc_price_id = entry.get("udc_price_id")
+			item_code = entry.get("item_code")
+			item_rate = entry.get("item_rate")
+
+			if not price_id and not udc_price_id:
+				results.append({"status": "error", "message": "price_id or udc_price_id is required"})
+				continue
+			if not item_code:
+				results.append({"status": "error", "message": "item_code is required"})
+				continue
+			if item_rate in (None, "", "null"):
+				results.append({"status": "error", "message": "item_rate is required"})
+				continue
+
+			if not frappe.db.exists("Item", item_code):
+				results.append({"status": "error", "message": f"Item {item_code} not found"})
+				continue
+
+			price_list_filters = {"price_id": price_id} if price_id else {"udc_price_id": udc_price_id}
+			price_list = frappe.db.get_value("Price List", price_list_filters, "name")
+			if not price_list:
+				missing_key = "price_id" if price_id else "udc_price_id"
+				missing_value = price_id or udc_price_id
+				results.append({
+					"status": "error",
+					"message": f"Price List not found for {missing_key} {missing_value}",
+				})
+				continue
+
+			existing = frappe.db.exists(
+				"Item Price",
+				{"item_code": item_code, "price_list": price_list},
+			)
+			if not existing:
+				results.append({
+					"status": "error",
+					"message": f"Item Price not found for item {item_code} and price list {price_list}",
+				})
+				continue
+
+			price_doc = frappe.get_doc("Item Price", existing)
+			price_doc.item_code = item_code
+			price_doc.price_list = price_list
+			price_doc.price_list_rate = flt(item_rate)
+			price_doc.save(ignore_permissions=True)
+
+			results.append({
+				"status": "success",
+				"price_id": price_id,
+				"udc_price_id": udc_price_id,
+				"price_list": price_list,
+				"item_code": item_code,
+				"item_rate": price_doc.price_list_rate,
+			})
+
+		frappe.db.commit()
+		return {
+			"status": "success",
+			"message": "Batch item price update processed",
+			"results": results,
+		}
+
+	except Exception as exc:
+		frappe.log_error(frappe.get_traceback(), "Batch Update Item Price From Client API")
+		frappe.local.response["http_status_code"] = 500
+		return {"status": "error", "message": str(exc)}
+
+
