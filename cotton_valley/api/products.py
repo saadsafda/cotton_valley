@@ -2136,8 +2136,8 @@ def download_custom_catalog(items, company=None, price_list=None):
             fields=["image", "item_code", "item_name", "custom_sub_category as subcategory",  
                     "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
                     "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
-                    "custom_pallet_ti as pallet_ti", "custom_pallet_hi as pallet_hi",
-                    "custom_weight_lbs as net_weight", "custom_case_per_pallet as cases_per_pallet",
+                    "custom_weight_lbs as net_weight","custom_pallet_ti as pallet_ti",
+                    "custom_pallet_hi as pallet_hi", "custom_case_per_pallet as cases_per_pallet",
                     "stock_price", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock", "company"]
         )
         
@@ -2150,8 +2150,8 @@ def download_custom_catalog(items, company=None, price_list=None):
 
         # --- STYLES ---
         header_blue = workbook.add_format({'bg_color': "#FF99A3", 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        header_green = workbook.add_format({'bg_color': "#92D050", 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        header_yellow = workbook.add_format({'bg_color': '#FFFF00', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_green = workbook.add_format({'bg_color': "#FF99A3", 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_yellow = workbook.add_format({'bg_color': '#FF99A3', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
         text_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
         text_blue_fmt = workbook.add_format({'bg_color': '#F2DCDB', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
         text_green_fmt = workbook.add_format({'bg_color': '#F2DCDB', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
@@ -2165,10 +2165,11 @@ def download_custom_catalog(items, company=None, price_list=None):
         worksheet.set_column('B:B', 15)
         worksheet.set_column('C:C', 35)
         worksheet.set_column('D:I', 20)
-        worksheet.set_column('J:K', 10)
-        worksheet.set_column('L:M', 20)
-        worksheet.set_column('N:N', 30)
-        worksheet.set_column('O:Q', 20)
+        worksheet.set_column('J:J', 20)
+        worksheet.set_column('K:L', 10)
+        worksheet.set_column('M:M', 20)
+        worksheet.set_column('N:O', 20)
+        worksheet.set_column('P:Q', 20)
 
         # --- COMPANY HEADER ---
         worksheet.set_row(0, 60)
@@ -2193,7 +2194,7 @@ def download_custom_catalog(items, company=None, price_list=None):
         headers = [
             "Picture", "Code", "Description", "Category", "SubCategory", 
             "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
-            "Case-Height(INCH)", "TI", "HI", "Net-Weight(LBS)", "Cases/Pallet Trucking",
+            "Case-Height(INCH)", "Net-Weight(LBS)", "TI", "HI", "Cases/Pallet Trucking",
             "Price in Case", "Price in Piece", "Item UPC", "CBM", 
             "Available Stock", "Stock in Pieces"
         ]
@@ -2203,7 +2204,7 @@ def download_custom_catalog(items, company=None, price_list=None):
         for col, title in enumerate(headers):
             if col in [13, 14]:  # Price in Case, Price in Piece
                 fmt = header_yellow
-            elif col in [9, 10]:  # TI, HI
+            elif col in [10, 11]:  # TI, HI
                 fmt = header_green
             else:
                 fmt = header_blue
@@ -2306,9 +2307,9 @@ def download_custom_catalog(items, company=None, price_list=None):
             worksheet.write(row, 6, item.get("case_length", "") or "-", text_blue_fmt)
             worksheet.write(row, 7, item.get("case_width", "") or "-", text_blue_fmt)
             worksheet.write(row, 8, item.get("case_height", "") or "-", text_blue_fmt)
-            worksheet.write(row, 9, item.get("pallet_ti", "") or "-", text_green_fmt)
-            worksheet.write(row, 10, item.get("pallet_hi", "") or "-", text_green_fmt)
-            worksheet.write(row, 11, item.get("net_weight", "") or "-", text_blue_fmt)
+            worksheet.write(row, 9, item.get("net_weight", "") or "-", text_blue_fmt)
+            worksheet.write(row, 10, item.get("pallet_ti", "") or "-", text_green_fmt)
+            worksheet.write(row, 11, item.get("pallet_hi", "") or "-", text_green_fmt)
             worksheet.write(row, 12, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
 
             selected_price = item_price_map.get(item.get("item_code"))
