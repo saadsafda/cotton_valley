@@ -5,6 +5,7 @@ from frappe import _
 from io import BytesIO
 import json
 
+from cotton_valley.api.sales_order import push_to_erp
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment, Border, Side
@@ -427,6 +428,12 @@ def notify_customer_on_status_change(doc, method):
             
         except Exception as e:
             frappe.log_error(f"Error updating customer notification: {str(e)}", "Sales Order Notification Script")
+
+
+def on_update_after_submit(doc, method):
+    """Server Script hook: run after a submitted Sales Order is updated."""
+    notify_customer_on_status_change(doc, method)
+    push_to_erp([doc.name])
 
 
 
