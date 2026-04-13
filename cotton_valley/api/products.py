@@ -2039,7 +2039,61 @@ def sync_udc_price_batch(
 
 
 @frappe.whitelist()
-def download_custom_catalog(items):
+def download_custom_catalog(company=None):
+    if not company:
+        return []
+
+    rows = frappe.db.sql(
+        """
+        SELECT DISTINCT ip.price_list
+        FROM `tabItem Price` ip
+        INNER JOIN `tabItem` i ON i.name = ip.item_code
+        WHERE i.company = %(company)s
+          AND IFNULL(ip.price_list, '') != ''
+        ORDER BY ip.price_list
+        """,
+        {"company": company},
+        as_list=True,
+    )
+
+    return [r[0] for r in rows if r and r[0]]
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def get_catalog_price_list_link_options(doctype, txt, searchfield, start, page_len, filters):
+    filters = filters or {}
+    company = (filters.get("company") or "").strip()
+
+    values = {
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len,
+    }
+
+    company_condition = ""
+    if company:
+        company_condition = " AND i.company = %(company)s "
+        values["company"] = company
+
+    return frappe.db.sql(
+        f"""
+        SELECT DISTINCT pl.name, pl.currency
+        FROM `tabPrice List` pl
+        INNER JOIN `tabItem Price` ip ON ip.price_list = pl.name
+        INNER JOIN `tabItem` i ON i.name = ip.item_code
+        WHERE pl.name LIKE %(txt)s
+          AND IFNULL(ip.price_list, '') != ''
+          {company_condition}
+        ORDER BY pl.name
+        LIMIT %(start)s, %(page_len)s
+        """,
+        values,
+    )
+
+
+@frappe.whitelist()
+def download_custom_catalog(items, company=None, price_list=None):
     try:
         # Parse the JSON string list of Item Names passed from JS
         if isinstance(items, str):
@@ -2050,15 +2104,41 @@ def download_custom_catalog(items):
         # Validate input
         if not item_names or not isinstance(item_names, list):
             frappe.throw(_("Invalid items list provided"))
+
+        company = (company or "").strip()
+        price_list = (price_list or "").strip()
+
+        if not company:
+            frappe.throw(_("Company is required"))
+
+        if not price_list:
+            frappe.throw(_("Price List is required"))
+
+        def get_company_banner_name(raw_company):
+            normalized = (raw_company or "").strip().lower()
+            mapped = {
+                "cotton valley": "COTTON VALLEY LLC",
+                "cotton valley llc": "COTTON VALLEY LLC",
+                "udc": "UNIVERSAL DISTRIBUTION LLC",
+                "universal distribution": "UNIVERSAL DISTRIBUTION LLC",
+                "universal distribution llc": "UNIVERSAL DISTRIBUTION LLC",
+            }
+            return mapped.get(normalized, (raw_company or "").strip().upper())
         
         # 1. Fetch Item Data
+        item_filters = {
+            "name": ["in", item_names],
+            "company": company,
+        }
+
         data = frappe.get_all("Item", 
-            filters={"name": ["in", item_names]},
+            filters=item_filters,
             fields=["image", "item_code", "item_name", "custom_sub_category as subcategory",  
                     "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
                     "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
-                    "custom_weight_lbs as net_weight", "custom_case_per_pallet as cases_per_pallet",
-                    "stock_price", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock"]
+                    "custom_weight_lbs as net_weight","custom_pallet_ti as pallet_ti",
+                    "custom_pallet_hi as pallet_hi", "custom_case_per_pallet as cases_per_pallet",
+                    "stock_price", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock", "company"]
         )
         
         if not data:
@@ -2069,23 +2149,27 @@ def download_custom_catalog(items):
         worksheet = workbook.add_worksheet("Catalog")
 
         # --- STYLES ---
-        header_blue = workbook.add_format({'bg_color': '#9FC5E8', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        header_yellow = workbook.add_format({'bg_color': '#FFFF00', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_blue = workbook.add_format({'bg_color': "#FF99A3", 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_green = workbook.add_format({'bg_color': "#FF99A3", 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        header_yellow = workbook.add_format({'bg_color': '#FF99A3', 'bold': True, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
         text_fmt = workbook.add_format({'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        text_blue_fmt = workbook.add_format({'bg_color': '#9FC5E8', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        text_blue_fmt = workbook.add_format({'bg_color': '#F2DCDB', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        text_green_fmt = workbook.add_format({'bg_color': '#F2DCDB', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
         price_fmt = workbook.add_format({'bg_color': '#FFFF00', 'border': 1, 'align': 'center', 'valign': 'vcenter', 'num_format': '$0.00'})
         company_header_fmt = workbook.add_format({'bold': True, 'font_size': 11, 'valign': 'vcenter'})
         company_info_fmt = workbook.add_format({'font_size': 16, 'valign': 'vcenter', 'bold': True})
+        company_banner_fmt = workbook.add_format({'bg_color': '#3A3F46', 'font_color': '#FFFFFF', 'bold': True, 'font_size': 16, 'valign': 'vcenter', 'align': 'left'})
 
         # --- COLUMN WIDTHS ---
         worksheet.set_column('A:A', 25)
         worksheet.set_column('B:B', 15)
         worksheet.set_column('C:C', 35)
-        worksheet.set_column('D:J', 20)
-        worksheet.set_column('K:K', 25)
-        worksheet.set_column('L:M', 20)
-        worksheet.set_column('N:N', 30)
-        worksheet.set_column('O:Q', 20)
+        worksheet.set_column('D:I', 20)
+        worksheet.set_column('J:J', 20)
+        worksheet.set_column('K:L', 10)
+        worksheet.set_column('M:M', 20)
+        worksheet.set_column('N:O', 20)
+        worksheet.set_column('P:Q', 20)
 
         # --- COMPANY HEADER ---
         worksheet.set_row(0, 60)
@@ -2102,26 +2186,53 @@ def download_custom_catalog(items):
         worksheet.write('A4', ' info@universaldc.com | info@cottonvalley.net', company_info_fmt)
         worksheet.write('A5', 'universaldc.com | cottonValley.net', company_info_fmt)
 
+        company_banner_name = get_company_banner_name(company)
+        worksheet.set_row(8, 30)
+        worksheet.merge_range(8, 0, 8, 18, company_banner_name, company_banner_fmt)
+
         # --- HEADERS ---
         headers = [
             "Picture", "Code", "Description", "Category", "SubCategory", 
             "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
-            "Case-Height(INCH)", "Net-Weight(LBS)", "Cases/Pallet Trucking",
+            "Case-Height(INCH)", "Net-Weight(LBS)", "TI", "HI", "Cases/Pallet Trucking",
             "Price in Case", "Price in Piece", "Item UPC", "CBM", 
             "Available Stock", "Stock in Pieces"
         ]
         
-        start_row = 10
+        start_row = 9
         worksheet.set_row(start_row, 30)
         for col, title in enumerate(headers):
-            fmt = header_yellow if col in [11, 12] else header_blue
+            if col in [13, 14]:  # Price in Case, Price in Piece
+                fmt = header_yellow
+            elif col in [10, 11]:  # TI, HI
+                fmt = header_green
+            else:
+                fmt = header_blue
             worksheet.write(start_row, col, title, fmt)
 
         # --- WRITE DATA ---
         row = start_row + 1
-        
-        # Fetch all categories in one query for performance
+
         item_codes = [item.item_code for item in data]
+        item_price_map = {}
+
+        if item_codes:
+            item_prices = frappe.get_all(
+                "Item Price",
+                filters={
+                    "item_code": ["in", item_codes],
+                    "price_list": price_list,
+                },
+                fields=["item_code", "price_list_rate"],
+                order_by="valid_from desc, modified desc",
+            )
+
+            for entry in item_prices:
+                code = entry.get("item_code")
+                if code and code not in item_price_map:
+                    item_price_map[code] = flt(entry.get("price_list_rate") or 0)
+
+        # Fetch all categories in one query for performance
         all_categories = frappe.db.sql("""
             SELECT c.parent, c.product_category as id, pc.title as title
             FROM `tabProduct Categoris` c
@@ -2197,13 +2308,24 @@ def download_custom_catalog(items):
             worksheet.write(row, 7, item.get("case_width", "") or "-", text_blue_fmt)
             worksheet.write(row, 8, item.get("case_height", "") or "-", text_blue_fmt)
             worksheet.write(row, 9, item.get("net_weight", "") or "-", text_blue_fmt)
-            worksheet.write(row, 10, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
-            worksheet.write(row, 11, (flt(item.get("stock_price", 0)) or 1), price_fmt)
-            worksheet.write(row, 12, (flt(item.get("stock_price", 0) or 1) / flt(item.get("case_pack", 1) or 1)), price_fmt)
-            worksheet.write(row, 13, item.get("item_upc", "") or "-", text_fmt)
-            worksheet.write(row, 14, item.get("cbm", "") or "-", text_fmt)
-            worksheet.write(row, 15, item.get("available_stock", "") or "-", text_fmt)
-            worksheet.write(row, 16, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
+            worksheet.write(row, 10, item.get("pallet_ti", "") or "-", text_green_fmt)
+            worksheet.write(row, 11, item.get("pallet_hi", "") or "-", text_green_fmt)
+            worksheet.write(row, 12, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
+
+            selected_price = item_price_map.get(item.get("item_code"))
+            if selected_price is None:
+                worksheet.write_blank(row, 13, None, price_fmt)
+                worksheet.write_blank(row, 14, None, price_fmt)
+            else:
+                case_pack = flt(item.get("case_pack", 0) or 0)
+                piece_price = selected_price / case_pack if case_pack else selected_price
+                worksheet.write(row, 13, selected_price, price_fmt)
+                worksheet.write(row, 14, piece_price, price_fmt)
+
+            worksheet.write(row, 15, item.get("item_upc", "") or "-", text_fmt)
+            worksheet.write(row, 16, item.get("cbm", "") or "-", text_fmt)
+            worksheet.write(row, 17, item.get("available_stock", "") or "-", text_fmt)
+            worksheet.write(row, 18, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
             row += 1
 
         workbook.close()

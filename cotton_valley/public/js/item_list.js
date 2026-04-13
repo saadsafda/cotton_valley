@@ -62,51 +62,92 @@ frappe.listview_settings['Item'] = {
             // Extract just the 'name' (ID) of the items
             const item_names = selected_items.map(i => i.name);
 
-            // 2. Trigger Download - use open_url_post for file downloads via POST
-            frappe.msgprint({
-                title: __('Generating Catalog'),
-                message: __('Please wait while we generate your catalog...'),
-                indicator: 'blue'
+            let export_dialog = null;
+
+            export_dialog = new frappe.ui.Dialog({
+                title: __('Export Catalog'),
+                fields: [
+                    {
+                        fieldname: 'company',
+                        label: __('Company'),
+                        fieldtype: 'Link',
+                        options: 'Company',
+                        reqd: 1,
+                        onchange: function () {
+                            export_dialog.set_value('price_list', '');
+                        }
+                    },
+                    {
+                        fieldname: 'price_list',
+                        label: __('Price List'),
+                        fieldtype: 'Link',
+                        options: 'Price List',
+                        get_query: function () {
+                            const company = export_dialog ? export_dialog.get_value('company') : '';
+                            return {
+                                query: 'cotton_valley.api.products.get_catalog_price_list_link_options',
+                                filters: {
+                                    company: company || ''
+                                }
+                            };
+                        },
+                        reqd: 1
+                    }
+                ],
+                primary_action_label: __('Export'),
+                primary_action: function (values) {
+                    if (!values.company || !values.price_list) {
+                        frappe.msgprint(__('Please select both Company and Price List.'));
+                        return;
+                    }
+
+                    export_dialog.hide();
+
+                    // 2. Trigger Download - use open_url_post for file downloads via POST
+                    frappe.msgprint({
+                        title: __('Generating Catalog'),
+                        message: __('Please wait while we generate your catalog...'),
+                        indicator: 'blue'
+                    });
+
+                    setTimeout(() => {
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '/api/method/cotton_valley.api.products.download_custom_catalog';
+                        form.target = '_blank';
+
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'items';
+                        input.value = JSON.stringify(item_names);
+                        form.appendChild(input);
+
+                        const company_input = document.createElement('input');
+                        company_input.type = 'hidden';
+                        company_input.name = 'company';
+                        company_input.value = values.company;
+                        form.appendChild(company_input);
+
+                        const price_list_input = document.createElement('input');
+                        price_list_input.type = 'hidden';
+                        price_list_input.name = 'price_list';
+                        price_list_input.value = values.price_list;
+                        form.appendChild(price_list_input);
+
+                        const csrf = document.createElement('input');
+                        csrf.type = 'hidden';
+                        csrf.name = 'csrf_token';
+                        csrf.value = frappe.csrf_token;
+                        form.appendChild(csrf);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                        document.body.removeChild(form);
+                    }, 250);
+                }
             });
 
-            // Use open_url_post which properly handles file downloads with POST data
-            setTimeout(() => {
-                frappe.call({
-                    method: 'frappe.core.doctype.file.file.download_file',
-                    args: {
-                        file_url: '/api/method/cotton_valley.api.products.download_custom_catalog',
-                        download: true
-                    },
-                    freeze: true,
-                    freeze_message: __('Generating catalog for {0} items...', [item_names.length]),
-                    callback: function(r) {
-                        // This won't work for binary downloads, need different approach
-                    }
-                });
-                
-                // Direct POST approach for file download
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '/api/method/cotton_valley.api.products.download_custom_catalog';
-                form.target = '_blank';
-                
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'items';
-                input.value = JSON.stringify(item_names);
-                form.appendChild(input);
-                
-                const csrf = document.createElement('input');
-                csrf.type = 'hidden';
-                csrf.name = 'csrf_token';
-                csrf.value = frappe.csrf_token;
-                form.appendChild(csrf);
-                
-                document.body.appendChild(form);
-                form.submit();
-                document.body.removeChild(form);
-            }, 500);
-
+            export_dialog.show();
         });
 
         if (frappe.get_route()[2] === 'Report' && !frappe.get_route()[3]) {
