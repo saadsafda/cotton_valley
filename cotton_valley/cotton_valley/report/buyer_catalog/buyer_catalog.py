@@ -145,21 +145,27 @@ body {
 	display: block;
 	page-break-inside: avoid;
 	break-inside: avoid;
+	overflow: hidden;
 }
 
 .imgbox {
+	width: 100%;
 	height: 118px;
 	text-align: center;
 	margin-bottom: 3px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	overflow: hidden;
 }
 
 .imgbox img {
+	width: 100%;
+	height: 100%;
 	max-width: 100%;
-	max-height: 116px;
+	max-height: 100%;
 	object-fit: contain;
+	display: block;
 }
 
 .sku-line {
