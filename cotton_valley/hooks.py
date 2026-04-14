@@ -191,7 +191,7 @@ doc_events = {
             "cotton_valley.server_scripts.sales_order.update_customer_order_summary",
             # "cotton_valley.server_scripts.sales_order.notify_customer_on_status_change"
         ],
-		"on_update_after_submit": "cotton_valley.server_scripts.sales_order.on_update_after_submit",
+		"on_update_after_submit": "cotton_valley.server_scripts.sales_order.notify_customer_on_status_change",
         "before_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
         "on_cancel": "cotton_valley.server_scripts.sales_order.increase_stock_on_cancel",
 	},

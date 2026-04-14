@@ -456,7 +456,6 @@ def push_to_erp(sales_orders):
     
     if isinstance(sales_orders, str):
         sales_orders = json.loads(sales_orders)
-    
     # ERP API configuration
     CV_ERP_URL = "https://erp.cottonvalley.us/ords/ctnvly_api/order/ord"
 

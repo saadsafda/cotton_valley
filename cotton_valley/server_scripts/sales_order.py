@@ -100,6 +100,10 @@ def update_customer_order_summary(doc, method):
     decrease_stock(doc, method)
     send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
+    try:
+        push_to_erp([doc.name])
+    except Exception as exc:
+        frappe.log_error("Sales Order on_submit", f"Push to ERP failed for {doc.name}: {exc}")
 
 @frappe.whitelist()
 def send_sales_order_confirmation_email(doc, method):
@@ -428,12 +432,6 @@ def notify_customer_on_status_change(doc, method):
             
         except Exception as e:
             frappe.log_error(f"Error updating customer notification: {str(e)}", "Sales Order Notification Script")
-
-
-def on_update_after_submit(doc, method):
-    """Server Script hook: run after a submitted Sales Order is updated."""
-    notify_customer_on_status_change(doc, method)
-    push_to_erp([doc.name])
 
 
 
