@@ -5,6 +5,7 @@ from frappe import _
 from io import BytesIO
 import json
 
+from cotton_valley.api.sales_order import push_to_erp
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment, Border, Side
@@ -99,6 +100,10 @@ def update_customer_order_summary(doc, method):
     decrease_stock(doc, method)
     send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
+    try:
+        push_to_erp([doc.name])
+    except Exception as exc:
+        frappe.log_error("Sales Order on_submit", f"Push to ERP failed for {doc.name}: {exc}")
 
 @frappe.whitelist()
 def send_sales_order_confirmation_email(doc, method):

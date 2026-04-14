@@ -28,6 +28,15 @@ def upsert_item_from_client():
 			return {"status": "error", "message": "No data provided"}
 
 		payload = json.loads(data)
+		if isinstance(payload, list):
+			frappe.local.response["http_status_code"] = 400
+			return {
+				"status": "error",
+				"message": "Array payload is not supported. Use update_item_price_from_client_batch.",
+			}
+		if not isinstance(payload, dict):
+			frappe.local.response["http_status_code"] = 400
+			return {"status": "error", "message": "Invalid payload"}
 
 		item_code = payload.get("item_code") or payload.get("name")
 		if not item_code:
