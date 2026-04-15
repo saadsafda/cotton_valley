@@ -167,29 +167,29 @@ html {
 	display: block;
 	page-break-inside: avoid;
 	break-inside: avoid;
-	overflow: hidden;
+	overflow: visible;
 	height: 100%;
 	padding: 8px 4px;
 }
 
 .imgbox {
-	width: 100%;
+	width: 88%;
 	height: 126px;
 	text-align: center;
-	margin-bottom: 10px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	overflow: hidden;
+	margin: 0 auto 10px auto;
+	display: block;
+	overflow: visible;
 }
 
 .imgbox img {
-	width: 100%;
-	height: 100%;
+	width: auto;
+	height: auto;
 	max-width: 100%;
-	max-height: 100%;
+	max-height: 126px;
 	object-fit: contain;
-	display: block;
+	object-position: center center;
+	display: inline-block;
+	margin: 0 auto;
 }
 
 .sku-line {
