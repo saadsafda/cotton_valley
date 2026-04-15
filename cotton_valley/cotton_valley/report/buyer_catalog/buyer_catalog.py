@@ -53,6 +53,11 @@ body {
 	font-family: Arial, sans-serif;
 	color: #202020;
 	font-size: 9px;
+	height: 100%;
+}
+
+html {
+	height: 100%;
 }
 
 .page-header {
@@ -115,9 +120,19 @@ body {
 
 .page-wrap {
 	border: 1px solid #4b4b4b;
-	padding: 7px 6px 2px 6px;
+	padding: 7px 6px 3px 6px;
 	-webkit-box-decoration-break: clone;
 	box-decoration-break: clone;
+	height: calc(100% - 6px);
+	min-height: calc(100% - 6px);
+	margin-bottom: 6px;
+	display: flex;
+	flex-direction: column;
+}
+
+.page-break-after {
+	page-break-after: always;
+	break-after: page;
 }
 
 .grid-table {
@@ -125,20 +140,27 @@ body {
 	border-collapse: collapse;
 	border-spacing: 0;
 	table-layout: fixed;
+	height: 100%;
+	flex: 1;
+}
+
+.grid-table tbody {
+	height: 100%;
 }
 
 .grid-table tr {
 	vertical-align: top;
+	height: 33.333%;
 }
 
 .card-cell {
 	width: 33.3333%;
-	padding: 0 6px 3px 6px;
+	padding: 10px 10px 12px 10px;
 	vertical-align: top;
 }
 
 .card-cell.empty {
-	padding: 0 6px 3px 6px;
+	padding: 10px 10px 12px 10px;
 }
 
 .card {
@@ -146,13 +168,15 @@ body {
 	page-break-inside: avoid;
 	break-inside: avoid;
 	overflow: hidden;
+	height: 100%;
+	padding: 8px 4px;
 }
 
 .imgbox {
 	width: 100%;
-	height: 118px;
+	height: 126px;
 	text-align: center;
-	margin-bottom: 3px;
+	margin-bottom: 10px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -261,15 +285,20 @@ body {
 		<div class="footer">{{ footer_text }}</div>
 	</div>
 
-	<div class="page-wrap">
+	{% set items_per_page = 9 %}
+	{% for page_start in range(0, products|length, items_per_page) %}
+	<div class="page-wrap{% if not loop.last %} page-break-after{% endif %}">
 		<div class="section-ribbon">{{ section_title }}</div>
 
 		<table class="grid-table">
 			<tbody>
-				{% for p in products %}
-				{% if loop.index0 % 3 == 0 %}
+				{% for idx in range(page_start, page_start + items_per_page) %}
+				{% set page_idx = idx - page_start %}
+				{% if page_idx % 3 == 0 %}
 				<tr>
 				{% endif %}
+					{% if idx < products|length %}
+					{% set p = products[idx] %}
 					<td class="card-cell">
 						<div class="card">
 							<div class="imgbox">
@@ -294,19 +323,17 @@ body {
 							<div class="dims">Case Weight:{{ p.case_weight }} | Case WH: {{ p.case_wh }}</div>
 						</div>
 					</td>
-				{% if loop.index0 % 3 == 2 %}
-				</tr>
-				{% elif loop.last %}
-				{% set missing = 2 - (loop.index0 % 3) %}
-				{% for _ in range(missing) %}
+					{% else %}
 					<td class="card-cell empty"></td>
-				{% endfor %}
+					{% endif %}
+				{% if page_idx % 3 == 2 %}
 				</tr>
 				{% endif %}
 				{% endfor %}
 			</tbody>
 		</table>
 	</div>
+	{% endfor %}
 
 </body>
 </html>
