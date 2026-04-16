@@ -1,6 +1,42 @@
 import frappe
 
 
+def _apply_sales_invoice_items(si, items, discount_percentage, sales_order):
+    # Rebuild items to ensure updates are applied after reloads.
+    si.items = []
+    for item in items:
+        item_dict = {
+            "item_code": item.get("item_code"),
+            "qty": item.get("qty"),
+            "rate": item.get("rate"),
+            "amount": item.get("amount"),
+            "sales_order": sales_order,
+        }
+        if item.get("discount_percentage"):
+            item_dict["discount_percentage"] = item.get("discount_percentage")
+        if item.get("discount_amount"):
+            item_dict["discount_amount"] = item.get("discount_amount")
+        si.append("items", item_dict)
+    if discount_percentage > 0:
+        si.apply_discount_on = "Grand Total"
+        si.additional_discount_percentage = discount_percentage
+
+
+def _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order):
+    for _ in range(2):
+        try:
+            si.save(ignore_permissions=True)
+            return
+        except Exception as e:
+            message = str(e)
+            if "Document has been modified after you have opened it" in message:
+                if not si.is_new():
+                    si.reload()
+                    _apply_sales_invoice_items(si, items, discount_percentage, sales_order)
+                    continue
+            raise
+
+
 @frappe.whitelist()
 def create_sales_invoice(sales_order, items, discount_percentage=0):
     """
@@ -34,6 +70,7 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
 
         if len(si_exists) > 0:
             si = frappe.get_doc("Sales Invoice", si_exists[0].name)
+            
             si.items = []  # Clear existing items
         else:
             si = frappe.get_doc({
@@ -55,29 +92,8 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
                     "allocated_amount": member.allocated_amount
                 })
 
-        # Add specified items to Sales Invoice with item-wise discounts
-        for item in items:
-            item_dict = {
-                "item_code": item.get("item_code"),
-                "qty": item.get("qty"),
-                "rate": item.get("rate"),
-                "amount": item.get("amount"),
-                "sales_order": sales_order
-            }
-            
-            # Handle item-wise discount
-            if item.get("discount_percentage"):
-                item_dict["discount_percentage"] = item.get("discount_percentage")
-            
-            if item.get("discount_amount"):
-                item_dict["discount_amount"] = item.get("discount_amount")
-            
-            si.append("items", item_dict)
-        # Apply discount if provided
-        if discount_percentage > 0:
-            si.apply_discount_on = "Grand Total"
-            si.additional_discount_percentage = discount_percentage
-        si.save(ignore_permissions=True)
+        _apply_sales_invoice_items(si, items, discount_percentage, sales_order)
+        _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order)
         frappe.db.commit()
 
         so.db_set("order_status", "Shipped", update_modified=True)

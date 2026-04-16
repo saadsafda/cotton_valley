@@ -225,12 +225,12 @@ scheduler_events = {
 	],
 	"cron": {
 		"0 14 * * *": [
-			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_price_sync",
-			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_price_sync",
+			# "cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_price_sync",
+			# "cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_price_sync",
 			"cotton_valley.server_scripts.sales_order.send_abandoned_cart_emails",
 			"cotton_valley.api.sales_order.mark_orders_as_invoiced",
-			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_item_sync",
-			"cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_item_sync"
+			# "cotton_valley.scheduler.product_scheduler.scheduler_dispatch_cv_item_sync",
+			# "cotton_valley.scheduler.product_scheduler.scheduler_dispatch_udc_item_sync"
 		]
 	},
 # 	"hourly": [
