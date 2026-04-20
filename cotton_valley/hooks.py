@@ -78,6 +78,8 @@ app_include_js = "/assets/cotton_valley/js/workspace_filter.js"
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
+on_login = "cotton_valley.server_scripts.login.on_login"
+
 # include js in doctype views
 doctype_js = {
     "Item" : "public/js/item.js", 
