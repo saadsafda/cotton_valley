@@ -9,6 +9,229 @@
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
+  "json": "{\"filters\":[[\"Item\",\"disabled\",\"=\",0,false]],\"fields\":[[\"name\",\"Item\"],[\"docstatus\",\"Item\"],[\"item_name\",\"Item\"],[\"product_category\",\"Product Categoris\"],[\"custom_sub_category\",\"Item\"],[\"item_group\",\"Item\"],[\"company\",\"Item\"],[\"custom_no_of_clicks\",\"Item\"],[\"modified\",\"Item\"],[\"modified_by\",\"Item\"],[\"creation\",\"Item\"],[\"disabled\",\"Item\"]],\"order_by\":\"`tabItem`.`name` desc\",\"add_totals_row\":0,\"page_length\":500,\"column_widths\":{\"name\":120,\"docstatus\":120,\"item_name\":308,\"Product Categoris:product_category\":120,\"custom_sub_category\":120,\"item_group\":120,\"company\":120,\"custom_no_of_clicks\":120,\"modified\":120,\"modified_by\":120,\"creation\":120,\"disabled\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2026-02-09 03:00:17.965561",
+  "module": "Cotton Valley",
+  "name": "Product Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "Product Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Item Manager"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Purchase User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Manufacturing User"
+   },
+   {
+    "parent": "Product Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Desk User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-02-18 09:28:00.281298",
+  "module": "Cotton Valley",
+  "name": "Product Catalog",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "Product Catalog",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Customer\"],[\"docstatus\",\"Customer\"],[\"activity_status\",\"Customer\"],[\"customer_name\",\"Customer\"],[\"custom_last_name\",\"Customer\"],[\"custom_email_address\",\"Customer\"],[\"account_number\",\"Customer\"],[\"sales_person\",\"Customer\"],[\"custom_company_name\",\"Customer\"],[\"price_list_for_udc\",\"Customer\"],[\"price_list_for_cv\",\"Customer\"],[\"creation\",\"Customer\"],[\"owner\",\"Customer\"],[\"no_of_orders\",\"Customer\"],[\"orders_amount\",\"Customer\"],[\"no_of_login\",\"Customer\"],[\"register_company\",\"Customer\"],[\"imported\",\"Customer\"],[\"disabled\",\"Customer\"],[\"custom_lov\",\"Customer\"]],\"order_by\":\"`tabCustomer`.`name` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"docstatus\":120,\"activity_status\":59,\"customer_name\":120,\"custom_last_name\":120,\"custom_email_address\":185,\"account_number\":152,\"sales_person\":168,\"custom_company_name\":160,\"price_list_for_udc\":164,\"price_list_for_cv\":149,\"creation\":120,\"owner\":120,\"no_of_orders\":120,\"orders_amount\":151,\"no_of_login\":120,\"register_company\":175,\"imported\":120,\"disabled\":120,\"custom_lov\":120},\"group_by\":null}",
+  "letter_head": null,
+  "modified": "2026-04-08 14:34:45.419539",
+  "module": "Cotton Valley",
+  "name": "Defualt Customer Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "Defualt Customer Report",
+  "report_script": null,
+  "report_type": "Report Builder",
+  "roles": [
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Master Manager"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock Manager"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Defualt Customer Report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-04-17 00:55:59.309329",
+  "module": "Cotton Valley",
+  "name": "Sales Invoice report View",
+  "prepared_report": 0,
+  "query": "",
+  "ref_doctype": "Sales Invoice",
+  "reference_report": null,
+  "report_name": "Sales Invoice report View",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts Manager"
+   },
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In house SR"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
   "json": null,
   "letter_head": null,
   "modified": "2026-03-31 17:41:00.104009",
@@ -83,31 +306,6 @@
     "role": "ERPNext User"
    }
   ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [],
-  "is_standard": "Yes",
-  "javascript": null,
-  "json": null,
-  "letter_head": null,
-  "modified": "2026-02-11 02:39:04.386329",
-  "module": "Cotton Valley",
-  "name": "Product Catalog",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Item",
-  "reference_report": null,
-  "report_name": "Product Catalog",
-  "report_script": null,
-  "report_type": "Script Report",
-  "roles": [],
   "timeout": 0
  },
  {
@@ -922,10 +1120,10 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-12-08 02:00:10.662894",
+  "modified": "2026-04-21 00:49:29.896941",
   "module": "Cotton Valley",
   "name": "Top Shipping Cities",
-  "prepared_report": 0,
+  "prepared_report": 1,
   "query": "",
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -996,10 +1194,10 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-12-08 02:41:42.858860",
+  "modified": "2026-04-21 00:49:29.995299",
   "module": "Cotton Valley",
   "name": "Best Selling Products",
-  "prepared_report": 0,
+  "prepared_report": 1,
   "query": "",
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -2095,50 +2293,6 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
-  "filters": [],
-  "is_standard": "Yes",
-  "javascript": null,
-  "json": null,
-  "letter_head": null,
-  "modified": "2025-11-27 04:20:18.590268",
-  "module": "Cotton Valley",
-  "name": "Sales Invoice report View",
-  "prepared_report": 0,
-  "query": "",
-  "ref_doctype": "Sales Invoice",
-  "reference_report": null,
-  "report_name": "Sales Invoice report View",
-  "report_script": null,
-  "report_type": "Script Report",
-  "roles": [
-   {
-    "parent": "Sales Invoice report View",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts Manager"
-   },
-   {
-    "parent": "Sales Invoice report View",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts User"
-   },
-   {
-    "parent": "Sales Invoice report View",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "ERPNext User"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
   "filters": [
    {
     "default": "",
@@ -2195,10 +2349,10 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-12-08 04:30:35.937167",
+  "modified": "2026-04-21 00:49:29.993134",
   "module": "Cotton Valley",
   "name": "Sales Person-wise Summary",
-  "prepared_report": 0,
+  "prepared_report": 1,
   "query": null,
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -4585,86 +4739,6 @@
   "docstatus": 0,
   "doctype": "Report",
   "filters": [],
-  "is_standard": "Yes",
-  "javascript": null,
-  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Item\"],[\"docstatus\",\"Item\"],[\"item_name\",\"Item\"],[\"product_category\",\"Product Categoris\"],[\"custom_sub_category\",\"Item\"],[\"item_group\",\"Item\"],[\"company\",\"Item\"],[\"custom_no_of_clicks\",\"Item\"],[\"modified\",\"Item\"],[\"modified_by\",\"Item\"],[\"creation\",\"Item\"],[\"disabled\",\"Item\"]],\"order_by\":\"`tabItem`.`name` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"docstatus\":120,\"item_name\":308,\"Product Categoris:product_category\":120,\"custom_sub_category\":120,\"item_group\":120,\"company\":120,\"custom_no_of_clicks\":120,\"modified\":120,\"modified_by\":120,\"creation\":120,\"disabled\":120},\"group_by\":null}",
-  "letter_head": null,
-  "modified": "2026-01-15 05:51:15.059998",
-  "module": "Cotton Valley",
-  "name": "Product Report",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Item",
-  "reference_report": null,
-  "report_name": "Product Report",
-  "report_script": null,
-  "report_type": "Report Builder",
-  "roles": [
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Item Manager"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Stock Manager"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Stock User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Purchase User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Maintenance User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Manufacturing User"
-   },
-   {
-    "parent": "Product Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Desk User"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [],
   "is_standard": "No",
   "javascript": null,
   "json": "{\"filters\":[[\"Sales Order\",\"docstatus\",\"=\",\"1\",false],[\"Sales Order\",\"company\",\"=\",\"Cotton Valley\"]],\"fields\":[[\"name\",\"Sales Order\"],[\"customer_name\",\"Sales Order\"],[\"customer_company_name\",\"Sales Order\"],[\"customer_account_number\",\"Sales Order\"],[\"push_to_erp\",\"Sales Order\"],[\"transaction_date\",\"Sales Order\"],[\"company\",\"Sales Order\"],[\"grand_total\",\"Sales Order\"],[\"currency\",\"Sales Order\"],[\"discount_amount\",\"Sales Order\"],[\"custom_mode_of_payment\",\"Sales Order\"],[\"order_status\",\"Sales Order\"],[\"order_type\",\"Sales Order\"],[\"custom_customer_sales_representative\",\"Sales Order\"],[\"customer_ip\",\"Sales Order\"],[\"customer_lat__long\",\"Sales Order\"],[\"from_app\",\"Sales Order\"],[\"status\",\"Sales Order\"]],\"order_by\":\"`tabSales Order`.`transaction_date` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":194,\"customer_name\":138,\"customer_company_name\":207,\"customer_account_number\":210,\"push_to_erp\":111,\"transaction_date\":121,\"company\":150,\"grand_total\":108,\"currency\":93,\"discount_amount\":131,\"custom_mode_of_payment\":152,\"order_status\":120,\"order_type\":120,\"custom_customer_sales_representative\":171,\"customer_ip\":154,\"customer_lat__long\":177,\"from_app\":98,\"status\":100},\"group_by\":null}",
@@ -4813,74 +4887,6 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "Sales Person"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [],
-  "is_standard": "Yes",
-  "javascript": null,
-  "json": "{\"filters\":[],\"fields\":[[\"name\",\"Customer\"],[\"activity_status\",\"Customer\"],[\"docstatus\",\"Customer\"],[\"customer_name\",\"Customer\"],[\"custom_last_name\",\"Customer\"],[\"custom_email_address\",\"Customer\"],[\"account_number\",\"Customer\"],[\"sales_person\",\"Customer\"],[\"custom_company_name\",\"Customer\"],[\"price_list_for_udc\",\"Customer\"],[\"price_list_for_cv\",\"Customer\"],[\"creation\",\"Customer\"],[\"owner\",\"Customer\"],[\"no_of_orders\",\"Customer\"],[\"orders_amount\",\"Customer\"],[\"no_of_login\",\"Customer\"],[\"register_company\",\"Customer\"],[\"imported\",\"Customer\"],[\"disabled\",\"Customer\"]],\"order_by\":\"`tabCustomer`.`name` desc\",\"add_totals_row\":0,\"page_length\":20,\"column_widths\":{\"name\":120,\"activity_status\":59,\"docstatus\":120,\"customer_name\":120,\"custom_last_name\":120,\"custom_email_address\":185,\"account_number\":152,\"sales_person\":168,\"custom_company_name\":160,\"price_list_for_udc\":164,\"price_list_for_cv\":149,\"creation\":120,\"owner\":120,\"no_of_orders\":120,\"orders_amount\":151,\"no_of_login\":120,\"register_company\":175,\"imported\":120,\"disabled\":120},\"group_by\":null}",
-  "letter_head": null,
-  "modified": "2026-02-09 03:13:41.034113",
-  "module": "Cotton Valley",
-  "name": "Defualt Customer Report",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Customer",
-  "reference_report": null,
-  "report_name": "Defualt Customer Report",
-  "report_script": null,
-  "report_type": "Report Builder",
-  "roles": [
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales User"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales Manager"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Sales Master Manager"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Stock User"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Stock Manager"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts User"
-   },
-   {
-    "parent": "Defualt Customer Report",
-    "parentfield": "roles",
-    "parenttype": "Report",
-    "role": "Accounts Manager"
    }
   ],
   "timeout": 0

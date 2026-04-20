@@ -62,6 +62,7 @@ fixtures = [
 # include js, css files in header of desk.html
 # app_include_css = "/assets/cotton_valley/css/cotton_valley.css"
 # app_include_js = "/assets/cotton_valley/js/cotton_valley.js"
+app_include_js = "/assets/cotton_valley/js/workspace_filter.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/cotton_valley/css/cotton_valley.css"
@@ -255,6 +256,11 @@ scheduler_events = {
 # override_whitelisted_methods = {
 # 	"frappe.desk.doctype.event.event.get_events": "cotton_valley.event.get_events"
 # }
+
+override_whitelisted_methods = {
+	"frappe.desk.desktop.get_workspace_sidebar_items": "cotton_valley.api.workspace_api.get_workspace_sidebar_items",
+	"frappe.desk.desktop.get_desktop_page": "cotton_valley.api.workspace_api.get_desktop_page"
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
