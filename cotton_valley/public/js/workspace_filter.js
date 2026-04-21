@@ -4,11 +4,12 @@
  */
 (function () {
     var ROLE = "In house SR";
-    var ALLOWED_SIDEBAR = ["Home", "Dashboard V1", "Reports"];
+    var ALLOWED_SIDEBAR = ["Home", "Dashboard V1"];
     var ALLOWED_SHORTCUTS = [
         "CV Customer", "CV Sales Order", "CV Sales Invoice",
         "UDC Customer", "UDC Sales Order", "UDC Sales Invoice"
     ];
+    var ALLOWED_SEARCH_DOCTYPES = ["Sales Order", "Sales Invoice", "Customer"];
 
     function hasRole() {
         if (!frappe.user_roles) return false;
@@ -52,6 +53,33 @@
         });
     }
 
+    function patchAwesomeBarDefaults() {
+        if (typeof frappe === "undefined" || !frappe.search || !frappe.search.AwesomeBar) {
+            setTimeout(patchAwesomeBarDefaults, 500);
+            return;
+        }
+
+        var _add_defaults = frappe.search.AwesomeBar.prototype.add_defaults;
+        if (_add_defaults) {
+            frappe.search.AwesomeBar.prototype.add_defaults = function (txt) {
+                if (!hasRole()) {
+                    _add_defaults.call(this, txt);
+                    return;
+                }
+                // Blocks "Search for X", calculator, current page search
+            };
+        }
+        
+        var _add_help = frappe.search.AwesomeBar.prototype.add_help;
+        if (_add_help) {
+            frappe.search.AwesomeBar.prototype.add_help = function () {
+                if (!hasRole()) {
+                    _add_help.call(this);
+                }
+            };
+        }
+    }
+
     function run() {
         if (!hasRole()) return;
         filterSidebar();
@@ -59,7 +87,10 @@
     }
 
     // Run on page load and SPA navigation
-    document.addEventListener("DOMContentLoaded", function () { setTimeout(run, 500); });
+    document.addEventListener("DOMContentLoaded", function () { 
+        setTimeout(run, 500); 
+        patchAwesomeBarDefaults();
+    });
 
     if (typeof MutationObserver !== "undefined") {
         var timer;

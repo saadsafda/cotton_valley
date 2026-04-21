@@ -263,6 +263,8 @@ override_whitelisted_methods = {
 	"frappe.desk.desktop.get_workspace_sidebar_items": "cotton_valley.api.workspace_api.get_workspace_sidebar_items",
 	"frappe.desk.desktop.get_desktop_page": "cotton_valley.api.workspace_api.get_desktop_page"
 }
+
+extend_bootinfo = "cotton_valley.api.boot.extend_bootinfo"
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

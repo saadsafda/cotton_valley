@@ -11,7 +11,7 @@ ALLOWED_HOME_SHORTCUTS = {
     "UDC Sales Invoice",
 }
 
-ALLOWED_WORKSPACES = {"Home", "Dashboard V1", "Reports"}
+ALLOWED_WORKSPACES = {"Home", "Dashboard V1"}
 
 
 def _is_limited_user():
