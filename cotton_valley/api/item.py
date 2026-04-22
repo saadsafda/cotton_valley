@@ -88,7 +88,7 @@ def _process_item_upsert(payload):
 
 	field_map = {
 		"item_name": "item_name",
-		"disabled": "disabled",
+		"disabled": "hide",
 		"pallet_hi": "custom_pallet_hi",
 		"pallet_ti": "custom_pallet_ti",
 		"carton_upc": "custom_carton_upc",

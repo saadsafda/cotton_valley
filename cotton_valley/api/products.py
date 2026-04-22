@@ -35,7 +35,7 @@ def get_product_types_with_count(category=None, subcategory=None, company=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
     subcategory = None if not subcategory or subcategory == "null" else get_categories_from_string(subcategory)
 
-    conditions = ["i.disabled = 0", "i.company = %s"]
+    conditions = ["i.hide = 0", "i.company = %s"]
     values = [company]
 
     if subcategory:
@@ -64,7 +64,7 @@ def get_product_types_with_count(category=None, subcategory=None, company=None):
 
 @frappe.whitelist(allow_guest=True)
 def get_product_ids(search=None, company=None):
-    filters = {"disabled": 0}  # only active products
+    filters = {"hide": 0}  # only active products
     company = "Cotton Valley" if not company or company == "null" else company
     if company:
         filters["company"] = company
@@ -102,7 +102,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     price = None if not price or price == "null" else get_categories_from_string(price)
     pcs_price = None if not pcsPrice or pcsPrice == "null" else get_categories_from_string(pcsPrice)
 
-    filters = {"disabled": 0}  # only active products
+    filters = {"hide": 0}  # only active products
 
     if ids:
         filters["name"] = ["in", ids]
@@ -193,7 +193,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     else:
         # For non-search, use raw SQL with conditional stock expression
         # Build base conditions from filters (excluding stock)
-        base_conditions = ["disabled = 0"]
+        base_conditions = ["hide = 0"]
         base_values = []
         if company:
             base_conditions.append("company = %s")
@@ -243,7 +243,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         weight_uom as weight,
         custom_case_pack as case_pack,
         image as product_thumbnail_id,
-        disabled as status,
+        hide as status,
         brand,
         custom_sub_category as sub_category,
         custom_carton_upc as carton_upc,
@@ -278,7 +278,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         "weight_uom as weight",
         "custom_case_pack as case_pack",
         "image as product_thumbnail_id",
-        "disabled as status",
+        "hide as status",
         "brand",
         "custom_sub_category as sub_category",
         "custom_carton_upc as carton_upc",
@@ -350,7 +350,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
             elif attribute == ["out_stock"]:
                 conditions.append(f"CASE WHEN {prefix}set_threshold = 1 THEN {prefix}threshold_stock ELSE {prefix}available_stock END <= 0")
         
-        conditions.append(f"{prefix}disabled = 0")
+        conditions.append(f"{prefix}hide = 0")
         
         return conditions, values
     
@@ -437,7 +437,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
                     i.weight_uom as weight,
                     i.custom_case_pack as case_pack,
                     i.image as product_thumbnail_id,
-                    i.disabled as status,
+                    i.hide as status,
                     i.brand,
                     i.custom_sub_category as sub_category,
                     i.custom_carton_upc as carton_upc,
@@ -677,7 +677,7 @@ def get_product(product_id, company=None):
             "weight_uom as weight",
             "custom_case_pack as case_pack",
             "image as product_thumbnail_id",
-            "disabled as status",
+            "hide as status",
             "brand",
             "custom_sub_category as sub_category",
             "custom_carton_upc as carton_upc",
@@ -1050,7 +1050,7 @@ def sync_item_from_api(item_code, company=None):
     field_mapping = {
         "item_name": item_data.get("itmdsc"),
         # "item_group": item_data.get("itmgrpdsc") or "COD",
-        "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
+        "hide": 1 if item_data.get("inactive_yn") == "Y" else 0,
         "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
         "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
         "custom_carton_upc": item_data.get("cart_upc"),
@@ -1307,7 +1307,7 @@ def sync_cv_item_batch(
 
             field_mapping = {
                 "item_name": item_data.get("itmdsc"),
-                "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
+                "hide": 1 if item_data.get("inactive_yn") == "Y" else 0,
                 "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
                 "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
                 "custom_carton_upc": item_data.get("cart_upc"),
@@ -1557,7 +1557,7 @@ def sync_udc_item_batch(
 
             field_mapping = {
                 "item_name": item_data.get("itmdsc"),
-                "disabled": 1 if item_data.get("inactive_yn") == "Y" else 0,
+                "hide": 1 if item_data.get("inactive_yn") == "Y" else 0,
                 "custom_pallet_hi": float(item_data.get("pall_hi") or 0),
                 "custom_pallet_ti": float(item_data.get("pall_ti") or 0),
                 "custom_carton_upc": item_data.get("cart_upc"),
