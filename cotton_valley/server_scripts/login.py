@@ -35,7 +35,7 @@ def _is_browser_login_request():
 
 def on_login(login_manager):
     """
-    Block users with 'Sales Person' role from logging in via the web frontend (desk).
+    Block users with 'Sales Person' or 'In house SR' role from logging in via the web frontend (desk).
     Mobile/API login must explicitly identify itself (header or form param) to bypass.
     """
     user = login_manager.user
@@ -51,7 +51,9 @@ def on_login(login_manager):
         return
 
     roles = frappe.db.get_all("Has Role", filters={"parent": user}, pluck="role")
-    if "Sales Person" in roles and not _is_mobile_login_request() and _is_browser_login_request():
+    blocked_roles = {"Sales Person", "In house SR"}
+    has_blocked_role = any(role in blocked_roles for role in roles)
+    if has_blocked_role and not _is_mobile_login_request() and _is_browser_login_request():
         frappe.throw(
             _("You are not allowed to login from the web interface. Please use the mobile app."),
             title=_("Access Denied"),

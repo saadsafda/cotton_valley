@@ -18,6 +18,98 @@ def _safe_getdate(value):
 		return None
 
 
+def _safe_text(value):
+	if value in (None, "", "null"):
+		return None
+	return str(value).strip()
+
+
+def _normalize_to_list(value):
+	"""Normalize scalar/array input into a clean list of string values."""
+	if value in (None, "", "null"):
+		return []
+
+	if isinstance(value, list):
+		return [v for v in (_safe_text(x) for x in value) if v]
+
+	if isinstance(value, tuple):
+		return [v for v in (_safe_text(x) for x in value) if v]
+
+	if isinstance(value, str):
+		text = value.strip()
+		if not text or text.lower() == "null":
+			return []
+
+		# Accept JSON array payloads that come as strings.
+		if text.startswith("[") and text.endswith("]"):
+			try:
+				parsed = json.loads(text)
+				if isinstance(parsed, list):
+					return [v for v in (_safe_text(x) for x in parsed) if v]
+			except Exception:
+				pass
+
+		# Accept comma-separated values.
+		if "," in text:
+			return [v for v in (_safe_text(x) for x in text.split(",")) if v]
+
+		single = _safe_text(text)
+		return [single] if single else []
+
+	single = _safe_text(value)
+	return [single] if single else []
+
+
+def _resolve_item_category_mapping():
+	"""Resolve Item category child table and category link field dynamically."""
+	item_meta = frappe.get_meta("Item")
+	table_field = item_meta.get_field("custom_product_categories")
+	child_dt = table_field.options if table_field and table_field.options else None
+	if not child_dt:
+		return None, None
+
+	child_meta = frappe.get_meta(child_dt)
+	for df in child_meta.fields:
+		if df.fieldtype == "Link" and df.options == "Product Category":
+			return child_dt, df.fieldname
+
+	return child_dt, None
+
+
+def _find_product_category(category_ref, company=None):
+	category_ref = _safe_text(category_ref)
+	if not category_ref:
+		return None
+
+	filters = {"erp_id": category_ref, "company": company} if company else {"erp_id": category_ref}
+	category_ref_exists = frappe.db.exists("Product Category", filters)
+	if category_ref_exists:
+		return category_ref_exists
+	
+
+
+def _find_product_subcategory(subcategory_ref, company=None):
+	subcategory_ref = _safe_text(subcategory_ref)
+	if not subcategory_ref:
+		return None
+	subcategory_ref_exists = frappe.db.exists("Product Subcategory", {"erp_id": subcategory_ref, "company": company} if company else {"erp_id": subcategory_ref})
+	if subcategory_ref_exists:
+		return subcategory_ref_exists
+
+
+def _set_item_category_row(item_doc, category_name):
+	child_dt, cat_field = _resolve_item_category_mapping()
+	if not child_dt or not cat_field:
+		return
+	item_doc.custom_product_categories = []
+	rows = item_doc.get("custom_product_categories") or []
+	for row in rows:
+		if row.get(cat_field) == category_name:
+			return
+
+	item_doc.append("custom_product_categories", {cat_field: category_name})
+
+
 @frappe.whitelist()
 def upsert_item_from_client():
 	"""Create or update an Item from client payload using item_code as the key."""
@@ -94,6 +186,7 @@ def _process_item_upsert(payload):
 		"carton_upc": "custom_carton_upc",
 		"upc": "custom_upc",
 		"cbm": "custom_cbm",
+		"company": "company",
 		"case_pack": "custom_case_pack",
 		"case_per_pallet": "custom_case_per_pallet",
 		"case_pallet_warehouse": "custom_case_pallet_warehouse",
@@ -152,6 +245,33 @@ def _process_item_upsert(payload):
 			item_doc.set(field_name, int(flt(value)))
 			continue
 		item_doc.set(field_name, value)
+
+	company = _safe_text(payload.get("company")) or item_doc.company
+
+	category_refs = []
+	category_refs.extend(_normalize_to_list(payload.get("category_ids")))
+
+	# Remove duplicates while preserving order.
+	category_refs = list(dict.fromkeys(category_refs))
+
+	for category_ref in category_refs:
+		category_name = _find_product_category(category_ref, company=company)
+		if not category_name:
+			return {
+				"status": "error",
+				"message": f"Category not found for value: {category_ref}",
+			}
+		_set_item_category_row(item_doc, category_name)
+
+	subcategory_ref = _safe_text(payload.get("sub_category_id"))
+	if subcategory_ref:
+		subcategory_name = _find_product_subcategory(subcategory_ref, company=company)
+		if not subcategory_name:
+			return {
+				"status": "error",
+				"message": f"Subcategory not found for value: {subcategory_ref}",
+			}
+		item_doc.custom_sub_category = subcategory_name
 
 	item_doc.save(ignore_permissions=True)
 	frappe.db.commit()

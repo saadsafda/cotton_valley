@@ -24,24 +24,24 @@ def settings(company=None):
     data = {
         "values": {
             "general": {
-            "default_currency_id": 1,
-            "default_currency": {
-                "id": 1,
-                "code": "USD",
-                "symbol": "$",
-                "no_of_decimal": 2,
-                "exchange_rate": "1.00",
-                "symbol_position": "before_price",
-                "thousands_separator": "comma",
-                "decimal_separator": "comma",
-                "system_reserve": "1",
-                "status": 1,
-            },
-            "min_order_amount": settings.min_order_amount,
-            "min_order_free_shipping": settings.min_order_free_shipping,
+                "default_currency_id": 1,
+                "default_currency": {
+                    "id": 1,
+                    "code": "USD",
+                    "symbol": "$",
+                    "no_of_decimal": 2,
+                    "exchange_rate": "1.00",
+                    "symbol_position": "before_price",
+                    "thousands_separator": "comma",
+                    "decimal_separator": "comma",
+                    "system_reserve": "1",
+                    "status": 1,
+                },
+                "min_order_amount": settings.min_order_amount,
+                "min_order_free_shipping": settings.min_order_free_shipping,
             },
             "wallet_points": {
-            "point_currency_ratio": 30
+                "point_currency_ratio": 30
             },
             "delivery": {
             "default_delivery": 1,
@@ -56,42 +56,42 @@ def settings(company=None):
             },
             "same_day_intervals": [
                 {
-                "title": "Morning",
-                "description": "8.00 AM - 12.00 AM"
+                    "title": "Morning",
+                    "description": "8.00 AM - 12.00 AM"
                 },
                 {
-                "title": "Noon",
-                "description": "12.00 PM - 2.00 PM"
+                    "title": "Noon",
+                    "description": "12.00 PM - 2.00 PM"
                 },
                 {
-                "title": "Afternoon",
-                "description": "02.00 PM - 05.00 PM"
+                    "title": "Afternoon",
+                    "description": "02.00 PM - 05.00 PM"
                 },
                 {
-                "title": "Evening",
-                "description": "05.00 PM - 08.00 PM"
+                    "title": "Evening",
+                    "description": "05.00 PM - 08.00 PM"
                 }
             ]
             },
             "maintenance": {
-            "title": "We'll be back Soon..",
-            "maintenance_mode": False,
-            "maintenance_image_id": 6,
-            "description": "We are busy to updating our store for you.",
-            "maintenance_image": {
-                "id": 6,
-                "collection_name": "attachment",
-                "name": "maintainance",
-                "file_name": "maintainance.jpg",
-                "mime_type": "image/jpeg",
-                "disk": "public",
-                "conversions_disk": "public",
-                "size": "111275",
-                "created_by_id": "1",
-                "created_at": "2023-08-24T08:16:03.000000Z",
-                "updated_at": "2023-08-24T08:16:03.000000Z",
-                "original_url": "https://react.pixelstrap.net/fastkart/assets/maintainance.jpg"
-            }
+                "title": "We'll be back Soon..",
+                "maintenance_mode": False,
+                "maintenance_image_id": 6,
+                "description": "We are busy to updating our store for you.",
+                "maintenance_image": {
+                    "id": 6,
+                    "collection_name": "attachment",
+                    "name": "maintainance",
+                    "file_name": "maintainance.jpg",
+                    "mime_type": "image/jpeg",
+                    "disk": "public",
+                    "conversions_disk": "public",
+                    "size": "111275",
+                    "created_by_id": "1",
+                    "created_at": "2023-08-24T08:16:03.000000Z",
+                    "updated_at": "2023-08-24T08:16:03.000000Z",
+                    "original_url": "https://react.pixelstrap.net/fastkart/assets/maintainance.jpg"
+                }
             },
             "payment_methods": mode_of_payment
         }
@@ -154,46 +154,46 @@ def get_website_theme_settings(company=None):
                 "footer_categories": [row.product_category for row in settings.footer_categories],
                 "help_center": [
                     {
-                    "label": "My Account",
-                    "link": "account/dashboard"
+                        "label": "My Account",
+                        "link": "account/dashboard"
                     },
                     {
-                    "label": "My Orders",
-                    "link": "account/order"
+                        "label": "My Orders",
+                        "link": "account/order"
                     },
                     {
-                    "label": "Privacy Policy",
-                    "link": "privacy-policy"
+                        "label": "Privacy Policy",
+                        "link": "privacy-policy"
                     },
                     {
-                    "label": "Shipping & Returns",
-                    "link": "shipping-and-returns"
+                        "label": "Shipping & Returns",
+                        "link": "shipping-and-returns"
                     },
                     {
-                    "label": "Contact Us",
-                    "link": "contact-us"
+                        "label": "Contact Us",
+                        "link": "contact-us"
                     }
                 ],
                 "useful_link": [
                     {
-                    "label": "Home",
-                    "link": "home"
+                        "label": "Home",
+                        "link": "home"
                     },
                     {
-                    "label": "Collections",
-                    "link": "collections"
+                        "label": "Collections",
+                        "link": "collections"
                     },
                     {
-                    "label": "About",
-                    "link": "about-us"
+                        "label": "About",
+                        "link": "about-us"
                     },
                     {
-                    "label": "Search",
-                    "link": "search"
+                        "label": "Search",
+                        "link": "search"
                     },
                     {
-                    "label": "Terms & Conditions",
-                    "link": "terms-and-conditions"
+                        "label": "Terms & Conditions",
+                        "link": "terms-and-conditions"
                     }
                 ],
                 "support_number": settings.support_number,
@@ -235,49 +235,49 @@ def get_website_theme_settings(company=None):
                 "read_more_enable": True
             },
             "seller": {
-            "about": {
-                "status": True,
-                "title": "Become a seller on Fastkart...",
-                "description": "Ready to showcase your products to the world? Join our dynamic marketplace and become a seller at our thriving multipurpose store. With a diverse customer base and a wide range of categories including groceries, fashion, electronics, and more, you'll have the perfect platform to reach a vast audience.\n\nAs a seller, you'll benefit from our user-friendly interface, seamless payment processing, and dedicated support to ensure your products shine. Whether you're a local artisan or a growing brand, our store provides the visibility and tools you need to succeed.\n\nTap into our established customer traffic, set up your shop with ease, and let your products take center stage. Join us in creating a shopping experience that caters to every need and taste. Your journey to success starts here – become a seller at our multipurpose store today!",
-                "image_url": "https://react.pixelstrap.net/fastkart/assets/banner-2.jpg"
-            },
-            "services": { 
-                "status": True,
-                "service_1": {
-                "title": "Lowest Cost",
-                "description": "Unlock quality at the lowest cost, exceeding expectations.",
-                "image_url": "https://react.pixelstrap.net/fastkart/assets/service.png"
+                "about": {
+                    "status": True,
+                    "title": "Become a seller...",
+                    "description": "Ready to showcase your products to the world? Join our dynamic marketplace and become a seller at our thriving multipurpose store. With a diverse customer base and a wide range of categories including groceries, fashion, electronics, and more, you'll have the perfect platform to reach a vast audience.\n\nAs a seller, you'll benefit from our user-friendly interface, seamless payment processing, and dedicated support to ensure your products shine. Whether you're a local artisan or a growing brand, our store provides the visibility and tools you need to succeed.\n\nTap into our established customer traffic, set up your shop with ease, and let your products take center stage. Join us in creating a shopping experience that caters to every need and taste. Your journey to success starts here – become a seller at our multipurpose store today!",
+                    "image_url": "https://react.pixelstrap.net/fastkart/assets/banner-2.jpg"
                 },
-                "service_2": {
-                "title": "Lowest Cost",
-                "description": "Unlock quality at the lowest cost, exceeding expectations.",
-                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-2.png"
+                "services": { 
+                    "status": True,
+                    "service_1": {
+                        "title": "Lowest Cost",
+                        "description": "Unlock quality at the lowest cost, exceeding expectations.",
+                        "image_url": "https://react.pixelstrap.net/fastkart/assets/service.png"
+                    },
+                    "service_2": {
+                        "title": "Lowest Cost",
+                        "description": "Unlock quality at the lowest cost, exceeding expectations.",
+                        "image_url": "https://react.pixelstrap.net/fastkart/assets/service-2.png"
+                    },
+                    "service_3": {
+                        "title": "Dedicated Pickup",
+                        "description": "Enjoy the convenience of dedicated pickup services for your orders.",
+                        "image_url": "https://react.pixelstrap.net/fastkart/assets/service-3.png"
+                    },
+                    "service_4": {
+                        "title": "Most Approachable",
+                        "description": "We take pride in being the most approachable choice for your needs.",
+                        "image_url": "https://react.pixelstrap.net/fastkart/assets/service-4.png"
+                    }
                 },
-                "service_3": {
-                "title": "Dedicated Pickup",
-                "description": "Enjoy the convenience of dedicated pickup services for your orders.",
-                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-3.png"
-                },
-                "service_4": {
-                "title": "Most Approachable",
-                "description": "We take pride in being the most approachable choice for your needs.",
-                "image_url": "https://react.pixelstrap.net/fastkart/assets/service-4.png"
-                }
-            },
             "steps": {
                 "status": True,
                 "title": "Doing Business on Fastkart is really easy",
                 "step_1": {
-                "title": "List Your Products & Get Support Provider",
-                "description": "Elevate your business by listing your products with us. Experience dedicated support services for your growth."
+                    "title": "List Your Products & Get Support Provider",
+                    "description": "Elevate your business by listing your products with us. Experience dedicated support services for your growth."
                 },
                 "step_2": {
-                "title": "Receive orders & Schedule a pickup",
-                "description": "Effortlessly receive orders and schedule pickups for ultimate convenience. Your business is simplified."
+                    "title": "Receive orders & Schedule a pickup",
+                    "description": "Effortlessly receive orders and schedule pickups for ultimate convenience. Your business is simplified."
                 },
                 "step_3": {
-                "title": "Receive quick payment & grow your business",
-                "description": "Receive swift payments, fuel the growth of your business seamlessly, and watch your ventures thrive."
+                    "title": "Receive quick payment & grow your business",
+                    "description": "Receive swift payments, fuel the growth of your business seamlessly, and watch your ventures thrive."
                 }
             },
             "start_selling": {
