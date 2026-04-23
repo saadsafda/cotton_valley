@@ -51,7 +51,7 @@ def get_columns():
             "label": _("Account Code"), 
             "fieldname": "account_code",
             "fieldtype": "Data", 
-            "width": 140
+            "width": 160
         },
         {
             "label": _("Qty"),
@@ -82,6 +82,7 @@ def get_columns():
             "fieldname": "payment_mode",
             "fieldtype": "Link",
             "options": "Mode of Payment",
+            "text_align": "Left",
             "width": 120
         },
         {
@@ -111,8 +112,9 @@ def get_data(filters):
 
             si.customer_name AS customer_name,
 
-            /* Prefer custom SI value, then fallback to linked Sales Order */
+            /* Prefer Customer.account_number, then fallback to SI/SO values */
             COALESCE(
+                NULLIF(cust.account_number, ''),
                 NULLIF(si.custom_customer_account_number, ''),
                 (SELECT so.customer_account_number
                  FROM `tabSales Order` so
@@ -148,6 +150,8 @@ def get_data(filters):
 
         FROM
             `tabSales Invoice` si
+        LEFT JOIN
+            `tabCustomer` cust ON cust.name = si.customer
         WHERE
              (%(company)s IS NULL OR si.company = %(company)s)
 
@@ -155,8 +159,10 @@ def get_data(filters):
             
             AND (%(si_number)s IS NULL OR si.name LIKE CONCAT('%%', %(si_number)s, '%%'))
 
-            /* Match against both SI custom account code and linked SO account code */
+            /* Match against Customer.account_number and SI/SO fallback values */
             AND (%(account_code)s IS NULL OR (
+                COALESCE(NULLIF(cust.account_number, ''), '') LIKE CONCAT('%%', %(account_code)s, '%%')
+                OR
                 COALESCE(NULLIF(si.custom_customer_account_number, ''), '') LIKE CONCAT('%%', %(account_code)s, '%%')
                 OR EXISTS (
                     SELECT 1 FROM `tabSales Order` so
