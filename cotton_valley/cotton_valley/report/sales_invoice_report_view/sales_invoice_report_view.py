@@ -20,26 +20,26 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {
-            "label": _("Company"),
-            "fieldname": "company",
-            "fieldtype": "Link",
-            "options": "Company",
-            "width": 120
-        },
+        # {
+        #     "label": _("Company"),
+        #     "fieldname": "company",
+        #     "fieldtype": "Link",
+        #     "options": "Company",
+        #     "width": 120
+        # },
         {
             "label": _("SI Number"),
             "fieldname": "si_number",
             "fieldtype": "Link",
             "options": "Sales Invoice",
-            "width": 140
+            "width": 200
         },
         {
             "label": _("SO Number"),
             "fieldname": "so_number",
             "fieldtype": "Link",
             "options": "Sales Order",
-            "width": 140
+            "width": 200
         },
         {
             "label": _("Customer Name"),
@@ -111,21 +111,34 @@ def get_data(filters):
 
             si.customer_name AS customer_name,
 
-            /* --- UPDATED: Get Customer Account Number from Sales Order --- */
-            (SELECT customer_account_number 
-             FROM `tabSales Order` so
-             JOIN `tabSales Invoice Item` sii ON sii.sales_order = so.name
-             WHERE sii.parent = si.name LIMIT 1) AS account_code,
-            /* ------------------------------------------------------------- */
+            /* Prefer custom SI value, then fallback to linked Sales Order */
+            COALESCE(
+                NULLIF(si.custom_customer_account_number, ''),
+                (SELECT so.customer_account_number
+                 FROM `tabSales Order` so
+                 JOIN `tabSales Invoice Item` sii ON sii.sales_order = so.name
+                 WHERE sii.parent = si.name
+                 LIMIT 1)
+            ) AS account_code,
 
             si.total_qty AS total_qty,
             si.base_total AS gross_amount,
             si.discount_amount AS discount_amount,
             si.grand_total AS net_amount,
 
-            (SELECT mode_of_payment 
-             FROM `tabSales Invoice Payment` 
-             WHERE parent = si.name LIMIT 1) AS payment_mode,
+            /* Prefer custom SI mode, then POS payment table, then Sales Order custom mode */
+            COALESCE(
+                NULLIF(si.custom_mode_of_payment, ''),
+                (SELECT sip.mode_of_payment
+                 FROM `tabSales Invoice Payment` sip
+                 WHERE sip.parent = si.name
+                 LIMIT 1),
+                (SELECT so.custom_mode_of_payment
+                 FROM `tabSales Order` so
+                 JOIN `tabSales Invoice Item` sii ON sii.sales_order = so.name
+                 WHERE sii.parent = si.name
+                 LIMIT 1)
+            ) AS payment_mode,
 
             (SELECT GROUP_CONCAT(DISTINCT sales_person SEPARATOR ', ')
              FROM `tabSales Team`
@@ -142,12 +155,15 @@ def get_data(filters):
             
             AND (%(si_number)s IS NULL OR si.name LIKE CONCAT('%%', %(si_number)s, '%%'))
 
-            /* Updated Filter Logic for Account Code */
-            AND (%(account_code)s IS NULL OR EXISTS (
-                SELECT 1 FROM `tabSales Order` so
-                JOIN `tabSales Invoice Item` sii ON sii.sales_order = so.name
-                WHERE sii.parent = si.name 
-                AND so.customer_account_number LIKE CONCAT('%%', %(account_code)s, '%%')
+            /* Match against both SI custom account code and linked SO account code */
+            AND (%(account_code)s IS NULL OR (
+                COALESCE(NULLIF(si.custom_customer_account_number, ''), '') LIKE CONCAT('%%', %(account_code)s, '%%')
+                OR EXISTS (
+                    SELECT 1 FROM `tabSales Order` so
+                    JOIN `tabSales Invoice Item` sii ON sii.sales_order = so.name
+                    WHERE sii.parent = si.name
+                    AND so.customer_account_number LIKE CONCAT('%%', %(account_code)s, '%%')
+                )
             ))
             
             AND (%(so_number)s IS NULL OR EXISTS (
