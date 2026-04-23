@@ -45,9 +45,15 @@
 })();
 
 frappe.listview_settings['Item'] = {
+    add_fields: ["hide"],
+    get_indicator: function (doc) {
+        if (cint(doc.hide)) {
+            return [__("Disabled"), "red", "hide,=,1"];
+        }
+        return [__("Enabled"), "green", "hide,=,0"];
+    },
     onload(listview) {
         let route = frappe.get_route();
-        console.log(route, "fdffer");
 
         listview.page.add_inner_button(__('Export Catalog'), function () {
 
