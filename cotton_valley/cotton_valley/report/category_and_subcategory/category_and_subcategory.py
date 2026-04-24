@@ -93,7 +93,7 @@ def get_data(filters):
                     (SELECT COUNT(*)
                      FROM `tabItem`
                      WHERE custom_sub_category = c.product_subcategory
-                     AND disabled = 0),
+                     AND hide = 0),
                     0
                 ) as item_count
             FROM
@@ -139,7 +139,7 @@ def get_data(filters):
                         AND ic.parenttype = 'Item'
                         AND ic.parentfield = 'custom_product_categories'
                     WHERE i.custom_sub_category = c.product_subcategory
-                      AND i.disabled = 0
+                                            AND i.hide = 0
                       AND ic.`{cat_field}` = p.name
                 ),
                 0
