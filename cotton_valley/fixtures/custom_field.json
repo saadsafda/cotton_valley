@@ -14261,7 +14261,7 @@
   "description": null,
   "docstatus": 0,
   "doctype": "Custom Field",
-  "dt": "Item",
+  "dt": "Sales Invoice",
   "fetch_from": "product_tag.tag_name",
   "fetch_if_empty": 0,
   "fieldname": "submit_datetime",
