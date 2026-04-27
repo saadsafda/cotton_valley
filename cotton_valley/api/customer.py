@@ -412,6 +412,7 @@ def get_current_customer(company=None):
             "name": customer.customer_name,
             "first_name": customer.customer_name,
             "last_name": customer.custom_last_name,
+            "account_number": customer.udc_account_number if company == "UDC" else customer.account_number,
             "email": customer.custom_email_address,
             "country_code": customer.custom_phone_number[:1] if customer.custom_phone_number else None,
             "phone": customer.custom_phone_number,
