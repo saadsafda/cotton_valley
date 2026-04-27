@@ -183,7 +183,11 @@ function fetch_customer_details(frm) {
                 const v = r.message;
                 const lastOrder = v.last_order_date || __('N/A');
                 const noOfOrders = v.no_of_orders || 0;
-                const totalAmount = v.orders_amount || '0.00';
+                const totalAmount = Number(v.orders_amount) || 0;
+                const formattedTotalAmount = totalAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
 
                 // Build a nicer HTML card for the HTML field
                 const currency = frm.doc.currency ? (frm.doc.currency + ' ') : '';
@@ -199,7 +203,7 @@ function fetch_customer_details(frm) {
                             </div>
                             <div style="min-width:140px; text-align:right;">
                                 <small style="color:#888">Total Orders Value</small>
-                                <div style="font-weight:700; color:#0b5cff; font-size:15px">${currency}${totalAmount}</div>
+                                <div style="font-weight:700; color:#0b5cff; font-size:15px">${currency}${formattedTotalAmount}</div>
                             </div>
                         </div>
                     </div>
