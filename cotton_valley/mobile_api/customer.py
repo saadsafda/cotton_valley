@@ -31,7 +31,7 @@ def get_all_customers():
             or_filters=or_filters,
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
-                    "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
+                    "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
                     "no_of_orders", "orders_amount"]
         )
 
@@ -39,7 +39,7 @@ def get_all_customers():
             filters={"customer_name": "New Opportunity"},
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
-                    "customer_primary_address", "account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
+                    "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
                     "no_of_orders", "orders_amount"]
         )
 
@@ -119,6 +119,7 @@ def get_all_customers():
                 "mode_of_payment": customer.mode_of_payment or '',
                 "company": customer.custom_company_name or '',
                 "account_number": customer.account_number or '',
+                "udc_account_number": customer.udc_account_number or '',
                 "price_list_for_cv": customer.price_list_for_cv or '',
                 "price_list_for_udc": customer.price_list_for_udc or '',
                 "no_of_orders": customer.no_of_orders or 0,

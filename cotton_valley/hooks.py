@@ -87,7 +87,8 @@ doctype_js = {
     "Sales Order" : "public/js/sales_order.js",
     "Sales Invoice" : "public/js/sales_invoice.js",
 	"Activity Log": "public/js/activity_log.js",
-	"Tag": "public/js/tag.js"
+	"Tag": "public/js/tag.js",
+	"Sales Person": "public/js/sales_person.js"
 }
 doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/js/item_list.js", "Sales Order" : "public/js/sales_order_list.js", "Lead": "public/js/lead_list.js"}
 # doctype_image_js = {"Item" : "public/js/item_image.js"}

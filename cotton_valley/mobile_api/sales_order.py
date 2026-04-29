@@ -72,7 +72,7 @@ def get_sales_person_orders(company=None, customer=None):
             filters=base_filters,
             fields=[
                 "name", "customer", "customer_name",
-                "customer_account_number", "customer_company_name as customer_company", "transaction_date", 
+                "customer_account_number as account_number", "customer_company_name as customer_company", "transaction_date", 
                 "delivery_date", "order_status as status", "docstatus", "grand_total", "currency",
                 "company", "custom_mode_of_payment", "custom_notes",
                 "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
@@ -384,7 +384,7 @@ def get_panding_payments():
         # get all sales invoices with pending payments for this sales person
         panding_customer_amount = frappe.db.get_list('Sales Invoice',
             filters={'docstatus': 0, 'custom_customer_sales_representative': sales_person},
-            fields=['name', 'customer', 'customer_name', 'company', 'customer_account_number', 'grand_total', "posting_date as transaction_date"],
+            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
         for record in panding_customer_amount:
             # get customer email and phone and sales invoice items
@@ -461,7 +461,7 @@ def get_submit_payments():
         # get all sales invoices with pending payments for this sales person
         submit_customer_amount = frappe.db.get_list('Sales Invoice',
             filters={'docstatus': 1, 'custom_customer_sales_representative': sales_person},
-            fields=['name', 'customer', 'customer_name', 'company', 'customer_account_number', 'grand_total', "posting_date as transaction_date"],
+            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
 
         

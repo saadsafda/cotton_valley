@@ -439,89 +439,6 @@ def get_monthly_sales_data():
         }
     
 
-
-# @frappe.whitelist(allow_guest=True)
-# def get_category_wise_monthly_data():
-#     return frappe.db.sql("""
-#         WITH MonthlyTargets AS (
-#             SELECT
-#                 sp_target.parent AS sales_person,
-#                 dist_pct.month,
-#                 sp_target.fiscal_year,
-#                 sp_target.product_category,
-#                 (sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
-#             FROM
-#                 `tabTarget Detail` AS sp_target
-#             JOIN
-#                 `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
-#         ),
-        
-#         MonthlyAchieved AS (
-#             SELECT
-#                 st.sales_person, -- FİX: Get sales_person from Sales Team table
-#                 MONTHNAME(si.posting_date) AS month,
-#                 YEAR(si.posting_date) AS fiscal_year,
-#                 sii.item_group AS product_category,
-#                 -- FİX: Calculate achieved amount based on allocation
-#                 SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
-#             FROM
-#                 `tabSales Invoice` AS si
-#             JOIN
-#                 `tabSales Invoice Item` AS sii ON si.name = sii.parent
-#             JOIN
-#                 `tabSales Team` AS st ON si.name = st.parent -- FİX: Join the Sales Team table
-#             WHERE
-#                 si.docstatus = 1 -- Only count Submitted invoices
-#             GROUP BY
-#                 st.sales_person, MONTHNAME(si.posting_date), YEAR(si.posting_date), sii.item_group
-#         )
-
-#         -- Final step: Combine Targets and Achieved data (This part was already correct)
-#         SELECT
-#             CombinedData.sales_person AS "Sales Person",
-#             CombinedData.month AS "Month",
-#             CombinedData.fiscal_year AS "Fiscal Year",
-#             CombinedData.product_category AS "Product Category",
-#             SUM(CombinedData.monthly_target) AS "Target Amount",
-#             SUM(CombinedData.achieved_amount) AS "Achieved Amount",
-#             (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
-#         FROM (
-#             -- Get all target rows
-#             SELECT
-#                 sales_person,
-#                 month,
-#                 fiscal_year,
-#                 product_category,
-#                 monthly_target,
-#                 0 AS achieved_amount -- Set achieved to 0 for this set
-#             FROM
-#                 MonthlyTargets
-
-#             UNION ALL
-
-#             -- Get all achieved rows
-#             SELECT
-#                 sales_person,
-#                 month,
-#                 fiscal_year,
-#                 product_category,
-#                 0 AS monthly_target, -- Set target to 0 for this set
-#                 achieved_amount
-#             FROM
-#                 MonthlyAchieved
-#         ) AS CombinedData
-#         GROUP BY
-#             CombinedData.sales_person,
-#             CombinedData.month,
-#             CombinedData.fiscal_year,
-#             CombinedData.product_category
-#         ORDER BY
-#             CombinedData.fiscal_year,
-#             CombinedData.sales_person,
-#             FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
-#     """, as_dict=True)
-
-
 @frappe.whitelist()
 def get_monthly_data():
     # --- 1. Get Sales Person (Same as your code) ---
@@ -638,8 +555,24 @@ def get_monthly_data():
 
 @frappe.whitelist()
 def get_category_wise_monthly_data():
-    
-    # Get the currently logged-in user
+    """
+    Monthly target vs achieved per Target Detail row, including the
+    Product Category, Product Subcategory and Item set on each target row.
+
+    A Target Detail row may be at one of three levels of specificity:
+      - Item       (item_code set)
+      - Subcategory (product_subcategory set, item_code blank)
+      - Category   (only product_category set)
+
+    Achieved sales are matched at the same level so the comparison stays
+    consistent with how the target was defined:
+      - Item level       -> Sales Invoice Item where item_code matches.
+      - Subcategory level -> Items whose Item.custom_sub_category matches.
+      - Category level    -> Items linked via the Product Categoris child
+        table (custom_product_categories on Item).
+    """
+
+    # 1) Resolve sales person from the logged-in user.
     user = frappe.session.user
     employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
     if not employee:
@@ -657,107 +590,233 @@ def get_category_wise_monthly_data():
             "data": []
         }
     sales_person_name = sales_person[0]
-    
-    # Get the current active fiscal year name
+
+    # 2) Current fiscal year + its date range.
     current_fiscal_year = get_fiscal_year(nowdate())[0]
-    
-    # FİX: Get the start and end dates for that fiscal year
-    fy_dates = frappe.db.get_value("Fiscal Year", current_fiscal_year, ["year_start_date", "year_end_date"], as_dict=True)
-    
+    fy_dates = frappe.db.get_value(
+        "Fiscal Year", current_fiscal_year,
+        ["year_start_date", "year_end_date"], as_dict=True
+    )
     if not fy_dates:
         frappe.throw(f"Fiscal Year {current_fiscal_year} not found.")
 
-    # Create a dictionary of parameters to pass to the query
-    query_params = {
+    params = {
         "user": sales_person_name,
         "fiscal_year": current_fiscal_year,
-        "fy_start_date": fy_dates.year_start_date, # FİX: Add start date
-        "fy_end_date": fy_dates.year_end_date      # FİX: Add end date
+        "fy_start_date": fy_dates.year_start_date,
+        "fy_end_date": fy_dates.year_end_date,
     }
 
-    return frappe.db.sql("""
-        WITH MonthlyTargets AS (
-            SELECT
-                sp_target.parent AS sales_person,
-                dist_pct.month,
-                sp_target.fiscal_year,
-                sp_target.product_category,
-                sp_target.category_name,
-                (sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
-            FROM
-                `tabTarget Detail` AS sp_target
-            JOIN
-                `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
-            WHERE
-                -- This part is fine, as your custom 'Target Detail' table has this field
-                sp_target.parent = %(user)s 
-                AND sp_target.fiscal_year = %(fiscal_year)s
-        ),
-        
-        MonthlyAchieved AS (
-            SELECT
-                st.sales_person,
-                MONTHNAME(si.posting_date) AS month,
-                YEAR(si.posting_date) AS fiscal_year_num,
-                ipc.product_category,
-                ipc.category_name,
-                SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
-            FROM
-                `tabSales Invoice` AS si
-            JOIN
-                `tabSales Invoice Item` AS sii ON si.name = sii.parent
-            JOIN
-                `tabSales Team` AS st ON si.name = st.parent
-            JOIN
-                `tabProduct Categoris` AS ipc ON sii.item_code = ipc.parent 
-            WHERE
-                si.docstatus = 1
-                AND st.sales_person = %(user)s
-                -- FİX: Changed the filter from fiscal_year to posting_date
-                AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
-            GROUP BY
-                st.sales_person,
-                MONTHNAME(si.posting_date),
-                YEAR(si.posting_date),
-                ipc.product_category
-        )
-
-        -- Final step: Combine Targets and Achieved data
+    # 3) Monthly targets at (category, subcategory, item, month) granularity.
+    targets = frappe.db.sql("""
         SELECT
-            CombinedData.sales_person AS "Sales Person",
-            CombinedData.month AS "Month",
-            CombinedData.fiscal_year AS "Fiscal Year",
-            CombinedData.product_category AS "Product Category",
-            CombinedData.category_name AS "Category Name",
-            SUM(CombinedData.monthly_target) AS "Target Amount",
-            SUM(CombinedData.achieved_amount) AS "Achieved Amount",
-            (SUM(CombinedData.achieved_amount) - SUM(CombinedData.monthly_target)) AS "Variance"
-        FROM (
-            SELECT
-                sales_person, month, fiscal_year, product_category, category_name,
-                monthly_target, 0 AS achieved_amount
-            FROM
-                MonthlyTargets
-            UNION ALL
-            SELECT
-                sales_person, 
-                month, 
-                %(fiscal_year)s AS fiscal_year,
-                product_category,
-                category_name,
-                0 AS monthly_target, 
-                achieved_amount
-            FROM
-                MonthlyAchieved
-        ) AS CombinedData
+            sp_target.product_category    AS product_category,
+            sp_target.category_name       AS category_name,
+            sp_target.product_subcategory AS product_subcategory,
+            sp_target.subcategory_name    AS subcategory_name,
+            sp_target.item_code           AS item_code,
+            sp_target.item_name           AS item_name,
+            dist_pct.month                AS month,
+            SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+        FROM `tabTarget Detail` AS sp_target
+        JOIN `tabMonthly Distribution Percentage` AS dist_pct
+            ON sp_target.distribution_id = dist_pct.parent
+        WHERE sp_target.parent = %(user)s
+          AND sp_target.fiscal_year = %(fiscal_year)s
         GROUP BY
-            CombinedData.sales_person,
-            CombinedData.month,
-            CombinedData.fiscal_year,
-            CombinedData.product_category
-        ORDER BY
-            CombinedData.fiscal_year,
-            CombinedData.sales_person,
-            FIELD(CombinedData.month, 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December');
-    """, query_params, as_dict=True)
+            sp_target.product_category,
+            sp_target.product_subcategory,
+            sp_target.item_code,
+            dist_pct.month
+    """, params, as_dict=True)
+
+    # 4) Achieved at item level (most specific).
+    achieved_by_item = frappe.db.sql("""
+        SELECT
+            sii.item_code               AS item_code,
+            MONTHNAME(si.posting_date)  AS month,
+            SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+        FROM `tabSales Invoice` AS si
+        JOIN `tabSales Invoice Item` AS sii ON si.name = sii.parent
+        JOIN `tabSales Team`         AS st  ON si.name = st.parent
+        WHERE si.docstatus = 1
+          AND st.sales_person = %(user)s
+          AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+        GROUP BY sii.item_code, MONTHNAME(si.posting_date)
+    """, params, as_dict=True)
+
+    # 5) Achieved at subcategory level (Item.custom_sub_category).
+    achieved_by_subcat = frappe.db.sql("""
+        SELECT
+            it.custom_sub_category      AS product_subcategory,
+            MONTHNAME(si.posting_date)  AS month,
+            SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+        FROM `tabSales Invoice` AS si
+        JOIN `tabSales Invoice Item` AS sii ON si.name = sii.parent
+        JOIN `tabSales Team`         AS st  ON si.name = st.parent
+        JOIN `tabItem`               AS it  ON it.name  = sii.item_code
+        WHERE si.docstatus = 1
+          AND st.sales_person = %(user)s
+          AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+          AND it.custom_sub_category IS NOT NULL
+          AND it.custom_sub_category <> ''
+        GROUP BY it.custom_sub_category, MONTHNAME(si.posting_date)
+    """, params, as_dict=True)
+
+    # 6) Achieved at category level (via Product Categoris child table on Item).
+    achieved_by_category = frappe.db.sql("""
+        SELECT
+            ipc.product_category        AS product_category,
+            MONTHNAME(si.posting_date)  AS month,
+            SUM(sii.net_amount * (st.allocated_percentage / 100)) AS achieved_amount
+        FROM `tabSales Invoice` AS si
+        JOIN `tabSales Invoice Item` AS sii ON si.name = sii.parent
+        JOIN `tabSales Team`         AS st  ON si.name = st.parent
+        JOIN `tabProduct Categoris`  AS ipc ON ipc.parent = sii.item_code
+                                            AND ipc.parenttype = 'Item'
+        WHERE si.docstatus = 1
+          AND st.sales_person = %(user)s
+          AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+        GROUP BY ipc.product_category, MONTHNAME(si.posting_date)
+    """, params, as_dict=True)
+
+    # 7) Build lookup maps once.
+    item_map = {
+        (r.item_code, r.month): float(r.achieved_amount or 0)
+        for r in achieved_by_item
+    }
+    subcat_map = {
+        (r.product_subcategory, r.month): float(r.achieved_amount or 0)
+        for r in achieved_by_subcat
+    }
+    category_map = {
+        (r.product_category, r.month): float(r.achieved_amount or 0)
+        for r in achieved_by_category
+    }
+
+    # 8) Build a nested structure:
+    #    Month + Category  ->  subcategories[]  ->  items[]
+    #
+    # Aggregation rules per category row:
+    #   - The "Level" of the category row is the deepest level any of its
+    #     target rows used (Item > Subcategory > Category).
+    #   - Category Target/Achieved = sum of all its subcategory rows.
+    #   - Subcategory Target/Achieved = sum of all its item rows
+    #     (or the subcategory's own target/achieved when no items below).
+    #
+    # We use a dict keyed by (month, category) -> dict keyed by subcategory
+    # -> dict keyed by item, so duplicate target rows at the same level are
+    # naturally merged.
+    LEVEL_RANK = {"Category": 1, "Subcategory": 2, "Item": 3}
+    grouped = {}  # (month, category) -> category_node
+
+    for t in targets:
+        target_amt = float(t.monthly_target or 0)
+
+        # The level this individual target row was set at.
+        if t.item_code:
+            row_level = "Item"
+            row_achieved = item_map.get((t.item_code, t.month), 0.0)
+        elif t.product_subcategory:
+            row_level = "Subcategory"
+            row_achieved = subcat_map.get((t.product_subcategory, t.month), 0.0)
+        else:
+            row_level = "Category"
+            row_achieved = category_map.get((t.product_category, t.month), 0.0)
+
+        cat_key = (t.month, t.product_category)
+        cat_node = grouped.get(cat_key)
+        if cat_node is None:
+            cat_node = {
+                "Sales Person": sales_person_name,
+                "Month": t.month,
+                "Fiscal Year": current_fiscal_year,
+                "Level": row_level,
+                "Product Category": t.product_category,
+                "Category Name": t.category_name,
+                "subcategories": {},  # temp dict, converted to list at the end
+                "Target Amount": 0.0,
+                "Achieved Amount": 0.0,
+            }
+            grouped[cat_key] = cat_node
+        else:
+            # Track the deepest level seen for this category in this month.
+            if LEVEL_RANK[row_level] > LEVEL_RANK[cat_node["Level"]]:
+                cat_node["Level"] = row_level
+
+        # Subcategory bucket. Use empty string as the key for "no subcategory"
+        # so category-level targets still appear in the structure.
+        sub_key = t.product_subcategory or ""
+        sub_node = cat_node["subcategories"].get(sub_key)
+        if sub_node is None:
+            sub_node = {
+                "Product Subcategory": t.product_subcategory,
+                "Subcategory Name": t.subcategory_name,
+                "Target Amount": 0.0,
+                "Achieved Amount": 0.0,
+                "items": {},  # temp dict, converted to list at the end
+            }
+            cat_node["subcategories"][sub_key] = sub_node
+
+        if row_level == "Item":
+            # Item-level target: nest under its subcategory.
+            item_key = t.item_code
+            item_node = sub_node["items"].get(item_key)
+            if item_node is None:
+                item_node = {
+                    "Item Code": t.item_code,
+                    "Item Name": t.item_name,
+                    "Target Amount": 0.0,
+                    "Achieved Amount": 0.0,
+                }
+                sub_node["items"][item_key] = item_node
+            item_node["Target Amount"] += target_amt
+            item_node["Achieved Amount"] += row_achieved
+            sub_node["Target Amount"] += target_amt
+            sub_node["Achieved Amount"] += row_achieved
+            cat_node["Target Amount"] += target_amt
+            cat_node["Achieved Amount"] += row_achieved
+        elif row_level == "Subcategory":
+            # Subcategory-level target with no specific item.
+            sub_node["Target Amount"] += target_amt
+            sub_node["Achieved Amount"] += row_achieved
+            cat_node["Target Amount"] += target_amt
+            cat_node["Achieved Amount"] += row_achieved
+        else:
+            # Category-level target.
+            sub_node["Target Amount"] += target_amt
+            sub_node["Achieved Amount"] += row_achieved
+            cat_node["Target Amount"] += target_amt
+            cat_node["Achieved Amount"] += row_achieved
+
+    # 9) Convert the nested dicts to the final list-of-dicts shape and sort.
+    month_order = {m: i for i, m in enumerate([
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+    ])}
+
+    result = []
+    for cat_node in grouped.values():
+        sub_list = []
+        for sub_node in cat_node["subcategories"].values():
+            items_list = sorted(
+                sub_node["items"].values(),
+                key=lambda it: (it["Item Name"] or it["Item Code"] or ""),
+            )
+            sub_node["items"] = items_list
+            sub_list.append(sub_node)
+
+        sub_list.sort(
+            key=lambda s: (s["Subcategory Name"] or s["Product Subcategory"] or "")
+        )
+        cat_node["subcategories"] = sub_list
+        cat_node["Variance"] = cat_node["Achieved Amount"] - cat_node["Target Amount"]
+        result.append(cat_node)
+
+    result.sort(key=lambda r: (
+        r["Product Category"] or "",
+        month_order.get(r["Month"], 99),
+    ))
+
+    return result
 
