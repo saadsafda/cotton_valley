@@ -1,6 +1,18 @@
 import frappe
 
 
+def _set_sales_invoice_customer_fields(si, customer_id, company):
+    sales_person, account_number = frappe.db.get_value(
+        "Customer", customer_id, ["sales_person", "account_number"]
+    )
+    if company == "UDC":
+        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
+        account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
+
+    si.custom_customer_sales_representative = sales_person
+    si.custom_customer_account_number = account_number
+
+
 def _apply_sales_invoice_items(si, items, discount_percentage, sales_order):
     # Rebuild items to ensure updates are applied after reloads.
     si.items = []
@@ -91,6 +103,8 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
                     "allocated_percentage": member.allocated_percentage,
                     "allocated_amount": member.allocated_amount
                 })
+
+        _set_sales_invoice_customer_fields(si, so.customer, so.company)
 
         _apply_sales_invoice_items(si, items, discount_percentage, sales_order)
         _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order)
