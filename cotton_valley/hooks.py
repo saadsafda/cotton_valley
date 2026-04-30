@@ -212,9 +212,13 @@ doc_events = {
     "Scheduled Job Log": {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
 	},
-    "Item Price": {
-        "before_save": "cotton_valley.server_scripts.item_price.before_save"
-    },
+	"Item Price": {
+		"validate": "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
+		"before_save": [
+			"cotton_valley.server_scripts.item._prevent_duplicate_item_price",
+			"cotton_valley.server_scripts.item_price.before_save",
+		],
+	},
     "File": {
 		"after_insert": "cotton_valley.server_scripts.file.after_save",
 	}
