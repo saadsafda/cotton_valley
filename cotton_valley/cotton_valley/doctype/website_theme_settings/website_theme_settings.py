@@ -1,9 +1,10 @@
 # Copyright (c) 2025, Saad and contributors
 # For license information, please see license.txt
 
-# import frappe
 from frappe.model.document import Document
+from cotton_valley.api.website_theme_setting import clear_website_theme_setting_cache
 
 
 class WebsiteThemeSettings(Document):
-	pass
+	def on_update(self):
+		clear_website_theme_setting_cache()

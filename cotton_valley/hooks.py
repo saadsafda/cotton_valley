@@ -203,7 +203,8 @@ doc_events = {
         "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"
     },
     "Customer": {
-        "before_save": "cotton_valley.server_scripts.customer.get_location_from_ip"
+        "before_save": "cotton_valley.server_scripts.customer.get_location_from_ip",
+		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache_on_customer_payment_change",
     },
 	"Item": {
 		"validate": "cotton_valley.server_scripts.item.validate",
@@ -221,7 +222,23 @@ doc_events = {
 	},
     "File": {
 		"after_insert": "cotton_valley.server_scripts.file.after_save",
-	}
+	},
+	"Mode of Payment": {
+		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+	},
+	"Product Category": {
+		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+	},
+	"Event Page": {
+		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+	},
+	"Brand": {
+		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+	},
 }
 
 # Scheduled Tasks
@@ -334,4 +351,3 @@ extend_bootinfo = "cotton_valley.api.boot.extend_bootinfo"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
