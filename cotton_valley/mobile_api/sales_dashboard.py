@@ -203,7 +203,7 @@ def get_monthly_targets(item_group=None, product_category=None):
     target_items = frappe.get_all(
         "Target Detail",
         filters=filters,
-        fields=["name", "item_group", "product_category", "target_amount", "distribution_id"],
+        fields=["name", "item_group", "product_category", "target_amount", "target_qty", "distribution_id"],
         order_by="idx asc"
     )
 
@@ -213,6 +213,7 @@ def get_monthly_targets(item_group=None, product_category=None):
         return {"targets": []}
 
     aggregated_targets = {}
+    aggregated_qtys = {}
     MONTHS = ["January", "February", "March", "April", "May", "June", 
               "July", "August", "September", "October", "November", "December"]
 
@@ -221,6 +222,7 @@ def get_monthly_targets(item_group=None, product_category=None):
         
         # This is the total target amount for this specific row (e.g., $100,000)
         base_target_amount = target_item.target_amount or 0.0
+        base_target_qty = target_item.target_qty or 0.0
         
         # Check if a distribution ID is set
         if not target_item.distribution_id:
@@ -239,6 +241,7 @@ def get_monthly_targets(item_group=None, product_category=None):
             
             # <-- CHANGED: Calculate the *actual amount* for the month
             monthly_target_amount = base_target_amount * (percentage / 100.0)
+            monthly_target_qty = base_target_qty * (percentage / 100.0)
 
             group_value = "All Targets"
             if group_key_field:
@@ -248,6 +251,7 @@ def get_monthly_targets(item_group=None, product_category=None):
             
             # <-- CHANGED: Aggregate the calculated monetary amount
             aggregated_targets[key] = aggregated_targets.get(key, 0.0) + monthly_target_amount
+            aggregated_qtys[key] = aggregated_qtys.get(key, 0.0) + monthly_target_qty
 
     # 4. Format the final output structure (This part was correct)
     final_targets = []
@@ -263,10 +267,12 @@ def get_monthly_targets(item_group=None, product_category=None):
         for month in MONTHS:
             key = (month, group)
             amount = aggregated_targets.get(key, 0.0)
+            qty = aggregated_qtys.get(key, 0.0)
             
             group_data["monthly_targets"].append({
                 "month": month,
-                "target_amount": amount
+                "target_amount": amount,
+                "target_qty": qty
             })
             
         final_targets.append(group_data)
@@ -376,11 +382,13 @@ def get_monthly_sales_data():
                 # Prepare data arrays
                 actual_data = []
                 target_data = []
+                target_qty_data = []
                 months = []
                 
                 # Get current month name
                 current_month_name = datetime.now().strftime("%B")  # e.g., "October"
                 current_month_goal = 0
+                current_month_goal_qty = 0
                 current_month_value = 0
                 
                 for target in sales_target:
@@ -389,7 +397,9 @@ def get_monthly_sales_data():
                     
                     # Add target amount
                     target_amount = float(target.target_amount or 0)
+                    target_qty = float(getattr(target, 'target_qty', 0) or 0)
                     target_data.append(target_amount)
+                    target_qty_data.append(target_qty)
                     
                     # Add actual sales amount from Sales Orders
                     actual_amount = actual_sales_by_month.get(target.month, 0)
@@ -398,6 +408,7 @@ def get_monthly_sales_data():
                     # Check if this is the current month
                     if target.month == current_month_name:
                         current_month_goal = target_amount
+                        current_month_goal_qty = target_qty
                         current_month_value = actual_amount
                 
                 return {
@@ -406,8 +417,10 @@ def get_monthly_sales_data():
                     "data": {
                         "actualData": actual_data,
                         "targetData": target_data,
+                        "targetQtyData": target_qty_data,
                         "months": months,
                         "current_month_goal": current_month_goal,
+                        "current_month_goal_qty": current_month_goal_qty,
                         "current_month_value": current_month_value,
                         "total_customers": total_customers,
                         "active_customers": active_customers
@@ -477,7 +490,8 @@ def get_monthly_data():
             SELECT
                 dist_pct.month,
                 sp_target.fiscal_year,
-                SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+                SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target,
+                SUM(sp_target.target_qty * (dist_pct.percentage_allocation / 100)) AS monthly_target_qty
             FROM
                 `tabTarget Detail` AS sp_target
             JOIN
@@ -511,11 +525,12 @@ def get_monthly_data():
         SELECT
             CombinedData.month AS "Month",
             SUM(CombinedData.monthly_target) AS "Target Amount",
+            SUM(CombinedData.monthly_target_qty) AS "Target Qty",
             SUM(CombinedData.achieved_amount) AS "Achieved Amount"
         FROM (
             SELECT
                 month, fiscal_year,
-                monthly_target, 0 AS achieved_amount
+                monthly_target, monthly_target_qty, 0 AS achieved_amount
             FROM
                 MonthlyTargets
             UNION ALL
@@ -523,6 +538,7 @@ def get_monthly_data():
                 month, 
                 %(fiscal_year)s AS fiscal_year,
                 0 AS monthly_target, 
+                0 AS monthly_target_qty, 
                 achieved_amount
             FROM
                 MonthlyAchieved
@@ -536,17 +552,19 @@ def get_monthly_data():
 
     # --- 4. Transform the Data (NEW SECTION) ---
     if not query_results:
-        return { 'actualData': [], 'targetData': [], 'months': [] }
+        return { 'actualData': [], 'targetData': [], 'targetQtyData': [], 'months': [] }
 
     # Use list comprehensions to create the arrays
     months = [row["Month"] for row in query_results]
     actualData = [row["Achieved Amount"] for row in query_results]
     targetData = [row["Target Amount"] for row in query_results]
+    targetQtyData = [row["Target Qty"] for row in query_results]
 
     # Return the final dictionary in your requested format
     return {
         'actualData': actualData,
         'targetData': targetData,
+        'targetQtyData': targetQtyData,
         'months': months,
     }
 
@@ -617,7 +635,8 @@ def get_category_wise_monthly_data():
             sp_target.item_code           AS item_code,
             sp_target.item_name           AS item_name,
             dist_pct.month                AS month,
-            SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target
+            SUM(sp_target.target_amount * (dist_pct.percentage_allocation / 100)) AS monthly_target,
+            SUM(sp_target.target_qty * (dist_pct.percentage_allocation / 100)) AS monthly_target_qty
         FROM `tabTarget Detail` AS sp_target
         JOIN `tabMonthly Distribution Percentage` AS dist_pct
             ON sp_target.distribution_id = dist_pct.parent
@@ -712,6 +731,7 @@ def get_category_wise_monthly_data():
 
     for t in targets:
         target_amt = float(t.monthly_target or 0)
+        target_qty = float(t.monthly_target_qty or 0)
 
         # The level this individual target row was set at.
         if t.item_code:
@@ -736,6 +756,7 @@ def get_category_wise_monthly_data():
                 "Category Name": t.category_name,
                 "subcategories": {},  # temp dict, converted to list at the end
                 "Target Amount": 0.0,
+                "Target Qty": 0.0,
                 "Achieved Amount": 0.0,
             }
             grouped[cat_key] = cat_node
@@ -753,6 +774,7 @@ def get_category_wise_monthly_data():
                 "Product Subcategory": t.product_subcategory,
                 "Subcategory Name": t.subcategory_name,
                 "Target Amount": 0.0,
+                "Target Qty": 0.0,
                 "Achieved Amount": 0.0,
                 "items": {},  # temp dict, converted to list at the end
             }
@@ -767,26 +789,34 @@ def get_category_wise_monthly_data():
                     "Item Code": t.item_code,
                     "Item Name": t.item_name,
                     "Target Amount": 0.0,
+                    "Target Qty": 0.0,
                     "Achieved Amount": 0.0,
                 }
                 sub_node["items"][item_key] = item_node
             item_node["Target Amount"] += target_amt
+            item_node["Target Qty"] += target_qty
             item_node["Achieved Amount"] += row_achieved
             sub_node["Target Amount"] += target_amt
+            sub_node["Target Qty"] += target_qty
             sub_node["Achieved Amount"] += row_achieved
             cat_node["Target Amount"] += target_amt
+            cat_node["Target Qty"] += target_qty
             cat_node["Achieved Amount"] += row_achieved
         elif row_level == "Subcategory":
             # Subcategory-level target with no specific item.
             sub_node["Target Amount"] += target_amt
+            sub_node["Target Qty"] += target_qty
             sub_node["Achieved Amount"] += row_achieved
             cat_node["Target Amount"] += target_amt
+            cat_node["Target Qty"] += target_qty
             cat_node["Achieved Amount"] += row_achieved
         else:
             # Category-level target.
             sub_node["Target Amount"] += target_amt
+            sub_node["Target Qty"] += target_qty
             sub_node["Achieved Amount"] += row_achieved
             cat_node["Target Amount"] += target_amt
+            cat_node["Target Qty"] += target_qty
             cat_node["Achieved Amount"] += row_achieved
 
     # 9) Convert the nested dicts to the final list-of-dicts shape and sort.
