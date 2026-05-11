@@ -207,8 +207,6 @@ def get_monthly_targets(item_group=None, product_category=None):
         order_by="idx asc"
     )
 
-    print(target_items, filters, "=================target_items")
-
     if not target_items:
         return {"targets": []}
 
