@@ -124,6 +124,7 @@ def get_all_customers():
                 "price_list_for_udc": customer.price_list_for_udc or '',
                 "no_of_orders": customer.no_of_orders or 0,
                 "orders_amount": customer.orders_amount or 0.0,
+                "last_order_date": last_order_date.strftime('%Y-%m-%d') if last_order_date else '',
                 "created_at": customer.creation or '',
                 "updated_at": customer.modified or '',
             }

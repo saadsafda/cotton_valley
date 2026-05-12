@@ -1,25 +1,81 @@
 import frappe # type: ignore
-from cotton_valley.api.common import get_customer_from_token, check_customer_token
+from cotton_valley.api.common import get_customer_from_token
 from cotton_valley.api.brand import get_brands
+
+THEME_SETTINGS_CACHE_VERSION_KEY = "cotton_valley:website_theme_setting:version"
+THEME_SETTINGS_CACHE_TTL = 60 * 60
+
+
+def _normalize_company(company=None):
+    return "Cotton Valley" if not company or company == "null" else company
+
+
+def _get_cache_version():
+    version = frappe.cache().get_value(THEME_SETTINGS_CACHE_VERSION_KEY)
+    if not version:
+        version = 1
+        frappe.cache().set_value(THEME_SETTINGS_CACHE_VERSION_KEY, version)
+    return version
+
+
+def _get_cache_key(method, company, customer=None):
+    customer = customer or "guest"
+    return f"cotton_valley:website_theme_setting:{_get_cache_version()}:{method}:{company}:{customer}"
+
+
+def _get_cached_response(cache_key):
+    return frappe.cache().get_value(cache_key)
+
+
+def _set_cached_response(cache_key, response):
+    frappe.cache().set_value(cache_key, response, expires_in_sec=THEME_SETTINGS_CACHE_TTL)
+    return response
+
+
+def _get_current_customer():
+    auth_header = frappe.get_request_header("Customer-Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+
+    try:
+        return get_customer_from_token()
+    except Exception:
+        return None
+
+
+def clear_website_theme_setting_cache(*args, **kwargs):
+    cache = frappe.cache()
+    version = cache.get_value(THEME_SETTINGS_CACHE_VERSION_KEY) or 1
+    cache.set_value(THEME_SETTINGS_CACHE_VERSION_KEY, int(version) + 1)
+
+
+def clear_website_theme_setting_cache_on_customer_payment_change(doc, method=None):
+    if doc.has_value_changed("mode_of_payment") or doc.has_value_changed("udc_mode_of_payment"):
+        clear_website_theme_setting_cache()
+
 
 @frappe.whitelist(allow_guest=True)
 def settings(company=None):
-    company = "Cotton Valley" if not company or company == "null" else company
+    company = _normalize_company(company)
+    current_customer = _get_current_customer()
+    cache_key = _get_cache_key("settings", company, current_customer)
+    cached_response = _get_cached_response(cache_key)
+    if cached_response:
+        return cached_response
+
     doctype = "Website Theme Settings"
     if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
     mode_of_payment = frappe.get_all("Mode of Payment", filters={"enabled": 1}, fields=["name", "enabled as status"])
-    if check_customer_token():
-        current_customer = get_customer_from_token()
-        if current_customer:
-            customer_payment = frappe.db.get_value("Customer", current_customer, "udc_mode_of_payment") if company == "UDC" else frappe.db.get_value("Customer", current_customer, "mode_of_payment")
-            if customer_payment:
-                mode_of_payment = frappe.get_all(
-                    "Mode of Payment",
-                    filters={"name": customer_payment, "enabled": 1},
-                    fields=["name", "enabled as status"]
-                )
+    if current_customer:
+        customer_payment = frappe.db.get_value("Customer", current_customer, "udc_mode_of_payment") if company == "UDC" else frappe.db.get_value("Customer", current_customer, "mode_of_payment")
+        if customer_payment:
+            mode_of_payment = frappe.get_all(
+                "Mode of Payment",
+                filters={"name": customer_payment, "enabled": 1},
+                fields=["name", "enabled as status"]
+            )
 
     data = {
         "values": {
@@ -96,11 +152,16 @@ def settings(company=None):
             "payment_methods": mode_of_payment
         }
         }
-    return data
+    return _set_cached_response(cache_key, data)
 
 @frappe.whitelist(allow_guest=True)
 def get_website_theme_settings(company=None):
-    company = "Cotton Valley" if not company or company == "null" else company
+    company = _normalize_company(company)
+    cache_key = _get_cache_key("get_website_theme_settings", company)
+    cached_response = _get_cached_response(cache_key)
+    if cached_response:
+        return cached_response
+
     doctype = "Website Theme Settings"
     if company == "UDC":
         doctype = f"UDC {doctype}"
@@ -332,7 +393,7 @@ def get_website_theme_settings(company=None):
         }
         }
     
-    return result
+    return _set_cached_response(cache_key, result)
     
 
 def get_file(file_url):
@@ -374,5 +435,3 @@ def get_categories_from_string(category_string):
         return []
     
     return [cat.strip() for cat in category_string.split(",") if cat.strip()]
-
-
