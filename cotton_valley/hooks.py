@@ -214,9 +214,9 @@ doc_events = {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
 	},
 	"Item Price": {
-		"validate": "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
+		# "validate": "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
 		"before_save": [
-			"cotton_valley.server_scripts.item._prevent_duplicate_item_price",
+			# "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
 			"cotton_valley.server_scripts.item_price.before_save",
 		],
 	},

@@ -43,23 +43,23 @@ def _sanitize_submit_datetime(doc):
 		doc.set("submit_datetime", None)
 
 
-def _prevent_duplicate_item_price(doc, method=None):
-	if doc.doctype != "Item Price":
-		return
+# def _prevent_duplicate_item_price(doc, method=None):
+# 	if doc.doctype != "Item Price":
+# 		return
 
-	if not doc.item_code or not doc.price_list:
-		return
+# 	if not doc.item_code or not doc.price_list:
+# 		return
 
-	exists = frappe.db.exists(
-		"Item Price",
-		{
-			"item_code": doc.item_code,
-			"price_list": doc.price_list,
-			"name": ["!=", doc.name],
-		},
-	)
-	if exists:
-		frappe.throw("Duplicate Item Price: This item already has a price for this Price List.")
+# 	exists = frappe.db.exists(
+# 		"Item Price",
+# 		{
+# 			"item_code": doc.item_code,
+# 			"price_list": doc.price_list,
+# 			"name": ["!=", doc.name],
+# 		},
+# 	)
+# 	if exists:
+# 		frappe.throw("Duplicate Item Price: This item already has a price for this Price List.")
 
 
 def validate(doc, method):
@@ -68,7 +68,7 @@ def validate(doc, method):
 	"""
 	_sanitize_submit_datetime(doc)
 	_clear_product_tags_if_requested(doc)
-	_prevent_duplicate_item_price(doc)
+	# _prevent_duplicate_item_price(doc)
 
 
 def before_save(doc, method):
@@ -77,4 +77,4 @@ def before_save(doc, method):
 	"""
 	_sanitize_submit_datetime(doc)
 	_clear_product_tags_if_requested(doc)
-	_prevent_duplicate_item_price(doc)
+	# _prevent_duplicate_item_price(doc)
