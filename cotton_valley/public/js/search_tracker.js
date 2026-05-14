@@ -14,11 +14,13 @@
  *   - Next.js SPA with client-side routing
  *
  * INSTALLATION:
- * Add this script to each Next.js app layout:
+ * Add this script to each Next.js app layout with data-company attribute:
  *
  *   <Script
  *     src="https://portal.cottonvalley.net/assets/cotton_valley/js/search_tracker.js"
  *     strategy="afterInteractive"
+ *     data-company="UDC"           // for universaldc.com
+ *     data-company="Cotton Valley" // for cottonvalley.net
  *   />
  */
 
@@ -42,6 +44,23 @@
         // Prevent duplicate logging of the same query within this window (ms)
         DEDUP_WINDOW_MS: 5000,
     };
+
+    // ── Company Detection ─────────────────────────────────────────────
+    // Reads the data-company attribute from the <script> tag.
+    // This is the most reliable method — works on localhost and production.
+    function getCompany() {
+        // Method 1: Read data-company from this script tag
+        var scripts = document.querySelectorAll('script[src*="search_tracker"]');
+        for (var i = 0; i < scripts.length; i++) {
+            var company = scripts[i].getAttribute('data-company');
+            if (company) return company;
+        }
+        // Method 2: Detect from domain (production fallback)
+        var host = window.location.hostname.toLowerCase();
+        if (host.indexOf('universaldc') !== -1) return 'UDC';
+        if (host.indexOf('cottonvalley') !== -1) return 'Cotton Valley';
+        return '';
+    }
 
     // ── Guest Session ID Management ──────────────────────────────────
     function getGuestSessionId() {
@@ -110,6 +129,7 @@
             results_count: resultsCount !== undefined && resultsCount !== null ? parseInt(resultsCount, 10) : 0,
             guest_session_id: getGuestSessionId(),
             origin: window.location.origin,
+            company: getCompany(),
         };
 
         var body = new URLSearchParams();

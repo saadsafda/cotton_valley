@@ -172,7 +172,8 @@ def log_website_search(
     referrer=None,
     results_count=None,
     guest_session_id=None,
-    origin=None
+    origin=None,
+    company=None
 ):
     """
     Log a website search query into the Website Search Log DocType.
@@ -192,6 +193,7 @@ def log_website_search(
         results_count (int/str): Number of search results returned.
         guest_session_id (str): UUID for tracking guest sessions.
         origin (str): The website origin domain (e.g. 'https://universaldc.com').
+        company (str): Explicit company name (e.g. 'UDC' or 'Cotton Valley').
 
     Returns:
         dict: Status of the operation with success/ignored/error.
@@ -251,8 +253,15 @@ def log_website_search(
         except (ValueError, TypeError):
             results_count = 0
 
-        # ── Resolve company from domain ───────────────────────────────
-        company = _resolve_company(page_url, referrer, origin)
+        # ── Resolve company ─────────────────────────────────────────────
+        # Priority: explicit company param > domain detection > default
+        resolved_company = ""
+        if company and str(company).strip():
+            # Frontend sent explicit company via data-company attribute
+            resolved_company = _sanitize_string(str(company).strip(), max_length=140)
+        else:
+            # Fallback: detect from domain
+            resolved_company = _resolve_company(page_url, referrer, origin)
 
         # ── Create log entry ──────────────────────────────────────────
         log = frappe.get_doc({
@@ -268,7 +277,7 @@ def log_website_search(
             "referrer": referrer,
             "results_count": results_count,
             "searched_on": now_datetime(),
-            "company": company,
+            "company": resolved_company,
         })
 
         log.insert(ignore_permissions=True)
