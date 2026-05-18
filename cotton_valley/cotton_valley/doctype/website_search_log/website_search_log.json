@@ -1,0 +1,173 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "WSL-.#####",
+ "creation": "2026-05-08 17:21:01.880730",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_search_info",
+  "search_query",
+  "normalized_query",
+  "results_count",
+  "searched_on",
+  "company",
+  "section_break_user_info",
+  "user_type",
+  "user",
+  "guest_session_id",
+  "section_break_request_info",
+  "ip_address",
+  "user_agent",
+  "page_url",
+  "referrer"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_search_info",
+   "fieldtype": "Section Break",
+   "label": "Search Information"
+  },
+  {
+   "fieldname": "search_query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Search Query",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "normalized_query",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Normalized Query",
+   "read_only": 1
+  },
+  {
+   "fieldname": "results_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Results Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "searched_on",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Searched On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_user_info",
+   "fieldtype": "Section Break",
+   "label": "User Information"
+  },
+  {
+   "fieldname": "user_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User Type",
+   "options": "\nGuest\nLogged In",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "guest_session_id",
+   "fieldtype": "Data",
+   "label": "Guest Session ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_request_info",
+   "fieldtype": "Section Break",
+   "label": "Request Information"
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "User Agent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "page_url",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Page URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "referrer",
+   "fieldtype": "Data",
+   "label": "Referrer",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-08 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Website Search Log",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Website Manager",
+   "share": 1
+  },
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "searched_on",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
