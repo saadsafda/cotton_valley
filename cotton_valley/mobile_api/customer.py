@@ -32,7 +32,7 @@ def get_all_customers():
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
-                    "no_of_orders", "orders_amount"]
+                    "no_of_orders", "orders_amount", "disabled"]
         )
 
         new_opt_customers = frappe.get_all("Customer",
@@ -40,7 +40,7 @@ def get_all_customers():
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
-                    "no_of_orders", "orders_amount"]
+                    "no_of_orders", "orders_amount", "disabled"]
         )
 
         customers.extend(new_opt_customers)
@@ -100,9 +100,9 @@ def get_all_customers():
         for customer in customers:
             # Check if customer has ordered in last 90 days
             last_order_date = last_order_map.get(customer.name)
-            active_customer = False
-            if last_order_date:
-                active_customer = last_order_date.strftime('%Y-%m-%d') >= ninety_days_ago
+            active_customer = customer.disabled
+            # if last_order_date:
+            #     active_customer = last_order_date.strftime('%Y-%m-%d') >= ninety_days_ago
             
             # --- Base Customer Info ---
             customer_data = {
@@ -115,7 +115,7 @@ def get_all_customers():
                 "status": 1 if not customer.disabled else 0,
                 "sales_person": customer.sales_person or '',
                 "udc_sales_person": customer.udc_sales_person or '',
-                "active_customer": active_customer or 0,
+                "active_customer": active_customer,
                 "mode_of_payment": customer.mode_of_payment or '',
                 "company": customer.custom_company_name or '',
                 "account_number": customer.account_number or '',
