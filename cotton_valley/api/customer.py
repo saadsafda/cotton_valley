@@ -1024,25 +1024,24 @@ def customer_offline():
 
 
 
-@frappe.whitelist(allow_guest=True)
 def deactivate_inactive_customers():
+    """Mark inactive customers offline using a single bulk SQL update
+    instead of per-customer set_value calls. This runs from the scheduler
+    every 5 minutes (moved from 'all' to cron in hooks.py)."""
     try:
-        # Set activity_status to empty for customers who haven't sent heartbeat in the last 10 minutes
         cutoff = add_to_date(now_datetime(), minutes=-5)
 
-        customers = frappe.get_all(
-            "Customer",
-            filters={
-                "activity_status": "🟢",
-                "last_seen": ("<=", cutoff),
-            },
-            fields=["name"],
-            order_by="last_seen desc",
-        )
-        for cust in customers:
-            frappe.db.set_value("Customer", cust.name, "activity_status", "", update_modified=False)
+        # Single bulk UPDATE — replaces N individual set_value calls
+        updated = frappe.db.sql("""
+            UPDATE `tabCustomer`
+            SET activity_status = ''
+            WHERE activity_status = '🟢'
+              AND last_seen <= %s
+        """, (cutoff,))
+
+        affected = frappe.db.sql("SELECT ROW_COUNT()")[0][0]
         frappe.db.commit()
-        return {"status": "success", "message": f"Updated offline status for {len(customers)} customers"}
+        return {"status": "success", "message": f"Updated offline status for {affected} customers"}
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Customer Offline Scheduler Error")
         return {"status": "error", "message": str(e)}

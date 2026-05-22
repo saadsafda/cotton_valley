@@ -159,10 +159,20 @@ def get_cart(company=None):
         return {"items": [], "total": 0.0, "discount": 0.0, "count": 0}
 
     so_doc = frappe.get_doc("Sales Order", so[0].name)
+
+    # Fetch all product data in a single batch query instead of per-item
+    item_codes = [item.item_code for item in so_doc.items]
+    all_products_data = {}
+    if item_codes:
+        result = get_all_products(ids=",".join(item_codes), company=company)
+        for product in result.get("data", []):
+            pid = product.get("id") or product.get("item_code") or product.get("name")
+            if pid:
+                all_products_data[pid] = product
+
     items = []
     for item in so_doc.items:
-        all_products = get_all_products(ids=item.item_code, company=company)["data"]
-        product = all_products[0] if len(all_products) > 0 else {}
+        product = all_products_data.get(item.item_code, {})
         items.append({
             "id": item.name,
             "product_id": item.item_code,
@@ -181,14 +191,15 @@ def get_cart(company=None):
 
 @frappe.whitelist(allow_guest=True)
 def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
-    customer = get_current_customer()
     """
     Create or update a Sales Order from cart.
+    Requires logged-in user (removed allow_guest to prevent bot abuse).
     items = [
       {"item_code": "ITEM-001", "qty": 2, "rate": 500},
       {"item_code": "ITEM-002", "qty": 1, "rate": 300},
     ]
     """
+    customer = get_current_customer()
     items = frappe.parse_json(items)
     company = "Cotton Valley" if not company or company == "null" else company
     notes = "" if not notes or notes == "null" else notes
