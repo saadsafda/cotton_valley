@@ -775,11 +775,12 @@ def get_all_sales_orders():
 @frappe.whitelist()
 def mark_orders_as_invoiced():
     orders_to_update = get_all_sales_orders()
-    
+    invoiced = []
+    skipped = []
 
     for order_name in orders_to_update:
         try:
-            url =f"https://erp.cottonvalley.us/ords/unvdst/sales/invoice/?trnrefno={order_name}"
+            url = f"https://erp.cottonvalley.us/ords/unvdst/sales/invoice/?trnrefno={order_name}"
             response = requests.get(url, auth=(ERP_USERNAME, ERP_PASSWORD))
              # Check if API responded successfully
             if response.status_code != 200:
@@ -793,11 +794,13 @@ def mark_orders_as_invoiced():
                 data = response.json()
             except Exception:
                 frappe.throw(f"Invalid JSON response: {response.text[:500]}")
-            frappe.log_error(
-                message=f"Sales Order {order_name} and api Response: {data}",
-                title="Check Data Value"
-            )
-            
+
+            erp_items = data.get("items") or []
+            # ERP hasn't issued an invoice for this order yet; try again next run.
+            if not erp_items:
+                skipped.append(order_name)
+                continue
+
             sales_order = frappe.get_doc("Sales Order", order_name)
 
             invoices = frappe.get_all(
@@ -808,7 +811,7 @@ def mark_orders_as_invoiced():
             if len(invoices) > 0:
                 sales_invoice_doc = frappe.get_doc("Sales Invoice", order_name)
                 sales_invoice_doc.items = []  # reset items
-                for row in data.get("items", []):
+                for row in erp_items:
                     sales_invoice_doc.append("items", {
                         "item_code": row.get("itmid"),
                         "qty": float(row.get("qty", 0) or 0),
@@ -827,7 +830,7 @@ def mark_orders_as_invoiced():
                         "sales_person": sales_person.sales_person,
                         "allocated_percentage": sales_person.allocated_percentage
                     })
-                for row in data.get("items", []):
+                for row in erp_items:
                     sales_invoice_doc.append("items", {
                         "item_code": row.get("itmid"),
                         "qty": float(row.get("qty", 0) or 0),
@@ -836,19 +839,22 @@ def mark_orders_as_invoiced():
                     })
                 sales_invoice_doc.save(ignore_permissions=True)
                 frappe.db.commit()
-            
+
             sales_order.db_set("order_status", "Shipped", update_modified=True)
             frappe.db.commit()
+            invoiced.append(order_name)
 
 
         except Exception as e:
             frappe.log_error(
-                message=f"Error updating Sales Order {order_name} to Invoiced: {str(e)}",
+                message=f"Error updating Sales Order {order_name} to Invoiced: {str(e)}\n\n{frappe.get_traceback()}",
                 title="Mark Orders As Invoiced Error"
             )
     return {
         "status": "success",
-        "message": f"Sales Orders {orders_to_update} marked as Invoiced.",
+        "message": f"Invoiced {len(invoiced)} order(s); skipped {len(skipped)} not yet invoiced in ERP.",
+        "invoiced": invoiced,
+        "skipped": skipped,
     }
 
    
