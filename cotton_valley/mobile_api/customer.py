@@ -100,9 +100,9 @@ def get_all_customers():
         for customer in customers:
             # Check if customer has ordered in last 90 days
             last_order_date = last_order_map.get(customer.name)
-            active_customer = False
-            if last_order_date:
-                active_customer = last_order_date.strftime('%Y-%m-%d') >= ninety_days_ago
+            active_customer = customer.disabled
+            # if last_order_date:
+            #     active_customer = last_order_date.strftime('%Y-%m-%d') >= ninety_days_ago
             
             # --- Base Customer Info ---
             customer_data = {
@@ -115,7 +115,7 @@ def get_all_customers():
                 "status": 1 if not customer.disabled else 0,
                 "sales_person": customer.sales_person or '',
                 "udc_sales_person": customer.udc_sales_person or '',
-                "active_customer": active_customer or 0,
+                "active_customer": active_customer,
                 "mode_of_payment": customer.mode_of_payment or '',
                 "company": customer.custom_company_name or '',
                 "account_number": customer.account_number or '',

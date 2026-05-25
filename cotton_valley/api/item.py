@@ -167,16 +167,10 @@ def _process_item_upsert(payload):
 	if not item_code:
 		return {"status": "error", "message": "Item code (item_code) is required"}
 
-	is_new = False
-	if frappe.db.exists("Item", item_code):
-		item_doc = frappe.get_doc("Item", item_code)
-	else:
-		is_new = True
-		item_doc = frappe.new_doc("Item")
-		item_doc.item_code = item_code
-		item_doc.item_name = payload.get("item_name") or item_code
-		item_doc.item_group = payload.get("item_group") or "COD"
-		item_doc.stock_uom = payload.get("stock_uom") or "Nos"
+	if not frappe.db.exists("Item", item_code):
+		return {"status": "error", "message": f"Item {item_code} not found"}
+
+	item_doc = frappe.get_doc("Item", item_code)
 
 	field_map = {
 		"item_name": "item_name",
@@ -278,7 +272,7 @@ def _process_item_upsert(payload):
 
 	return {
 		"status": "success",
-		"message": f"Item {item_code} successfully {'created' if is_new else 'updated'}",
+		"message": f"Item {item_code} successfully updated",
 		"item_code": item_code,
 	}
 
