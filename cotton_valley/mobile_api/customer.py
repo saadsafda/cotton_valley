@@ -43,8 +43,9 @@ def get_all_customers():
             "udc_sales_person": ["in", permitted_sales_persons]
         }
 
-        customers = frappe.get_all("Customer",
+        customers = frappe.get_list("Customer",
             or_filters=or_filters,
+            page_length=0,
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
@@ -53,6 +54,7 @@ def get_all_customers():
 
         new_opt_customers = frappe.get_all("Customer",
             filters={"customer_name": "New Opportunity"},
+            page_length=0,
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
                     "mode_of_payment", "sales_person", "udc_sales_person", "custom_company_name", "creation", "modified",
                     "customer_primary_address", "account_number", "udc_account_number", "customer_billing_address", "price_list_for_cv", "price_list_for_udc",
@@ -60,6 +62,8 @@ def get_all_customers():
         )
 
         customers.extend(new_opt_customers)
+        # Keep unique customers by name to avoid duplicates (e.g. New Opportunity already matched above).
+        customers = list({c.name: c for c in customers}.values())
 
         if not customers:
             return {
@@ -128,7 +132,7 @@ def get_all_customers():
                 "country_code": customer.custom_phone_number[:1] if customer.custom_phone_number else '',
                 "phone": customer.custom_phone_number or '',
                 "profile_image_id": customer.image or '',
-                "status": 1 if not customer.disabled else 0,
+                "status": customer.disabled,
                 "sales_person": customer.sales_person or '',
                 "udc_sales_person": customer.udc_sales_person or '',
                 "active_customer": active_customer,
