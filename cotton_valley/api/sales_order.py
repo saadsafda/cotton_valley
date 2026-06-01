@@ -663,7 +663,7 @@ def push_to_erp(sales_orders):
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def unstock_items(order_id, items, total):
     """
     Unstock items from a submitted Sales Order.
