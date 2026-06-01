@@ -102,8 +102,8 @@ def _get_target_fields():
 def _get_item_fields():
 	meta = frappe.get_meta("Item")
 	return {
-		"product_category": _resolve_field(meta, ["product_category", "item_group"], "Product Category"),
-		"product_subcategory": _resolve_field(meta, ["product_subcategory", "item_sub_group"], "Product Subcategory"),
+		"product_category": _resolve_field(meta, ["product_category"], "Product Category"),
+		"product_subcategory": _resolve_field(meta, ["product_subcategory"], "Product Subcategory"),
 		"item_name": _resolve_field(meta, ["item_name"], "Item Name"),
 	}
 
@@ -176,7 +176,7 @@ def _get_actuals(filters, item_fields, period_type):
 	match_subcategory = bool(item_fields.get("product_subcategory"))
 
 	conditions = [
-		"si.docstatus = 1",
+		"si.docstatus IN (0, 1)",
 		"si.posting_date BETWEEN %(from_date)s AND %(to_date)s",
 	]
 	values = {"from_date": filters.from_date, "to_date": filters.to_date}
