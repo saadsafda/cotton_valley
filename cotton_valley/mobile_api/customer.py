@@ -13,18 +13,34 @@ def get_all_customers():
         
         if employee:
             sales_person = frappe.db.get_value("Sales Person", {"employee": employee, "enabled": 1}, "name")
-            
-        if not sales_person:
+
+        # Collect all Sales Person values the current user can access:
+        # 1) Sales Person linked to their Employee
+        # 2) Additional Sales Person entries from User Permission
+        permitted_sales_persons = set()
+        if sales_person:
+            permitted_sales_persons.add(sales_person)
+
+        user_permission_sales_persons = frappe.get_all(
+            "User Permission",
+            filters={"user": current_user, "allow": "Sales Person"},
+            pluck="for_value"
+        )
+        permitted_sales_persons.update([sp for sp in user_permission_sales_persons if sp])
+
+        if not permitted_sales_persons:
             return {
                 "status": "success",
-                "message": "No sales person linked to current user",
+                "message": "No sales person linked or permitted for current user",
                 "data": [],
                 "count": 0
             }
 
+        permitted_sales_persons = list(permitted_sales_persons)
+
         or_filters = {
-            "sales_person": sales_person,
-            "udc_sales_person": sales_person
+            "sales_person": ["in", permitted_sales_persons],
+            "udc_sales_person": ["in", permitted_sales_persons]
         }
 
         customers = frappe.get_all("Customer",
@@ -184,4 +200,3 @@ def get_all_customers():
             "message": "An error occurred while fetching customers",
             "error": str(e)
         }
-
