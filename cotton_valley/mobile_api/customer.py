@@ -301,3 +301,120 @@ def create_customer_address(customer_id, address, address_type="Shipping", is_de
             "status": "error",
             "message": str(e)
         }
+
+
+@frappe.whitelist()
+def edit_customer_address(customer_id, address_id, address, address_type=None, is_default=0, company=None):
+    """
+    Edit an existing address for a specific customer.
+
+    Args:
+        customer_id (str): Customer document name.
+        address_id (str): Address document name.
+        address (str|dict): Address payload (JSON string or dict).
+        address_type (str): Shipping or Billing (optional override).
+        is_default (int|str|bool): Mark as default for selected type.
+        company (str): Optional company name.
+    """
+    try:
+        customer_id = None if not customer_id or customer_id == "null" else customer_id
+        address_id = None if not address_id or address_id == "null" else address_id
+        company = "Cotton Valley" if not company or company == "null" else company
+        address_type = None if not address_type or address_type == "null" else address_type
+        is_default = frappe.utils.cint(is_default)
+
+        if not customer_id:
+            return {
+                "status": "error",
+                "message": "Customer is required"
+            }
+
+        if not address_id:
+            return {
+                "status": "error",
+                "message": "Address is required"
+            }
+
+        if not frappe.db.exists("Customer", customer_id):
+            return {
+                "status": "error",
+                "message": "Customer not found"
+            }
+
+        if not frappe.db.exists("Address", address_id):
+            return {
+                "status": "error",
+                "message": "Address not found"
+            }
+
+        has_link = frappe.db.exists("Dynamic Link", {
+            "parent": address_id,
+            "parenttype": "Address",
+            "link_doctype": "Customer",
+            "link_name": customer_id
+        })
+        if not has_link:
+            return {
+                "status": "error",
+                "message": "Address does not belong to this customer"
+            }
+
+        address = frappe.parse_json(address) if isinstance(address, str) else address
+        if not isinstance(address, dict):
+            return {
+                "status": "error",
+                "message": "Invalid address payload"
+            }
+
+        addr_doc = frappe.get_doc("Address", address_id)
+        final_address_type = address.get("address_type") or address_type or addr_doc.address_type
+        if final_address_type not in ["Shipping", "Billing"]:
+            return {
+                "status": "error",
+                "message": "address_type must be Shipping or Billing"
+            }
+
+        addr_doc.address_title = address.get("address_title") or addr_doc.address_title or f"{customer_id}-{final_address_type}"
+        addr_doc.address_type = final_address_type
+        addr_doc.address_line1 = address.get("address_line1") or address.get("street") or addr_doc.address_line1
+        addr_doc.address_line2 = address.get("address_line2") if "address_line2" in address else addr_doc.address_line2
+        addr_doc.city = address.get("city") if "city" in address else addr_doc.city
+        addr_doc.state = address.get("state") if "state" in address else addr_doc.state
+        addr_doc.pincode = address.get("pincode") if "pincode" in address else addr_doc.pincode
+        addr_doc.country = address.get("country") if "country" in address else addr_doc.country
+        addr_doc.phone = address.get("phone") if "phone" in address else addr_doc.phone
+        addr_doc.email_id = address.get("email_id") if "email_id" in address else addr_doc.email_id
+        addr_doc.company = address.get("company") or company
+        addr_doc.save(ignore_permissions=True)
+
+        if is_default and final_address_type == "Shipping":
+            frappe.db.set_value("Customer", customer_id, "customer_primary_address", addr_doc.name)
+        if is_default and final_address_type == "Billing":
+            frappe.db.set_value("Customer", customer_id, "customer_billing_address", addr_doc.name)
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Customer address updated successfully",
+            "data": {
+                "id": addr_doc.name,
+                "customer_id": customer_id,
+                "title": addr_doc.address_title or "",
+                "address_type": addr_doc.address_type or "",
+                "street": addr_doc.address_line1 or "",
+                "city": addr_doc.city or "",
+                "pincode": addr_doc.pincode or "",
+                "phone": addr_doc.phone or "",
+                "country": addr_doc.country or "",
+                "state": addr_doc.state or "",
+                "is_default": is_default
+            }
+        }
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error("Edit Customer Address Mobile API Error", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": str(e)
+        }
