@@ -497,10 +497,13 @@ def push_to_erp(sales_orders):
             
             # Track successful item pushes
             pushed_items = []
+            # Collect ERP responses for each item to store on the Sales Order
+            erp_responses = []
             # if so_doc.company == "Cotton Valley":
             #     frappe.throw("Cotton Valley Sales Order cannot be pushed to ERP via this method.")
             
             # Prepare payload for each item in the Sales Order
+            total_items = len(so_doc.items)
             for item in so_doc.items:
                 customer_erp_id = ""
                 if so_doc.company == "Cotton Valley":
@@ -519,7 +522,9 @@ def push_to_erp(sales_orders):
                     "everst_so_no": "",
                     "item_id": item.item_code,
                     "qty": str(int(item.qty)),
-                    "rate": str(float(item.rate))
+                    "rate": str(float(item.rate)),
+                    "inventoryItem": item.idx,  # default to idx for tracking, will be overridden for UDC Regular items
+                    "itemCount": total_items
                 }
 
                 if so_doc.company == "UDC":
@@ -576,6 +581,11 @@ def push_to_erp(sales_orders):
                         if result.returncode == 0 and http_status and 200 <= http_status < 300:
                             # Success
                             pushed_items.append(item.item_code)
+                            erp_responses.append({
+                                "item_code": item.item_code,
+                                "http_status": http_status,
+                                "response": response_body
+                            })
                             break  # Success, exit retry loop
                         else:
                             # Determine error type
@@ -623,6 +633,7 @@ def push_to_erp(sales_orders):
             if len(pushed_items) == len(so_doc.items):
                 so_doc.db_set("push_to_erp", 1, update_modified=True)
                 so_doc.db_set("order_status", "Processing", update_modified=True)
+                so_doc.db_set("response", json.dumps(erp_responses, indent=2), update_modified=True)
                 frappe.db.commit()
                 
                 results["success"].append({
@@ -637,6 +648,17 @@ def push_to_erp(sales_orders):
                 message=f"Error pushing Sales Order {so_name} to ERP: {str(e)}",
                 title="ERP Push Error"
             )
+            # Persist whatever responses were collected along with the error
+            if 'so_doc' in locals() and so_doc:
+                try:
+                    error_payload = {
+                        "error": str(e),
+                        "responses": locals().get("erp_responses", [])
+                    }
+                    so_doc.db_set("response", json.dumps(error_payload, indent=2), update_modified=True)
+                    frappe.db.commit()
+                except Exception:
+                    pass
             results["failed"].append({
                 "order": so_name,
                 "error": str(e)
