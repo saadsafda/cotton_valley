@@ -204,3 +204,100 @@ def get_all_customers():
             "message": "An error occurred while fetching customers",
             "error": str(e)
         }
+
+
+@frappe.whitelist()
+def create_customer_address(customer_id, address, address_type="Shipping", is_default=0, company=None):
+    """
+    Create an address for a specific customer.
+
+    Args:
+        customer_id (str): Customer document name.
+        address (str|dict): Address payload (JSON string or dict).
+        address_type (str): Shipping or Billing.
+        is_default (int|str|bool): Mark as default for selected type.
+        company (str): Optional company name.
+    """
+    try:
+        customer_id = None if not customer_id or customer_id == "null" else customer_id
+        company = "Cotton Valley" if not company or company == "null" else company
+        address_type = "Shipping" if not address_type or address_type == "null" else address_type
+        is_default = frappe.utils.cint(is_default)
+
+        if not customer_id:
+            return {
+                "status": "error",
+                "message": "Customer is required"
+            }
+
+        if not frappe.db.exists("Customer", customer_id):
+            return {
+                "status": "error",
+                "message": "Customer not found"
+            }
+
+        address = frappe.parse_json(address) if isinstance(address, str) else address
+        if not isinstance(address, dict):
+            return {
+                "status": "error",
+                "message": "Invalid address payload"
+            }
+
+        address_type = address.get("address_type") or address_type
+        if address_type not in ["Shipping", "Billing"]:
+            return {
+                "status": "error",
+                "message": "address_type must be Shipping or Billing"
+            }
+
+        address_doc = frappe.get_doc({
+            "doctype": "Address",
+            "address_title": address.get("address_title") or f"{customer_id}-{address_type}",
+            "address_type": address_type,
+            "address_line1": address.get("address_line1") or address.get("street"),
+            "address_line2": address.get("address_line2"),
+            "city": address.get("city"),
+            "state": address.get("state"),
+            "pincode": address.get("pincode"),
+            "country": address.get("country"),
+            "phone": address.get("phone"),
+            "email_id": address.get("email_id"),
+            "company": company,
+            "links": [{
+                "link_doctype": "Customer",
+                "link_name": customer_id
+            }]
+        })
+        address_doc.insert(ignore_permissions=True)
+
+        if is_default and address_type == "Shipping":
+            frappe.db.set_value("Customer", customer_id, "customer_primary_address", address_doc.name)
+        if is_default and address_type == "Billing":
+            frappe.db.set_value("Customer", customer_id, "customer_billing_address", address_doc.name)
+
+        frappe.db.commit()
+
+        return {
+            "status": "success",
+            "message": "Customer address created successfully",
+            "data": {
+                "id": address_doc.name,
+                "customer_id": customer_id,
+                "title": address_doc.address_title or "",
+                "address_type": address_doc.address_type or "",
+                "street": address_doc.address_line1 or "",
+                "city": address_doc.city or "",
+                "pincode": address_doc.pincode or "",
+                "phone": address_doc.phone or "",
+                "country": address_doc.country or "",
+                "state": address_doc.state or "",
+                "is_default": is_default
+            }
+        }
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error("Create Customer Address Mobile API Error", frappe.get_traceback())
+        return {
+            "status": "error",
+            "message": str(e)
+        }
