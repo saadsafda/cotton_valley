@@ -391,13 +391,14 @@ def get_panding_payments():
             customer_details = frappe.db.get_value(
                 "Customer",
                 record.customer,
-                ["custom_email_address", "custom_phone_number", "custom_company_name"],
+                ["custom_email_address", "custom_phone_number", "custom_company_name", "mode_of_payment", "udc_mode_of_payment"],
                 as_dict=True
             )
             if customer_details:
                 record["customer_email"] = customer_details.get("custom_email_address")
                 record["customer_phone"] = customer_details.get("custom_phone_number")
                 record["customer_company"] = customer_details.get("custom_company_name")
+                record["mode_of_payment"] = customer_details.get("udc_mode_of_payment") if record.company == "UDC" else customer_details.get("mode_of_payment")
 
             # get items for this sales invoice
             items = frappe.get_all(
@@ -470,14 +471,14 @@ def get_submit_payments():
             customer_details = frappe.db.get_value(
                 "Customer",
                 record.customer,
-                ["custom_email_address", "custom_phone_number", "custom_company_name"],
+                ["custom_email_address", "custom_phone_number", "custom_company_name", "mode_of_payment", "udc_mode_of_payment"],
                 as_dict=True
             )
             if customer_details:
                 record["customer_email"] = customer_details.get("custom_email_address")
                 record["customer_phone"] = customer_details.get("custom_phone_number")
                 record["customer_company"] = customer_details.get("custom_company_name")
-
+                record["mode_of_payment"] = customer_details.get("udc_mode_of_payment") if record.company == "UDC" else customer_details.get("mode_of_payment")
             # get items for this sales invoice
             items = frappe.get_all(
                 "Sales Invoice Item",
