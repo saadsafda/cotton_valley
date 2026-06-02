@@ -112,6 +112,14 @@ frappe.ui.form.on('Sales Order', {
                 window.open(url);
             });
         }
+
+        // Render the ERP response as a table with row count + Export to Excel
+        render_erp_response_table(frm);
+    },
+
+    response(frm) {
+        // Re-render whenever the stored response changes
+        render_erp_response_table(frm);
     },
 
     push_to_erp: function (frm) {
@@ -164,6 +172,137 @@ function push_single_order_to_erp(frm) {
             });
         }
     });
+}
+
+function get_erp_response_rows(frm) {
+    // Returns a normalized array of rows from the `response` field.
+    // Success format: [ {item_code, http_status, response}, ... ]
+    // Failure format: { error, responses: [ ... ] }
+    if (!frm.doc.response) {
+        return { rows: [], error: null };
+    }
+    let parsed;
+    try {
+        parsed = JSON.parse(frm.doc.response);
+    } catch (e) {
+        return { rows: [], error: null };
+    }
+
+    let raw_rows = [];
+    let error = null;
+    if (Array.isArray(parsed)) {
+        raw_rows = parsed;
+    } else if (parsed && typeof parsed === 'object') {
+        raw_rows = parsed.responses || [];
+        error = parsed.error || null;
+    }
+
+    const rows = raw_rows.map(function (r, i) {
+        let order_no = '';
+        try {
+            order_no = (JSON.parse(r.response || '{}')).newOrderNo || '';
+        } catch (e) {
+            order_no = '';
+        }
+        return {
+            idx: i + 1,
+            item_code: r.item_code || '',
+            http_status: r.http_status || '',
+            order_no: order_no,
+            raw: r.response || ''
+        };
+    });
+
+    return { rows: rows, error: error };
+}
+
+function render_erp_response_table(frm) {
+    const field = frm.get_field('response_table');
+    if (!field) {
+        return;
+    }
+
+    const data = get_erp_response_rows(frm);
+    const rows = data.rows;
+
+    if (!rows.length) {
+        const msg = data.error
+            ? `<div class="text-danger" style="padding:8px;">${frappe.utils.escape_html(data.error)}</div>`
+            : '<div class="text-muted" style="padding:8px;">No ERP response available.</div>';
+        field.$wrapper.html(msg);
+        return;
+    }
+
+    let body = '';
+    rows.forEach(function (r) {
+        const ok = r.http_status >= 200 && r.http_status < 300;
+        const status_badge =
+            `<span class="indicator-pill ${ok ? 'green' : 'red'}">${frappe.utils.escape_html(String(r.http_status))}</span>`;
+        body += `
+            <tr>
+                <td style="text-align:center;">${r.idx}</td>
+                <td>${frappe.utils.escape_html(r.item_code)}</td>
+                <td style="text-align:center;">${status_badge}</td>
+                <td>${frappe.utils.escape_html(r.order_no)}</td>
+            </tr>`;
+    });
+
+    const html = `
+        <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <div style="font-weight:600;">${__('Total Rows')}: <span class="indicator-pill blue">${rows.length}</span></div>
+                <button type="button" class="btn btn-default btn-sm btn-export-erp-response">
+                    <i class="fa fa-download"></i> ${__('Export to Excel')}
+                </button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="table table-bordered" style="margin-bottom:0;">
+                    <thead>
+                        <tr>
+                            <th style="width:50px; text-align:center;">#</th>
+                            <th>${__('Item Code')}</th>
+                            <th style="width:120px; text-align:center;">${__('HTTP Status')}</th>
+                            <th>${__('New Order No')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>${body}</tbody>
+                </table>
+            </div>
+        </div>`;
+
+    field.$wrapper.html(html);
+    field.$wrapper.find('.btn-export-erp-response').on('click', function () {
+        export_erp_response_to_excel(frm, rows);
+    });
+}
+
+function export_erp_response_to_excel(frm, rows) {
+    let table = '<table border="1"><thead><tr>' +
+        '<th>#</th><th>Item Code</th><th>HTTP Status</th><th>New Order No</th>' +
+        '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+        table += `<tr>
+            <td>${r.idx}</td>
+            <td>${frappe.utils.escape_html(r.item_code)}</td>
+            <td>${frappe.utils.escape_html(String(r.http_status))}</td>
+            <td>${frappe.utils.escape_html(r.order_no)}</td>
+        </tr>`;
+    });
+    table += '</tbody></table>';
+
+    const html =
+        '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+        'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+        '<head><meta charset="utf-8"></head><body>' + table + '</body></html>';
+
+    const blob = new Blob(['﻿', html], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${frm.doc.name}_ERP_Response.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
 }
 
 function fetch_customer_details(frm) {
