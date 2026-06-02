@@ -179,6 +179,7 @@ def send_sales_order_confirmation_email(doc, method):
                 "currency": doc.currency,
                 "items": doc.items,
                 "specialinstructions": doc.custom_notes or "",
+                "key": doc.get_signature(),
             }
             
             # Render template

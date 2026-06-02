@@ -1,3 +1,4 @@
+import os
 import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from cotton_valley.api.customer import get_current_customer
@@ -748,6 +749,324 @@ def unstock_items(order_id, items, total):
             "status": "error",
             "message": f"An error occurred: {str(e)}"
         }
+
+
+@frappe.whitelist(allow_guest=True)
+def download_sales_order_pdf(order_name):
+    import pdfkit
+    from frappe.utils import scrub_urls, get_url
+
+    frappe.set_user("Administrator")
+    html = frappe.get_print(
+        "Sales Order",
+        order_name,
+        print_format="SO Print Format",
+        no_letterhead=0
+    )
+    frappe.set_user("Guest")
+
+    html = scrub_urls(html)
+
+    # Replace site URL with localhost so wkhtmltopdf can fetch CSS/images locally.
+    site_url = get_url().rstrip("/")
+    html = html.replace(site_url, "http://127.0.0.1:8000")
+
+    # Unpatched wkhtmltopdf does not support CSS Grid or Flexbox.
+    # Inject table-based overrides so the 3-column header renders correctly.
+    grid_fix_css = """
+<style>
+  .pf-header .brand {
+    display: table !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+  }
+  .pf-header .brand > * {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    padding-right: 14px !important;
+  }
+  .pf-header .grid {
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  .pf-header .grid > * {
+    display: table-cell !important;
+    vertical-align: top !important;
+    padding-right: 8px !important;
+  }
+  .pf-header .grid > *:nth-child(1) { width: 30% !important; }
+  .pf-header .grid > *:nth-child(2) { width: 30% !important; }
+  .pf-header .grid > *:nth-child(3) { width: 40% !important; }
+</style>
+"""
+    html = html.replace("</head>", grid_fix_css + "</head>", 1)
+
+    pdf = pdfkit.from_string(html, False, options={
+        "load-error-handling": "ignore",
+        "load-media-error-handling": "ignore",
+        "encoding": "UTF-8",
+        "quiet": "",
+    })
+
+    frappe.local.response.filename = f"{order_name}.pdf"
+    frappe.local.response.filecontent = pdf
+    frappe.local.response.type = "download"
+
+
+@frappe.whitelist(allow_guest=True)
+def download_sales_order_excel(order_name):
+    import mimetypes
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, Alignment, Border, Side
+    from openpyxl.drawing.image import Image as XLImage
+    from PIL import Image as PILImage
+
+    mimetypes.add_type("image/webp", ".webp")
+
+    doc = frappe.get_doc("Sales Order", order_name)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sales Order"
+
+    bold = Font(bold=True)
+    title_font = Font(bold=True, size=14)
+    head_font = Font(bold=True, size=12)
+
+    left = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="top", wrap_text=True)
+
+    thin = Side(style="thin", color="999999")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def put(r, c, v, f=None, a=None, b=None):
+        cell = ws.cell(row=r, column=c, value=v)
+        if f:
+            cell.font = f
+        if a:
+            cell.alignment = a
+        if b:
+            cell.border = b
+        return cell
+
+    r = 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    put(r, 1, (doc.company or "Company"), title_font, center)
+    r += 1
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    put(r, 1, doc.doctype, head_font, center)
+    r += 2
+
+    put(r, 1, "Billing Information:", bold, left)
+    put(r, 4, "Shipping Information:", bold, left)
+    put(r, 8, "Order #", bold, left)
+    put(r, 9, doc.name, bold, left)
+    r += 1
+
+    billing_lines = []
+    if doc.get("customer_address"):
+        a = frappe.get_doc("Address", doc.customer_address)
+        billing_lines = [
+            a.get("address_title") or "",
+            a.get("address_line1") or "",
+            a.get("address_line2") or "",
+            " ".join([x for x in [a.get("city"), a.get("state"), a.get("pincode")] if x]),
+            a.get("country") or "",
+            f"Phone: {a.get('phone')}" if a.get("phone") else "",
+        ]
+        mobile = a.get("mobile_no") or a.get("mobile") or a.get("mobile_number")
+        if mobile:
+            billing_lines.append(f"Mobile: {mobile}")
+
+    shipping_lines = []
+    if doc.get("shipping_address_name"):
+        s = frappe.get_doc("Address", doc.shipping_address_name)
+        shipping_lines = [
+            s.get("address_title") or "",
+            s.get("address_line1") or "",
+            s.get("address_line2") or "",
+            " ".join([x for x in [s.get("city"), s.get("state"), s.get("pincode")] if x]),
+            s.get("country") or "",
+            f"Phone: {s.get('phone')}" if s.get("phone") else "",
+        ]
+        mobile = s.get("mobile_no") or s.get("mobile") or s.get("mobile_number")
+        if mobile:
+            shipping_lines.append(f"Mobile: {mobile}")
+
+    sales_rep_name = doc.sales_team[0].sales_person if doc.get("sales_team") else ""
+
+    sales_rep_email = ""
+    sales_rep_phone = ""
+    if sales_rep_name:
+        emp_name = frappe.db.get_value("Employee", {"employee_name": sales_rep_name}, "name")
+        if emp_name:
+            emp = frappe.get_doc("Employee", emp_name)
+            sales_rep_email = emp.get("user_id") or emp.get("company_email") or emp.get("personal_email") or ""
+            sales_rep_phone = emp.get("mobile") or emp.get("cell_number") or emp.get("phone_number") or ""
+
+    processed_by = sales_rep_name or "—"
+
+    account_no = (
+        doc.get("customer_account_number")
+        or doc.get("account_no")
+        or doc.get("customer_account")
+        or "—"
+    )
+
+    order_date = str(doc.transaction_date or doc.posting_date or "")
+
+    meta_rows = [
+        ("Order Date", order_date),
+        ("Sales Rep", sales_rep_name or "—"),
+        ("Sales Rep Phone", sales_rep_phone or "—"),
+        ("Sales Rep Email", sales_rep_email or "—"),
+        ("Processed By", processed_by or "—"),
+        ("Account #", account_no or "—"),
+        ("Status", doc.status or "—"),
+        ("Order Type", doc.get("order_type") or "—"),
+    ]
+
+    max_lines = max(len(billing_lines), len(shipping_lines), len(meta_rows))
+    for i in range(max_lines):
+        btxt = billing_lines[i] if i < len(billing_lines) else ""
+        ws.merge_cells(start_row=r + i, start_column=1, end_row=r + i, end_column=3)
+        put(r + i, 1, btxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+
+        stxt = shipping_lines[i] if i < len(shipping_lines) else ""
+        ws.merge_cells(start_row=r + i, start_column=4, end_row=r + i, end_column=7)
+        put(r + i, 4, stxt, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+
+        if i < len(meta_rows):
+            put(r + i, 8, meta_rows[i][0], bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, meta_rows[i][1], None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+        else:
+            put(r + i, 8, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+            put(r + i, 9, "", None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+
+    r += max_lines + 1
+
+    customer_email = doc.get("custom_customer_email") or ""
+    put(r, 1, "Email Address:", bold, Alignment(horizontal="left", vertical="center", wrap_text=True))
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=7)
+    put(r, 2, customer_email, None, Alignment(horizontal="left", vertical="center", wrap_text=True))
+    r += 2
+
+    headers = ["Line#", "SKU", "Image", "Item Name", "Case Pack", "Qty", "UOM", "Rate", "Amount"]
+    for i, h in enumerate(headers, start=1):
+        put(r, i, h, bold, center, border)
+    r += 1
+
+    def resolve_image_path(image_url):
+        if not image_url:
+            return None
+        if image_url.startswith("http://") or image_url.startswith("https://"):
+            return None
+        if image_url.startswith("/private/files/"):
+            return frappe.get_site_path(image_url.lstrip("/"))
+        if image_url.startswith("/files/"):
+            return frappe.get_site_path("public", image_url.lstrip("/"))
+        if image_url.startswith("files/"):
+            return frappe.get_site_path("public", image_url)
+        if image_url.startswith("private/files/"):
+            return frappe.get_site_path(image_url)
+        return None
+
+    def convert_webp_to_png(webp_path):
+        if not webp_path:
+            return None
+        ext = os.path.splitext(webp_path)[1].lower()
+        if ext != ".webp":
+            return webp_path
+        base = os.path.splitext(os.path.basename(webp_path))[0]
+        png_path = f"/tmp/{base}.png"
+        im = PILImage.open(webp_path).convert("RGBA")
+        im.save(png_path, "PNG")
+        return png_path
+
+    line_no = 1
+    for it in doc.items:
+        case_pack = it.get("custom_case_pack") or ""
+        ws.row_dimensions[r].height = 55
+
+        row_values = [
+            line_no,
+            it.item_code or "",
+            "",
+            it.item_name or "",
+            case_pack,
+            float(it.qty or 0),
+            it.uom or "",
+            float(it.rate or 0),
+            float(it.amount or 0),
+        ]
+
+        for c, v in enumerate(row_values, start=1):
+            put(r, c, v, None, center, border)
+
+        img_path = resolve_image_path(it.get("image"))
+        if img_path and os.path.exists(img_path):
+            try:
+                img_path = convert_webp_to_png(img_path)
+                xl_img = XLImage(img_path)
+                xl_img.width = 45
+                xl_img.height = 45
+
+                col_width_px = 84
+                row_height_px = 55
+                img_width = 45
+                img_height = 45
+
+                x_offset_px = (col_width_px - img_width) // 2
+                y_offset_px = (row_height_px - img_height) // 2
+
+                x_offset_emu = x_offset_px * 9525
+                y_offset_emu = y_offset_px * 9525
+
+                from openpyxl.drawing.spreadsheet_drawing import OneCellAnchor, AnchorMarker
+                from openpyxl.drawing.xdr import XDRPositiveSize2D
+                from openpyxl.utils.units import pixels_to_EMU
+
+                marker = AnchorMarker(col=2, colOff=x_offset_emu, row=r - 1, rowOff=y_offset_emu)
+                size = XDRPositiveSize2D(pixels_to_EMU(img_width), pixels_to_EMU(img_height))
+                xl_img.anchor = OneCellAnchor(_from=marker, ext=size)
+                ws.add_image(xl_img)
+            except Exception:
+                try:
+                    ws.add_image(xl_img, f"C{r}")
+                except Exception:
+                    pass
+
+        r += 1
+        line_no += 1
+
+    r += 1
+
+    put(r, 8, "Subtotal", bold, right)
+    put(r, 9, float(doc.total or 0), None, right)
+    r += 1
+
+    put(r, 8, "Tax", bold, right)
+    put(r, 9, float(doc.total_taxes_and_charges or 0), None, right)
+    r += 1
+
+    put(r, 8, "Grand Total", bold, right)
+    put(r, 9, float(doc.grand_total or 0), bold, right)
+
+    widths = [18, 18, 14, 40, 14, 12, 12, 18, 24]
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    bio = BytesIO()
+    wb.save(bio)
+
+    frappe.local.response.filename = f"{order_name}.xlsx"
+    frappe.local.response.filecontent = bio.getvalue()
+    frappe.local.response.type = "download"
 
 
 def get_all_sales_orders():
