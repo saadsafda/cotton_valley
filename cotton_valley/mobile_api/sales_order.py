@@ -87,7 +87,7 @@ def get_sales_person_orders(company=None, customer=None):
             customer_details = frappe.db.get_value(
                 "Customer",
                 order.customer,
-                ["custom_email_address", "custom_phone_number", "custom_company_name", "image"],
+                ["custom_email_address", "custom_phone_number", "custom_company_name", "image", "mode_of_payment", "udc_mode_of_payment"],
                 as_dict=True
             )
             
@@ -96,7 +96,7 @@ def get_sales_person_orders(company=None, customer=None):
                 order["customer_phone"] = customer_details.get("custom_phone_number")
                 order["customer_company"] = customer_details.get("custom_company_name")
                 order["customer_image"] = customer_details.get("image")
-            
+                order["mode_of_payment"] = customer_details.get("udc_mode_of_payment") if order.company == "UDC" else customer_details.get("mode_of_payment")
             # Get items for this sales order
             items = frappe.get_all(
                 "Sales Order Item",
