@@ -72,7 +72,7 @@ def get_sales_person_orders(company=None, customer=None):
             filters=base_filters,
             fields=[
                 "name", "customer", "customer_name",
-                "customer_account_number as account_number", "customer_company_name as customer_company", "transaction_date", 
+                "customer_account_number as account_number", "customer_company_name as customer_company", "submit_datetime as transaction_date", 
                 "delivery_date", "order_status as status", "docstatus", "grand_total", "currency",
                 "company", "custom_mode_of_payment", "custom_notes",
                 "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
