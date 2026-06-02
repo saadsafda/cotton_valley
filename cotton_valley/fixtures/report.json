@@ -11,6 +11,136 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
+  "modified": "2026-05-06 17:02:29.993171",
+  "module": "Cotton Valley",
+  "name": "SR target report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Order",
+  "reference_report": null,
+  "report_name": "SR target report",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Accounts User"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Stock User"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Maintenance User"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "ERPNext User"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Employee"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Person"
+   },
+   {
+    "parent": "SR target report",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In house SR"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
+  "modified": "2026-05-08 18:00:00",
+  "module": "Cotton Valley",
+  "name": "Website Search Analytics",
+  "prepared_report": 0,
+  "query": "",
+  "ref_doctype": "Website Search Log",
+  "reference_report": null,
+  "report_name": "Website Search Analytics",
+  "report_script": null,
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "parent": "Website Search Analytics",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "System Manager"
+   },
+   {
+    "parent": "Website Search Analytics",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Website Manager"
+   },
+   {
+    "parent": "Website Search Analytics",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [],
+  "is_standard": "Yes",
+  "javascript": null,
+  "json": null,
+  "letter_head": null,
   "modified": "2026-04-28 00:00:00",
   "module": "Cotton Valley",
   "name": "Sales Person Target Hierarchy",
