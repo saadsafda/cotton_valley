@@ -778,23 +778,161 @@ def unstock_items(order_id, items, total):
 
 @frappe.whitelist(allow_guest=True)
 def download_sales_order_pdf(order_name):
+    import re
     import pdfkit
+    from pathlib import Path
+    from urllib.parse import unquote, urlparse
+    from bs4 import BeautifulSoup
     from frappe.utils import scrub_urls, get_url
 
-    frappe.set_user("Administrator")
-    html = frappe.get_print(
-        "Sales Order",
-        order_name,
-        print_format="SO Print Format",
-        no_letterhead=0
+    doc = frappe.get_doc("Sales Order", order_name)
+    account_no = (
+        frappe.db.get_value("Customer", doc.customer, "account_number")
+        or doc.get("customer_account_number")
+        or doc.get("account_no")
+        or doc.get("customer_account")
+        or ""
     )
-    frappe.set_user("Guest")
+
+    current_user = frappe.session.user
+    try:
+        frappe.set_user("Administrator")
+        html = frappe.get_print(
+            "Sales Order",
+            order_name,
+            print_format="SO Print Format",
+            no_letterhead=0
+        )
+    finally:
+        frappe.set_user(current_user)
 
     html = scrub_urls(html)
 
-    # Replace site URL with localhost so wkhtmltopdf can fetch CSS/images locally.
     site_url = get_url().rstrip("/")
-    html = html.replace(site_url, "http://127.0.0.1:8000")
+    pdf_base_url = (frappe.conf.get("pdf_base_url") or frappe.conf.get("wkhtmltopdf_base_url") or "").rstrip("/")
+    if pdf_base_url:
+        html = html.replace(site_url, pdf_base_url)
+
+    sites_root = os.path.abspath(frappe.get_site_path(".."))
+    assets_root = os.path.join(sites_root, "assets")
+    missing_assets = []
+    empty_image = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+
+    def _file_url(path):
+        return Path(path).resolve().as_uri()
+
+    def _local_asset_path(url):
+        if not url:
+            return None, False
+
+        value = url.strip()
+        if value.startswith(("data:", "mailto:", "tel:", "#")):
+            return None, False
+
+        parsed = urlparse(value if not value.startswith("//") else f"http:{value}")
+        path = unquote(parsed.path if parsed.scheme in ("http", "https") else urlparse(value).path)
+        rel_path = path.lstrip("/")
+
+        if path.startswith("/private/files/"):
+            return frappe.get_site_path("private", "files", path[len("/private/files/"):]), True
+        if path.startswith("/files/"):
+            return frappe.get_site_path("public", "files", path[len("/files/"):]), True
+        if path.startswith("/assets/"):
+            return os.path.join(assets_root, path[len("/assets/"):]), True
+        if rel_path.startswith("private/files/"):
+            return frappe.get_site_path(rel_path), True
+        if rel_path.startswith("files/"):
+            return frappe.get_site_path("public", rel_path), True
+        if rel_path.startswith("assets/"):
+            return os.path.join(sites_root, rel_path), True
+
+        return None, False
+
+    def _localize_url(url):
+        path, is_local_asset = _local_asset_path(url)
+        if not is_local_asset:
+            return url, False, False
+
+        path = os.path.abspath(path)
+        if os.path.exists(path):
+            return _file_url(path), True, True
+
+        missing_assets.append(url)
+        return "", True, False
+
+    def _rewrite_css_urls(css):
+        def replace(match):
+            original_url = match.group(2).strip()
+            replacement, was_local_asset, exists = _localize_url(original_url)
+            if was_local_asset and exists:
+                return f"url('{replacement}')"
+            if was_local_asset:
+                return "url('data:,')"
+            return match.group(0)
+
+        return re.sub(r"url\(\s*(['\"]?)(.*?)\1\s*\)", replace, css or "")
+
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup.find_all(["img", "source", "script"]):
+        attr = "src"
+        if not tag.get(attr):
+            continue
+
+        replacement, was_local_asset, exists = _localize_url(tag.get(attr))
+        if was_local_asset and exists:
+            tag[attr] = replacement
+        elif was_local_asset:
+            if tag.name == "img":
+                tag[attr] = empty_image
+            else:
+                tag.decompose()
+
+    for tag in soup.find_all(["link", "a"]):
+        attr = "href"
+        if not tag.get(attr):
+            continue
+
+        replacement, was_local_asset, exists = _localize_url(tag.get(attr))
+        if was_local_asset and exists:
+            tag[attr] = replacement
+        elif was_local_asset and tag.name == "link":
+            tag.decompose()
+
+    for tag in soup.find_all("style"):
+        tag.string = _rewrite_css_urls(tag.string or "")
+
+    for tag in soup.find_all(style=True):
+        tag["style"] = _rewrite_css_urls(tag.get("style") or "")
+
+    if account_no:
+        grid = soup.select_one(".pf-header .grid")
+        if grid:
+            for section in grid.find_all("div", recursive=False)[:2]:
+                addr = section.select_one(".addr")
+                if not addr:
+                    continue
+
+                strong = addr.select_one(".strong")
+                if strong:
+                    strong.string = account_no
+                else:
+                    strong = soup.new_tag("div", attrs={"class": "strong"})
+                    strong.string = account_no
+                    addr.insert(0, strong)
+
+    for label in soup.select(".pf-header .meta td.label"):
+        if label.get_text(strip=True) == "Order Type":
+            row = label.find_parent("tr")
+            if row:
+                row.decompose()
+
+    html = str(soup)
+
+    if missing_assets:
+        frappe.log_error(
+            message="\n".join(sorted(set(missing_assets))[:50]),
+            title="Sales Order PDF Missing Local Assets",
+        )
 
     # Unpatched wkhtmltopdf does not support CSS Grid or Flexbox.
     # Inject table-based overrides so the 3-column header renders correctly.
@@ -827,12 +965,23 @@ def download_sales_order_pdf(order_name):
 """
     html = html.replace("</head>", grid_fix_css + "</head>", 1)
 
-    pdf = pdfkit.from_string(html, False, options={
+    options = {
         "load-error-handling": "ignore",
         "load-media-error-handling": "ignore",
         "encoding": "UTF-8",
         "quiet": "",
-    })
+    }
+
+    try:
+        from packaging.version import Version
+        from frappe.utils.pdf import get_wkhtmltopdf_version
+
+        if Version(str(get_wkhtmltopdf_version()).strip()) >= Version("0.12.6"):
+            options["enable-local-file-access"] = ""
+    except Exception:
+        options["enable-local-file-access"] = ""
+
+    pdf = pdfkit.from_string(html, False, options=options)
 
     frappe.local.response.filename = f"{order_name}.pdf"
     frappe.local.response.filecontent = pdf
@@ -852,6 +1001,13 @@ def download_sales_order_excel(order_name):
     mimetypes.add_type("image/webp", ".webp")
 
     doc = frappe.get_doc("Sales Order", order_name)
+    account_no = (
+        frappe.db.get_value("Customer", doc.customer, "account_number")
+        or doc.get("customer_account_number")
+        or doc.get("account_no")
+        or doc.get("customer_account")
+        or ""
+    )
 
     wb = Workbook()
     ws = wb.active
@@ -897,7 +1053,7 @@ def download_sales_order_excel(order_name):
     if doc.get("customer_address"):
         a = frappe.get_doc("Address", doc.customer_address)
         billing_lines = [
-            a.get("address_title") or "",
+            account_no or a.get("address_title") or "",
             a.get("address_line1") or "",
             a.get("address_line2") or "",
             " ".join([x for x in [a.get("city"), a.get("state"), a.get("pincode")] if x]),
@@ -912,7 +1068,7 @@ def download_sales_order_excel(order_name):
     if doc.get("shipping_address_name"):
         s = frappe.get_doc("Address", doc.shipping_address_name)
         shipping_lines = [
-            s.get("address_title") or "",
+            account_no or s.get("address_title") or "",
             s.get("address_line1") or "",
             s.get("address_line2") or "",
             " ".join([x for x in [s.get("city"), s.get("state"), s.get("pincode")] if x]),
@@ -936,13 +1092,6 @@ def download_sales_order_excel(order_name):
 
     processed_by = sales_rep_name or "—"
 
-    account_no = (
-        doc.get("customer_account_number")
-        or doc.get("account_no")
-        or doc.get("customer_account")
-        or "—"
-    )
-
     order_date = str(doc.transaction_date or doc.posting_date or "")
 
     meta_rows = [
@@ -953,7 +1102,6 @@ def download_sales_order_excel(order_name):
         ("Processed By", processed_by or "—"),
         ("Account #", account_no or "—"),
         ("Status", doc.status or "—"),
-        ("Order Type", doc.get("order_type") or "—"),
     ]
 
     max_lines = max(len(billing_lines), len(shipping_lines), len(meta_rows))

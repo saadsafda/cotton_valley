@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from io import BytesIO
 import json
+import re
 
 from cotton_valley.api.sales_order import push_to_erp
 from openpyxl import Workbook
@@ -185,6 +186,8 @@ def send_sales_order_confirmation_email(doc, method):
             # Render template
             subject = frappe.render_template(email_template.subject, template_args)
             response = email_template.response_html if email_template.use_html else email_template.response
+            response = re.sub(r"{{\s*base_amount\s*}}", "{{ item.amount }}", response)
+            response = re.sub(r"&#123;&#123;\s*base_amount\s*&#125;&#125;", "{{ item.amount }}", response)
             message = frappe.render_template(response, template_args)
 
         except frappe.DoesNotExistError:
