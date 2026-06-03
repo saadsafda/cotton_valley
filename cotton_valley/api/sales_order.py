@@ -782,6 +782,15 @@ def download_sales_order_pdf(order_name):
     from bs4 import BeautifulSoup
     from frappe.utils import scrub_urls, get_url
 
+    doc = frappe.get_doc("Sales Order", order_name)
+    account_no = (
+        frappe.db.get_value("Customer", doc.customer, "account_number")
+        or doc.get("customer_account_number")
+        or doc.get("account_no")
+        or doc.get("customer_account")
+        or ""
+    )
+
     current_user = frappe.session.user
     try:
         frappe.set_user("Administrator")
@@ -892,6 +901,28 @@ def download_sales_order_pdf(order_name):
     for tag in soup.find_all(style=True):
         tag["style"] = _rewrite_css_urls(tag.get("style") or "")
 
+    if account_no:
+        grid = soup.select_one(".pf-header .grid")
+        if grid:
+            for section in grid.find_all("div", recursive=False)[:2]:
+                addr = section.select_one(".addr")
+                if not addr:
+                    continue
+
+                strong = addr.select_one(".strong")
+                if strong:
+                    strong.string = account_no
+                else:
+                    strong = soup.new_tag("div", attrs={"class": "strong"})
+                    strong.string = account_no
+                    addr.insert(0, strong)
+
+    for label in soup.select(".pf-header .meta td.label"):
+        if label.get_text(strip=True) == "Order Type":
+            row = label.find_parent("tr")
+            if row:
+                row.decompose()
+
     html = str(soup)
 
     if missing_assets:
@@ -967,6 +998,13 @@ def download_sales_order_excel(order_name):
     mimetypes.add_type("image/webp", ".webp")
 
     doc = frappe.get_doc("Sales Order", order_name)
+    account_no = (
+        frappe.db.get_value("Customer", doc.customer, "account_number")
+        or doc.get("customer_account_number")
+        or doc.get("account_no")
+        or doc.get("customer_account")
+        or ""
+    )
 
     wb = Workbook()
     ws = wb.active
@@ -1012,7 +1050,7 @@ def download_sales_order_excel(order_name):
     if doc.get("customer_address"):
         a = frappe.get_doc("Address", doc.customer_address)
         billing_lines = [
-            a.get("address_title") or "",
+            account_no or a.get("address_title") or "",
             a.get("address_line1") or "",
             a.get("address_line2") or "",
             " ".join([x for x in [a.get("city"), a.get("state"), a.get("pincode")] if x]),
@@ -1027,7 +1065,7 @@ def download_sales_order_excel(order_name):
     if doc.get("shipping_address_name"):
         s = frappe.get_doc("Address", doc.shipping_address_name)
         shipping_lines = [
-            s.get("address_title") or "",
+            account_no or s.get("address_title") or "",
             s.get("address_line1") or "",
             s.get("address_line2") or "",
             " ".join([x for x in [s.get("city"), s.get("state"), s.get("pincode")] if x]),
@@ -1051,13 +1089,6 @@ def download_sales_order_excel(order_name):
 
     processed_by = sales_rep_name or "—"
 
-    account_no = (
-        doc.get("customer_account_number")
-        or doc.get("account_no")
-        or doc.get("customer_account")
-        or "—"
-    )
-
     order_date = str(doc.transaction_date or doc.posting_date or "")
 
     meta_rows = [
@@ -1068,7 +1099,6 @@ def download_sales_order_excel(order_name):
         ("Processed By", processed_by or "—"),
         ("Account #", account_no or "—"),
         ("Status", doc.status or "—"),
-        ("Order Type", doc.get("order_type") or "—"),
     ]
 
     max_lines = max(len(billing_lines), len(shipping_lines), len(meta_rows))
