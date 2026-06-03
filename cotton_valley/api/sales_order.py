@@ -776,6 +776,7 @@ def unstock_items(order_id, items, total):
 @frappe.whitelist(allow_guest=True)
 def download_sales_order_pdf(order_name):
     import pdfkit
+    from bs4 import BeautifulSoup
     from frappe.utils import scrub_urls, get_url
 
     frappe.set_user("Administrator")
@@ -789,9 +790,30 @@ def download_sales_order_pdf(order_name):
 
     html = scrub_urls(html)
 
-    # Replace site URL with localhost so wkhtmltopdf can fetch CSS/images locally.
     site_url = get_url().rstrip("/")
-    html = html.replace(site_url, "http://127.0.0.1:8000")
+    local_url = "http://127.0.0.1:8000"
+
+    # Fetch every external CSS file server-side and inline it as a <style> block.
+    # This removes the dependency on wkhtmltopdf loading CSS from URLs,
+    # which fails on unpatched wkhtmltopdf regardless of load-error-handling.
+    soup = BeautifulSoup(html, "html.parser")
+    for link in soup.find_all("link", rel=True):
+        if "stylesheet" in link.get("rel", []):
+            href = link.get("href", "")
+            if href:
+                fetch_url = href.replace(site_url, local_url)
+                try:
+                    resp = requests.get(fetch_url, timeout=10, verify=False)
+                    if resp.ok:
+                        style_tag = soup.new_tag("style")
+                        style_tag.string = resp.text
+                        link.replace_with(style_tag)
+                except Exception:
+                    pass
+    html = str(soup)
+
+    # Replace remaining site URLs so wkhtmltopdf loads images from localhost.
+    html = html.replace(site_url, local_url)
 
     # Unpatched wkhtmltopdf does not support CSS Grid or Flexbox.
     # Inject table-based overrides so the 3-column header renders correctly.
