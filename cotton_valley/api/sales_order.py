@@ -775,45 +775,130 @@ def unstock_items(order_id, items, total):
 
 @frappe.whitelist(allow_guest=True)
 def download_sales_order_pdf(order_name):
+    import re
     import pdfkit
+    from pathlib import Path
+    from urllib.parse import unquote, urlparse
     from bs4 import BeautifulSoup
     from frappe.utils import scrub_urls, get_url
 
-    frappe.set_user("Administrator")
-    html = frappe.get_print(
-        "Sales Order",
-        order_name,
-        print_format="SO Print Format",
-        no_letterhead=0
-    )
-    frappe.set_user("Guest")
+    current_user = frappe.session.user
+    try:
+        frappe.set_user("Administrator")
+        html = frappe.get_print(
+            "Sales Order",
+            order_name,
+            print_format="SO Print Format",
+            no_letterhead=0
+        )
+    finally:
+        frappe.set_user(current_user)
 
     html = scrub_urls(html)
 
     site_url = get_url().rstrip("/")
-    local_url = "http://127.0.0.1:8000"
+    pdf_base_url = (frappe.conf.get("pdf_base_url") or frappe.conf.get("wkhtmltopdf_base_url") or "").rstrip("/")
+    if pdf_base_url:
+        html = html.replace(site_url, pdf_base_url)
 
-    # Fetch every external CSS file server-side and inline it as a <style> block.
-    # This removes the dependency on wkhtmltopdf loading CSS from URLs,
-    # which fails on unpatched wkhtmltopdf regardless of load-error-handling.
+    sites_root = os.path.abspath(frappe.get_site_path(".."))
+    assets_root = os.path.join(sites_root, "assets")
+    missing_assets = []
+    empty_image = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+
+    def _file_url(path):
+        return Path(path).resolve().as_uri()
+
+    def _local_asset_path(url):
+        if not url:
+            return None, False
+
+        value = url.strip()
+        if value.startswith(("data:", "mailto:", "tel:", "#")):
+            return None, False
+
+        parsed = urlparse(value if not value.startswith("//") else f"http:{value}")
+        path = unquote(parsed.path if parsed.scheme in ("http", "https") else urlparse(value).path)
+        rel_path = path.lstrip("/")
+
+        if path.startswith("/private/files/"):
+            return frappe.get_site_path("private", "files", path[len("/private/files/"):]), True
+        if path.startswith("/files/"):
+            return frappe.get_site_path("public", "files", path[len("/files/"):]), True
+        if path.startswith("/assets/"):
+            return os.path.join(assets_root, path[len("/assets/"):]), True
+        if rel_path.startswith("private/files/"):
+            return frappe.get_site_path(rel_path), True
+        if rel_path.startswith("files/"):
+            return frappe.get_site_path("public", rel_path), True
+        if rel_path.startswith("assets/"):
+            return os.path.join(sites_root, rel_path), True
+
+        return None, False
+
+    def _localize_url(url):
+        path, is_local_asset = _local_asset_path(url)
+        if not is_local_asset:
+            return url, False, False
+
+        path = os.path.abspath(path)
+        if os.path.exists(path):
+            return _file_url(path), True, True
+
+        missing_assets.append(url)
+        return "", True, False
+
+    def _rewrite_css_urls(css):
+        def replace(match):
+            original_url = match.group(2).strip()
+            replacement, was_local_asset, exists = _localize_url(original_url)
+            if was_local_asset and exists:
+                return f"url('{replacement}')"
+            if was_local_asset:
+                return "url('data:,')"
+            return match.group(0)
+
+        return re.sub(r"url\(\s*(['\"]?)(.*?)\1\s*\)", replace, css or "")
+
     soup = BeautifulSoup(html, "html.parser")
-    for link in soup.find_all("link", rel=True):
-        if "stylesheet" in link.get("rel", []):
-            href = link.get("href", "")
-            if href:
-                fetch_url = href.replace(site_url, local_url)
-                try:
-                    resp = requests.get(fetch_url, timeout=10, verify=False)
-                    if resp.ok:
-                        style_tag = soup.new_tag("style")
-                        style_tag.string = resp.text
-                        link.replace_with(style_tag)
-                except Exception:
-                    pass
+    for tag in soup.find_all(["img", "source", "script"]):
+        attr = "src"
+        if not tag.get(attr):
+            continue
+
+        replacement, was_local_asset, exists = _localize_url(tag.get(attr))
+        if was_local_asset and exists:
+            tag[attr] = replacement
+        elif was_local_asset:
+            if tag.name == "img":
+                tag[attr] = empty_image
+            else:
+                tag.decompose()
+
+    for tag in soup.find_all(["link", "a"]):
+        attr = "href"
+        if not tag.get(attr):
+            continue
+
+        replacement, was_local_asset, exists = _localize_url(tag.get(attr))
+        if was_local_asset and exists:
+            tag[attr] = replacement
+        elif was_local_asset and tag.name == "link":
+            tag.decompose()
+
+    for tag in soup.find_all("style"):
+        tag.string = _rewrite_css_urls(tag.string or "")
+
+    for tag in soup.find_all(style=True):
+        tag["style"] = _rewrite_css_urls(tag.get("style") or "")
+
     html = str(soup)
 
-    # Replace remaining site URLs so wkhtmltopdf loads images from localhost.
-    html = html.replace(site_url, local_url)
+    if missing_assets:
+        frappe.log_error(
+            message="\n".join(sorted(set(missing_assets))[:50]),
+            title="Sales Order PDF Missing Local Assets",
+        )
 
     # Unpatched wkhtmltopdf does not support CSS Grid or Flexbox.
     # Inject table-based overrides so the 3-column header renders correctly.
@@ -846,12 +931,23 @@ def download_sales_order_pdf(order_name):
 """
     html = html.replace("</head>", grid_fix_css + "</head>", 1)
 
-    pdf = pdfkit.from_string(html, False, options={
+    options = {
         "load-error-handling": "ignore",
         "load-media-error-handling": "ignore",
         "encoding": "UTF-8",
         "quiet": "",
-    })
+    }
+
+    try:
+        from packaging.version import Version
+        from frappe.utils.pdf import get_wkhtmltopdf_version
+
+        if Version(str(get_wkhtmltopdf_version()).strip()) >= Version("0.12.6"):
+            options["enable-local-file-access"] = ""
+    except Exception:
+        options["enable-local-file-access"] = ""
+
+    pdf = pdfkit.from_string(html, False, options=options)
 
     frappe.local.response.filename = f"{order_name}.pdf"
     frappe.local.response.filecontent = pdf
