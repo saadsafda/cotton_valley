@@ -191,7 +191,7 @@ def get_cart(company=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), company=None, submit=False, payment_reference=None, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
     """
     Create or update a Sales Order from cart.
     Requires logged-in user (removed allow_guest to prevent bot abuse).
@@ -204,6 +204,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
     items = frappe.parse_json(items)
     company = "Cotton Valley" if not company or company == "null" else company
     notes = "" if not notes or notes == "null" else notes
+    payment_reference = None if not payment_reference or payment_reference == "null" else payment_reference
     billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
@@ -271,6 +272,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
                 so_doc.custom_shipping_method = delivery_description
             if payment_method:
                 so_doc.custom_mode_of_payment = payment_method
+            so_doc.custom_payment_reference = payment_reference if submit else None
 
             for row in item_list:
                 so_doc.append("items", {
@@ -337,6 +339,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
             so_doc.custom_shipping_method = delivery_description
         if payment_method:
             so_doc.custom_mode_of_payment = payment_method
+        so_doc.custom_payment_reference = payment_reference if submit else None
 
         if client_ip:
             so_doc.customer_ip = client_ip

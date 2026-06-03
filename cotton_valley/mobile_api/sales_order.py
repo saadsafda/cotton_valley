@@ -165,7 +165,7 @@ def get_sales_person_orders(company=None, customer=None):
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None):
     """
     Create or update a Sales Order from cart.
     items = [
@@ -177,6 +177,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
 
     customer = None if not customer or customer == "null" else customer
     company = "Cotton Valley" if not company or company == "null" else company
+    payment_reference = None if not payment_reference or payment_reference == "null" else payment_reference
     billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
@@ -191,6 +192,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     customer_id = customer
 
     customer_name = frappe.db.get_value("Customer", customer_id, "customer_name")
+    will_submit = bool(submit and customer_name != "New Opportunity")
 
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
@@ -237,6 +239,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
                 so_doc.custom_shipping_method = delivery_description
             if payment_method:
                 so_doc.custom_mode_of_payment = payment_method
+            so_doc.custom_payment_reference = payment_reference if will_submit else None
 
             for row in item_list:
                 so_doc.append("items", {
@@ -260,7 +263,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
                     "allocated_percentage": 100
                 })
             so_doc.save(ignore_permissions=True)
-            if customer_name != "New Opportunity":
+            if will_submit:
                 so_doc.submit()
             frappe.db.commit()
 
@@ -310,6 +313,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
         so_doc.custom_shipping_method = delivery_description
     if payment_method:
         so_doc.custom_mode_of_payment = payment_method
+    so_doc.custom_payment_reference = payment_reference if will_submit else None
 
     if client_ip:
         so_doc.customer_ip = client_ip
@@ -336,7 +340,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
             "allocated_percentage": 100
         })
     so_doc.save(ignore_permissions=True)
-    if submit and customer_name != "New Opportunity":
+    if will_submit:
         so_doc.submit()
     frappe.db.commit()
     return so_doc.name
