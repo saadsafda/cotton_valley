@@ -357,7 +357,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     background: #ffffff;
     padding: 8px;
     overflow: hidden;
-    height: 252px;
+    height: 275px;
     display: flex;
     flex-direction: column;
 }
