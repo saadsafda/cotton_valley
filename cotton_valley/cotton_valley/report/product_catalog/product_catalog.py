@@ -2,7 +2,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import get_url, formatdate, today
+from frappe.utils import get_url, formatdate, today, flt
 
 SEP = "||"
 PCS_CANDIDATES = frozenset({
@@ -808,7 +808,7 @@ def _get_products_for_pdf(filters):
         # Show unit price when CA >= 1
         show_unit_price = (cp_num >= 1 and unit_price_val is not None)
 
-        stock_qty = r.get("available_stock") or 0
+        stock_qty = flt(r.get("available_stock"))
         in_stock = stock_qty > 0
 
         # Resolve category / subcategory names
