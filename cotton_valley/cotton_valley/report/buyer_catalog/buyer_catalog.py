@@ -126,8 +126,6 @@ html {
 	height: calc(100% - 6px);
 	min-height: calc(100% - 6px);
 	margin-bottom: 6px;
-	display: flex;
-	flex-direction: column;
 }
 
 .page-break-after {
@@ -140,8 +138,8 @@ html {
 	border-collapse: collapse;
 	border-spacing: 0;
 	table-layout: fixed;
-	height: 100%;
-	flex: 1;
+	/* full page-wrap height minus the section ribbon (incl. its margin) */
+	height: calc(100% - 26px);
 }
 
 .grid-table tbody {
@@ -905,6 +903,7 @@ def _build_product_rows(filters):
 				"subcategory_code": subcategory_code,
 				"subcategory_name": subcategory_name,
 				"image_url": _abs_url(r.image_path),
+				"image_path": r.image_path,
 				"title_line": (r.item_name or "").upper(),
 				"upc_token": upc_token,
 				"new_tag": grade_tag or "-",
@@ -967,6 +966,13 @@ def download_buyer_catalog_pdf(filters=None):
 	filters = filters or {}
 
 	products = _build_product_rows(filters)
+
+	# Embed images directly so the PDF does not depend on the server being
+	# able to fetch its own public URLs (fails on some live setups).
+	for p in products:
+		embedded = _to_logo_src(p.get("image_path"))
+		if embedded:
+			p["image_url"] = embedded
 
 	context = {
 		"products": products,
