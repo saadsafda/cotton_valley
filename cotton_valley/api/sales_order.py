@@ -1273,7 +1273,7 @@ def mark_orders_as_invoiced():
     for order_name in orders_to_update:
         try:
             url = f"https://erp.cottonvalley.us/ords/unvdst/sales/invoice/?trnrefno={order_name}"
-            response = requests.get(url, auth=(ERP_USERNAME, ERP_PASSWORD))
+            response = requests.get(url, auth=(ERP_USERNAME, ERP_PASSWORD), timeout=(10, 60))
              # Check if API responded successfully
             if response.status_code != 200:
                 frappe.throw(f"API Error {response.status_code}: {response.text}")

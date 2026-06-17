@@ -696,7 +696,7 @@ def fetch_customer_data(customer_id, company="Cotton Valley"):
             password = UDC_PASSWORD
 
         try:
-            response = requests.get(url_base, auth=(username, password), verify=False)
+            response = requests.get(url_base, auth=(username, password), verify=False, timeout=(10, 60))
         except requests.exceptions.SSLError as ssl_err:
             frappe.log_error("Fetch Customer Data SSL Error", f"SSL error when connecting to external API: {ssl_err}")
             return {

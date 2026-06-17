@@ -1019,7 +1019,7 @@ def sync_item_from_api(item_code, company=None):
         username = UDC_USER
         password = UDC_PASSWORD
 
-    response = requests.get(url, auth=(username, password))
+    response = requests.get(url, auth=(username, password), timeout=(10, 60))
     # Check if API responded successfully
     if response.status_code != 200:
         frappe.throw(f"API Error {response.status_code}: {response.text}")
@@ -1272,7 +1272,7 @@ def sync_cv_item_batch(
         
         try:
             url = f"{url_base}{item_code}"
-            resp = requests.get(url, auth=(CV_USER, CV_PASSWORD), verify=False)
+            resp = requests.get(url, auth=(CV_USER, CV_PASSWORD), verify=False, timeout=(10, 60))
 
             if resp.status_code == 404:
                 errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
@@ -1523,7 +1523,7 @@ def sync_udc_item_batch(
         
         try:
             url = f"{url_base}{item_code}"
-            resp = requests.get(url, auth=(UDC_USER, UDC_PASSWORD), verify=False)
+            resp = requests.get(url, auth=(UDC_USER, UDC_PASSWORD), verify=False, timeout=(10, 60))
 
             if resp.status_code == 404:
                 errors.append({"item_code": item_code, "error": "Item not found in external ERP system (404)"})
