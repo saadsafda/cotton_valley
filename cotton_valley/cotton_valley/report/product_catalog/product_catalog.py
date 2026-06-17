@@ -2,7 +2,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import get_url, formatdate, today
+from frappe.utils import get_url, formatdate, today, flt
 
 SEP = "||"
 PCS_CANDIDATES = frozenset({
@@ -357,7 +357,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     background: #ffffff;
     padding: 8px;
     overflow: hidden;
-    height: 252px;
+    height: 245px;
     display: flex;
     flex-direction: column;
 }
@@ -365,13 +365,13 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 /* IMAGE */
 .imgbox {
     text-align: center;
-    margin-bottom: 7px;
-    height: 125px;
+    margin-bottom: 6px;
+    height: 100px;
     overflow: hidden;
 }
 .imgbox img {
     max-width: 100%;
-    max-height: 121px;
+    max-height: 96px;
     object-fit: contain;
 }
 
@@ -668,30 +668,6 @@ def _get_case_pack_map(item_codes):
 
 
 
-def _get_stock_map(item_codes, company=None):
-    if not item_codes:
-        return {}
-
-    if company:
-        rows = frappe.db.sql("""
-            SELECT b.item_code, SUM(b.actual_qty) as qty
-            FROM `tabBin` b
-            INNER JOIN `tabWarehouse` w ON w.name = b.warehouse
-            WHERE b.item_code IN %(items)s
-              AND w.company = %(company)s
-            GROUP BY b.item_code
-        """, {"items": tuple(item_codes), "company": company}, as_dict=1)
-    else:
-        rows = frappe.db.sql("""
-            SELECT item_code, SUM(actual_qty) as qty
-            FROM `tabBin`
-            WHERE item_code IN %(items)s
-            GROUP BY item_code
-        """, {"items": tuple(item_codes)}, as_dict=1)
-
-    return {r.item_code: (r.qty or 0) for r in rows}
-
-
 def _get_company_logo(company):
     if not company:
         return ""
@@ -791,6 +767,7 @@ def _get_products_for_pdf(filters):
             ip.price_list_rate,
             ip.currency,
             IFNULL(it.custom_case_pack, 0) as case_pack,
+            IFNULL(it.available_stock, 0) as available_stock,
             {cat_codes_select} as category_codes,
             {sub_codes_select} as subcategory_codes
         FROM `tabItem` it
@@ -814,9 +791,6 @@ def _get_products_for_pdf(filters):
     cat_titles = _get_titles_map("Product Category", all_cat)
     sub_titles = _get_titles_map("Product Subcategory", all_sub)
 
-    item_codes = [r.item_code for r in rows]
-    stock_map = _get_stock_map(item_codes, filters.get("company"))
-
     products = []
     for r in rows:
         price = r.price_list_rate or 0
@@ -834,7 +808,7 @@ def _get_products_for_pdf(filters):
         # Show unit price when CA >= 1
         show_unit_price = (cp_num >= 1 and unit_price_val is not None)
 
-        stock_qty = stock_map.get(r.item_code, 0) or 0
+        stock_qty = flt(r.get("available_stock"))
         in_stock = stock_qty > 0
 
         # Resolve category / subcategory names
