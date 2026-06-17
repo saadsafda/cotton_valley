@@ -3,10 +3,19 @@ import json
 import frappe
 from frappe.utils import flt, getdate
 
+# Maximum number of records handled in one go.
+# Uploads up to this size are processed immediately in the request.
+# Bigger uploads are split into chunks of this size and each chunk runs as a
+# separate background job, so a large batch never blocks (freezes) the server.
+CHUNK_SIZE = 50
 
-@frappe.whitelist()
-def item_automation():
-	pass
+
+# ---------------------------------------------------------------------------
+# Small helpers
+# ---------------------------------------------------------------------------
+def _bad_request(message):
+	frappe.local.response["http_status_code"] = 400
+	return {"status": "error", "message": message}
 
 
 def _safe_getdate(value):
@@ -29,10 +38,7 @@ def _normalize_to_list(value):
 	if value in (None, "", "null"):
 		return []
 
-	if isinstance(value, list):
-		return [v for v in (_safe_text(x) for x in value) if v]
-
-	if isinstance(value, tuple):
+	if isinstance(value, (list, tuple)):
 		return [v for v in (_safe_text(x) for x in value) if v]
 
 	if isinstance(value, str):
@@ -80,78 +86,66 @@ def _find_product_category(category_ref, company=None):
 	category_ref = _safe_text(category_ref)
 	if not category_ref:
 		return None
-
-	filters = {"erp_id": category_ref, "company": company} if company else {"erp_id": category_ref}
-	category_ref_exists = frappe.db.exists("Product Category", filters)
-	if category_ref_exists:
-		return category_ref_exists
-	
+	filters = {"erp_id": category_ref}
+	if company:
+		filters["company"] = company
+	return frappe.db.exists("Product Category", filters)
 
 
 def _find_product_subcategory(subcategory_ref, company=None):
 	subcategory_ref = _safe_text(subcategory_ref)
 	if not subcategory_ref:
 		return None
-	subcategory_ref_exists = frappe.db.exists("Product Subcategory", {"erp_id": subcategory_ref, "company": company} if company else {"erp_id": subcategory_ref})
-	if subcategory_ref_exists:
-		return subcategory_ref_exists
-
-
-def _set_item_category_row(item_doc, category_name):
-	child_dt, cat_field = _resolve_item_category_mapping()
-	if not child_dt or not cat_field:
-		return
-	item_doc.custom_product_categories = []
-	rows = item_doc.get("custom_product_categories") or []
-	for row in rows:
-		if row.get(cat_field) == category_name:
-			return
-
-	item_doc.append("custom_product_categories", {cat_field: category_name})
+	filters = {"erp_id": subcategory_ref}
+	if company:
+		filters["company"] = company
+	return frappe.db.exists("Product Subcategory", filters)
 
 
 @frappe.whitelist()
+def item_automation():
+	pass
+
+
+# ---------------------------------------------------------------------------
+# Item upsert
+# ---------------------------------------------------------------------------
+@frappe.whitelist()
 def upsert_item_from_client():
-	"""Create or update an Item from client payload using item_code as the key."""
+	"""Create or update Items from a client payload (a single object or a list)."""
 	try:
 		data = frappe.request.get_data(as_text=True)
 		if not data:
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "No data provided"}
+			return _bad_request("No data provided")
 
 		payload = json.loads(data)
-		if isinstance(payload, list):
-			results = []
-			if len(payload) > 20:
-				job = frappe.enqueue(
-					method="cotton_valley.api.item.process_item_upsert_batch",
-					queue="long",
-					timeout=10000,
-					paraItems=payload,
-				)
-				return {
-					"status": "success",
-					"message": "Batch item upsert queued",
-					"job_id": job.id if job else None,
-					"item_count": len(payload),
-				}
-			
-			results.append(process_item_upsert_batch(payload))
-			return {
-				"status": "success",
-				"message": "Batch item upsert processed",
-				"results": results,
-			}
-		if not isinstance(payload, dict):
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "Invalid payload"}
 
-		result = _process_item_upsert(payload)
-		if result.get("status") != "success":
-			frappe.local.response["http_status_code"] = 400
+		# Single item: process now and return its result.
+		if isinstance(payload, dict):
+			result = _process_item_upsert(payload)
+			if result.get("status") != "success":
+				frappe.local.response["http_status_code"] = 400
 			return result
 
-		return result
+		if not isinstance(payload, list):
+			return _bad_request("Invalid payload")
+
+		# Small list: process now.
+		if len(payload) <= CHUNK_SIZE:
+			return {
+				"status": "success",
+				"message": "Items processed",
+				"results": process_item_upsert_batch(payload),
+			}
+
+		# Large list: split into small chunks and run each in the background.
+		# The request returns immediately and no single job blocks the server.
+		_enqueue_in_chunks("cotton_valley.api.item.process_item_upsert_batch", payload)
+		return {
+			"status": "success",
+			"message": "Large batch queued in background",
+			"item_count": len(payload),
+		}
 
 	except Exception as exc:
 		frappe.log_error(frappe.get_traceback(), "Upsert Item From Client API")
@@ -160,8 +154,9 @@ def upsert_item_from_client():
 
 
 def _process_item_upsert(payload):
+	"""Update one Item from a payload. Commits only on success."""
 	if not isinstance(payload, dict):
-		return {"status": "error", "message": "Invalid payload"}
+		return {"status": "error", "message": "Invalid item payload"}
 
 	item_code = payload.get("item_code") or payload.get("name")
 	if not item_code:
@@ -172,6 +167,7 @@ def _process_item_upsert(payload):
 
 	item_doc = frappe.get_doc("Item", item_code)
 
+	# Incoming field -> Item field.
 	field_map = {
 		"item_name": "item_name",
 		"disabled": "hide",
@@ -203,6 +199,19 @@ def _process_item_upsert(payload):
 		"total_stock": "custom_total_stock",
 	}
 
+	# Fields that must be cast before saving.
+	float_fields = {
+		"custom_pallet_hi", "custom_pallet_ti", "custom_cbm",
+		"custom_package_length_inch", "custom_package_width_inch",
+		"custom_package_height_inch", "custom_weight_lbs", "available_stock",
+		"po_qty", "custom_avaerage_sale", "custom_lc", "custom_llc",
+		"custom_eta_qty", "custom_total_stock",
+	}
+	int_fields = {
+		"custom_case_pack", "custom_case_per_pallet",
+		"custom_case_pallet_warehouse", "custom_case_trucking",
+	}
+
 	for param_name, field_name in field_map.items():
 		if param_name not in payload:
 			continue
@@ -210,61 +219,33 @@ def _process_item_upsert(payload):
 		if value in (None, "", "null"):
 			continue
 		if field_name == "eta":
-			item_doc.eta = _safe_getdate(value)
-			continue
-		if field_name in {
-			"custom_pallet_hi",
-			"custom_pallet_ti",
-			"custom_cbm",
-			"custom_package_length_inch",
-			"custom_package_width_inch",
-			"custom_package_height_inch",
-			"custom_weight_lbs",
-			"available_stock",
-			"po_qty",
-			"custom_avaerage_sale",
-			"custom_lc",
-			"custom_llc",
-			"custom_eta_qty",
-			"custom_total_stock",
-		}:
-			item_doc.set(field_name, flt(value))
-			continue
-		if field_name in {
-			"custom_case_pack",
-			"custom_case_per_pallet",
-			"custom_case_pallet_warehouse",
-			"custom_case_trucking",
-		}:
-			item_doc.set(field_name, int(flt(value)))
-			continue
+			value = _safe_getdate(value)
+		elif field_name in float_fields:
+			value = flt(value)
+		elif field_name in int_fields:
+			value = int(flt(value))
 		item_doc.set(field_name, value)
 
 	company = _safe_text(payload.get("company")) or item_doc.company
 
-	category_refs = []
-	category_refs.extend(_normalize_to_list(payload.get("category_ids")))
-
-	# Remove duplicates while preserving order.
-	category_refs = list(dict.fromkeys(category_refs))
-
-	for category_ref in category_refs:
-		category_name = _find_product_category(category_ref, company=company)
-		if not category_name:
-			return {
-				"status": "error",
-				"message": f"Category not found for value: {category_ref}",
-			}
-		_set_item_category_row(item_doc, category_name)
+	# Replace the product categories with the ones given in the payload.
+	category_refs = list(dict.fromkeys(_normalize_to_list(payload.get("category_ids"))))
+	if category_refs:
+		child_dt, cat_field = _resolve_item_category_mapping()
+		if child_dt and cat_field:
+			rows = []
+			for category_ref in category_refs:
+				category_name = _find_product_category(category_ref, company=company)
+				if not category_name:
+					return {"status": "error", "message": f"Category not found for value: {category_ref}"}
+				rows.append({cat_field: category_name})
+			item_doc.set("custom_product_categories", rows)
 
 	subcategory_ref = _safe_text(payload.get("sub_category_id"))
 	if subcategory_ref:
 		subcategory_name = _find_product_subcategory(subcategory_ref, company=company)
 		if not subcategory_name:
-			return {
-				"status": "error",
-				"message": f"Subcategory not found for value: {subcategory_ref}",
-			}
+			return {"status": "error", "message": f"Subcategory not found for value: {subcategory_ref}"}
 		item_doc.custom_sub_category = subcategory_name
 
 	item_doc.save(ignore_permissions=True)
@@ -278,83 +259,39 @@ def _process_item_upsert(payload):
 
 
 def process_item_upsert_batch(paraItems):
+	"""Process a list of item payloads one by one (used inline and as a job)."""
 	results = []
 	for entry in paraItems:
-		if not isinstance(entry, dict):
-			results.append({"status": "error", "message": "Invalid item payload"})
-			continue
-		result = _process_item_upsert(entry)
+		try:
+			result = _process_item_upsert(entry)
+		except Exception as exc:
+			# Undo this item's partial changes; already-saved items are safe.
+			frappe.db.rollback()
+			frappe.log_error(frappe.get_traceback(), "Item Upsert Batch")
+			result = {"status": "error", "message": str(exc)}
 		results.append(result)
 	return results
 
+
+# ---------------------------------------------------------------------------
+# Item price update
+# ---------------------------------------------------------------------------
 @frappe.whitelist()
 def update_item_price_from_client():
-	"""Update Item Price using price_id, item_code, and item_rate."""
+	"""Update a single Item Price using price_id/udc_price_id, item_code and item_rate."""
 	try:
 		data = frappe.request.get_data(as_text=True)
 		if not data:
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "No data provided"}
+			return _bad_request("No data provided")
 
 		payload = json.loads(data)
+		if not isinstance(payload, dict):
+			return _bad_request("Invalid payload")
 
-		price_id = payload.get("price_id")
-		udc_price_id = payload.get("udc_price_id")
-		item_code = payload.get("item_code")
-		item_rate = payload.get("item_rate")
-
-		if not price_id and not udc_price_id:
+		result = _process_item_price(payload)
+		if result.get("status") != "success":
 			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "price_id or udc_price_id is required"}
-		if not item_code:
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "item_code is required"}
-		if item_rate in (None, "", "null"):
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "item_rate is required"}
-
-		if not frappe.db.exists("Item", item_code):
-			frappe.local.response["http_status_code"] = 404
-			return {"status": "error", "message": f"Item {item_code} not found"}
-
-		price_list_filters = {"price_id": price_id} if price_id else {"udc_price_id": udc_price_id}
-		price_list = frappe.db.get_value("Price List", price_list_filters, "name")
-		if not price_list:
-			frappe.local.response["http_status_code"] = 404
-			missing_key = "price_id" if price_id else "udc_price_id"
-			missing_value = price_id or udc_price_id
-			return {
-				"status": "error",
-				"message": f"Price List not found for {missing_key} {missing_value}",
-			}
-
-		existing = frappe.db.exists(
-			"Item Price",
-			{"item_code": item_code, "price_list": price_list},
-		)
-		if not existing:
-			frappe.local.response["http_status_code"] = 404
-			return {
-				"status": "error",
-				"message": f"Item Price not found for item {item_code} and price list {price_list}",
-			}
-
-		price_doc = frappe.get_doc("Item Price", existing)
-		price_doc.item_code = item_code
-		price_doc.price_list = price_list
-		price_doc.price_list_rate = flt(item_rate)
-		price_doc.save(ignore_permissions=True)
-		frappe.db.commit()
-
-		return {
-			"status": "success",
-			"message": f"Item price for {item_code} updated successfully",
-			"price_id": price_id,
-			"udc_price_id": udc_price_id,
-			"price_list": price_list,
-			"item_code": item_code,
-			"item_rate": price_doc.price_list_rate,
-		}
+		return result
 
 	except Exception as exc:
 		frappe.log_error(frappe.get_traceback(), "Update Item Price From Client API")
@@ -364,38 +301,31 @@ def update_item_price_from_client():
 
 @frappe.whitelist()
 def update_item_price_from_client_batch():
-	"""Update multiple Item Price records using an array payload."""
+	"""Update multiple Item Prices from an array payload."""
 	try:
 		data = frappe.request.get_data(as_text=True)
 		if not data:
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "No data provided"}
+			return _bad_request("No data provided")
 
 		payload = json.loads(data)
 		items = payload.get("items") if isinstance(payload, dict) else payload
 		if not isinstance(items, list) or not items:
-			frappe.local.response["http_status_code"] = 400
-			return {"status": "error", "message": "items must be a non-empty array"}
+			return _bad_request("items must be a non-empty array")
 
-		if len(items) > 20:
-			job = frappe.enqueue(
-				method="cotton_valley.api.item.process_item_price_batch",
-				queue="long",
-				timeout=10000,
-				paraItems=items,
-			)
+		# Small list: process now.
+		if len(items) <= CHUNK_SIZE:
 			return {
 				"status": "success",
-				"message": "Batch item price update queued",
-				"job_id": job.id if job else None,
-				"item_count": len(items),
+				"message": "Item prices processed",
+				"results": process_item_price_batch(items),
 			}
 
-		results = process_item_price_batch(items)
+		# Large list: split into small chunks and run each in the background.
+		_enqueue_in_chunks("cotton_valley.api.item.process_item_price_batch", items)
 		return {
 			"status": "success",
-			"message": "Batch item price update processed",
-			"results": results,
+			"message": "Large batch queued in background",
+			"item_count": len(items),
 		}
 
 	except Exception as exc:
@@ -404,70 +334,76 @@ def update_item_price_from_client_batch():
 		return {"status": "error", "message": str(exc)}
 
 
+def _process_item_price(payload):
+	"""Update one Item Price from a payload. Commits only on success."""
+	if not isinstance(payload, dict):
+		return {"status": "error", "message": "Invalid item payload"}
+
+	price_id = payload.get("price_id")
+	udc_price_id = payload.get("udc_price_id")
+	item_code = payload.get("item_code")
+	item_rate = payload.get("item_rate")
+
+	if not price_id and not udc_price_id:
+		return {"status": "error", "message": "price_id or udc_price_id is required"}
+	if not item_code:
+		return {"status": "error", "message": "item_code is required"}
+	if item_rate in (None, "", "null"):
+		return {"status": "error", "message": "item_rate is required"}
+	if not frappe.db.exists("Item", item_code):
+		return {"status": "error", "message": f"Item {item_code} not found"}
+
+	price_list_filters = {"price_id": price_id} if price_id else {"udc_price_id": udc_price_id}
+	price_list = frappe.db.get_value("Price List", price_list_filters, "name")
+	if not price_list:
+		missing_key = "price_id" if price_id else "udc_price_id"
+		missing_value = price_id or udc_price_id
+		return {"status": "error", "message": f"Price List not found for {missing_key} {missing_value}"}
+
+	existing = frappe.db.exists("Item Price", {"item_code": item_code, "price_list": price_list})
+	if not existing:
+		return {"status": "error", "message": f"Item Price not found for item {item_code} and price list {price_list}"}
+
+	price_doc = frappe.get_doc("Item Price", existing)
+	price_doc.price_list_rate = flt(item_rate)
+	price_doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	return {
+		"status": "success",
+		"message": f"Item price for {item_code} updated successfully",
+		"price_id": price_id,
+		"udc_price_id": udc_price_id,
+		"price_list": price_list,
+		"item_code": item_code,
+		"item_rate": price_doc.price_list_rate,
+	}
+
+
 def process_item_price_batch(paraItems):
+	"""Update a list of Item Prices one by one (used inline and as a job)."""
 	results = []
 	for entry in paraItems:
-		if not isinstance(entry, dict):
-			results.append({"status": "error", "message": "Invalid item payload"})
-			continue
-
-		price_id = entry.get("price_id")
-		udc_price_id = entry.get("udc_price_id")
-		item_code = entry.get("item_code")
-		item_rate = entry.get("item_rate")
-
-		if not price_id and not udc_price_id:
-			results.append({"status": "error", "message": "price_id or udc_price_id is required"})
-			continue
-		if not item_code:
-			results.append({"status": "error", "message": "item_code is required"})
-			continue
-		if item_rate in (None, "", "null"):
-			results.append({"status": "error", "message": "item_rate is required"})
-			continue
-
-		if not frappe.db.exists("Item", item_code):
-			results.append({"status": "error", "message": f"Item {item_code} not found"})
-			continue
-
-		price_list_filters = {"price_id": price_id} if price_id else {"udc_price_id": udc_price_id}
-		price_list = frappe.db.get_value("Price List", price_list_filters, "name")
-		if not price_list:
-			missing_key = "price_id" if price_id else "udc_price_id"
-			missing_value = price_id or udc_price_id
-			results.append({
-				"status": "error",
-				"message": f"Price List not found for {missing_key} {missing_value}",
-			})
-			continue
-
-		existing = frappe.db.exists(
-			"Item Price",
-			{"item_code": item_code, "price_list": price_list},
-		)
-		if not existing:
-			results.append({
-				"status": "error",
-				"message": f"Item Price not found for item {item_code} and price list {price_list}",
-			})
-			continue
-
-		price_doc = frappe.get_doc("Item Price", existing)
-		price_doc.item_code = item_code
-		price_doc.price_list = price_list
-		price_doc.price_list_rate = flt(item_rate)
-		price_doc.save(ignore_permissions=True)
-
-		results.append({
-			"status": "success",
-			"price_id": price_id,
-			"udc_price_id": udc_price_id,
-			"price_list": price_list,
-			"item_code": item_code,
-			"item_rate": price_doc.price_list_rate,
-		})
-
-	frappe.db.commit()
+		try:
+			result = _process_item_price(entry)
+		except Exception as exc:
+			# Undo this item's partial changes; already-saved items are safe.
+			frappe.db.rollback()
+			frappe.log_error(frappe.get_traceback(), "Item Price Batch")
+			result = {"status": "error", "message": str(exc)}
+		results.append(result)
 	return results
 
 
+# ---------------------------------------------------------------------------
+# Shared background helper
+# ---------------------------------------------------------------------------
+def _enqueue_in_chunks(method, items):
+	"""Split items into CHUNK_SIZE pieces and queue each piece as its own job."""
+	for start in range(0, len(items), CHUNK_SIZE):
+		frappe.enqueue(
+			method,
+			queue="long",
+			timeout=1500,
+			paraItems=items[start:start + CHUNK_SIZE],
+		)
