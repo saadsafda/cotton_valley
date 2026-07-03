@@ -160,13 +160,37 @@ def check_device_registration(deviceId, device_model, device_os):
     success = False
     message = ''
 
-    if current_user == "sher.muhammad@cottonvalley.net":
+    employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
+
+    if current_user == "sher.muhammad@cottonvalley.net" and employee:
+        devices = get_employee_devices(employee.name)
+        device_found = any(deviceId == device['device_id'] for device in devices.get('devices', [])) if devices else False
+
+        if not device_found:
+            if frappe.db.exists("Employee Device Registration", {"employee": employee.name}):
+                registration = frappe.get_doc("Employee Device Registration", {"employee": employee.name})
+            else:
+                registration = frappe.new_doc("Employee Device Registration")
+                registration.user = current_user
+                registration.employee = employee.name
+
+            registration.append("employee_devices", {
+                "device_id": deviceId,
+                "device_model": device_model,
+                "device_os": device_os,
+                "approved": 1
+            })
+            if registration.name:
+                registration.save(ignore_permissions=True)
+            else:
+                registration.insert(ignore_permissions=True)
+            frappe.db.commit()
+
         return {
             "success": True,
             "message": ""
         }
 
-    employee = frappe.db.get_value("Employee", {"user_id": current_user, "status": "Active"}, ["name"], as_dict=True)
     if employee:
         devices = get_employee_devices(employee.name)
 
