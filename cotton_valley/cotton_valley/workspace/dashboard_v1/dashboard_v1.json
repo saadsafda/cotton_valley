@@ -1,8 +1,8 @@
 {
  "charts": [
   {
-   "chart_name": "Top 5 Selling Items",
-   "label": "Top 5 Selling Items"
+   "chart_name": "Numbers of orders",
+   "label": "Numbers of orders"
   },
   {
    "chart_name": "Order Status Summary",
@@ -13,6 +13,22 @@
    "label": "Excellent Sales Reps"
   },
   {
+   "chart_name": "Customers",
+   "label": "Customers"
+  },
+  {
+   "chart_name": "New customers",
+   "label": "New customers"
+  },
+  {
+   "chart_name": "Best Selling",
+   "label": "Best Selling"
+  },
+  {
+   "chart_name": "Top Categaory Wise sale",
+   "label": "Top Categaory Wise sale"
+  },
+  {
    "chart_name": "Top 5 States",
    "label": "Top 5 States"
   },
@@ -21,7 +37,7 @@
    "label": "Top 5 Cities"
   }
  ],
- "content": "[{\"id\":\"qG0s346AFl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Dashboad</span>\",\"col\":12}},{\"id\":\"9a0Hb0G9c5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V1\",\"col\":3}},{\"id\":\"M15xmNH2EA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V2\",\"col\":3}},{\"id\":\"Pb_k6pbQc-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"kwNSAMbQE2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Selling Items\",\"col\":6}},{\"id\":\"loNpqkJckM\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Order Status Summary\",\"col\":6}},{\"id\":\"mynb34FYde\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Excellent Sales Reps\",\"col\":12}},{\"id\":\"lmyg6byz8p\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 States\",\"col\":6}},{\"id\":\"sdleNsN6Lc\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Cities\",\"col\":6}}]",
+ "content": "[{\"id\":\"qG0s346AFl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Dashboad</span>\",\"col\":12}},{\"id\":\"9a0Hb0G9c5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V1\",\"col\":3}},{\"id\":\"M15xmNH2EA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V2\",\"col\":3}},{\"id\":\"Pb_k6pbQc-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"NIo_wUNExV\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Numbers of orders\",\"col\":12}},{\"id\":\"hZwsliGu0d\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Order Status Summary\",\"col\":6}},{\"id\":\"iL91yLPU6L\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Excellent Sales Reps\",\"col\":6}},{\"id\":\"r8pUJKmWcO\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customers\",\"col\":12}},{\"id\":\"slQ_1Xt19l\",\"type\":\"chart\",\"data\":{\"chart_name\":\"New customers\",\"col\":12}},{\"id\":\"njobcaJO_x\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Best Selling\",\"col\":6}},{\"id\":\"_JQxeMLpfX\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Categaory Wise sale\",\"col\":6}},{\"id\":\"YZELkHnSyg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 States\",\"col\":6}},{\"id\":\"-cxRvZNJzg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Cities\",\"col\":6}}]",
  "creation": "2025-10-10 02:14:29.864535",
  "custom_blocks": [],
  "docstatus": 0,
@@ -34,7 +50,7 @@
  "is_hidden": 0,
  "label": "Dashboard V1",
  "links": [],
- "modified": "2026-01-02 01:55:22.701726",
+ "modified": "2026-07-15 21:24:02.371943",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Dashboard V1",

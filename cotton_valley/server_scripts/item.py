@@ -1,5 +1,8 @@
+import random
 import frappe
 from frappe.utils import get_datetime
+
+RECOMMENDED_PRODUCTS_LIMIT = 5
 
 
 def _clear_product_tags_if_requested(doc):
@@ -43,6 +46,58 @@ def _sanitize_submit_datetime(doc):
 		doc.set("submit_datetime", None)
 
 
+def _auto_populate_recommended_products(doc):
+	"""
+	If the "Recommended Products" grid (custom_recommended) is empty, fill it
+	with up to RECOMMENDED_PRODUCTS_LIMIT other active items that share at
+	least one Product Category with this item. If no other item exists in
+	any of its categories, nothing is added.
+	"""
+	if not doc.meta.get_field("custom_recommended"):
+		return
+
+	if doc.get("custom_recommended"):
+		return
+
+	if not doc.name:
+		return
+
+	category_ids = [
+		row.product_category
+		for row in (doc.get("custom_product_categories") or [])
+		if row.product_category
+	]
+	if not category_ids:
+		return
+
+	conditions = ["c.product_category IN %s", "i.name != %s", "i.hide = 0"]
+	values = [category_ids, doc.name]
+
+	if doc.company:
+		conditions.append("i.company = %s")
+		values.append(doc.company)
+
+	rows = frappe.db.sql(
+		f"""
+		SELECT DISTINCT i.name
+		FROM `tabItem` i
+		INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
+		WHERE {" AND ".join(conditions)}
+		""",
+		tuple(values),
+		as_dict=True,
+	)
+
+	if not rows:
+		return
+
+	candidates = [r.name for r in rows]
+	random.shuffle(candidates)
+
+	for item_name in candidates[:RECOMMENDED_PRODUCTS_LIMIT]:
+		doc.append("custom_recommended", {"product_name": item_name})
+
+
 # def _prevent_duplicate_item_price(doc, method=None):
 # 	if doc.doctype != "Item Price":
 # 		return
@@ -68,6 +123,7 @@ def validate(doc, method):
 	"""
 	_sanitize_submit_datetime(doc)
 	_clear_product_tags_if_requested(doc)
+	_auto_populate_recommended_products(doc)
 	# _prevent_duplicate_item_price(doc)
 
 
