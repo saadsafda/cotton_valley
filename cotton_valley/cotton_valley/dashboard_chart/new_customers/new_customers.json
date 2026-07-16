@@ -1,0 +1,37 @@
+{
+ "chart_name": "New customers",
+ "chart_type": "Report",
+ "creation": "2026-07-15 16:01:41.669993",
+ "currency": "USD",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{}",
+ "group_by_type": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2026-07-16 21:23:47.517162",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "New customers",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "report_name": "New customer Yearly chart",
+ "roles": [],
+ "show_values_over_chart": 0,
+ "time_interval": "Yearly",
+ "timeseries": 0,
+ "timespan": "Last Year",
+ "type": "Line",
+ "use_report_chart": 0,
+ "x_field": "customer_name",
+ "y_axis": [
+  {
+   "y_field": "no_of_orders"
+  },
+  {
+   "y_field": "orders_amount"
+  }
+ ]
+}

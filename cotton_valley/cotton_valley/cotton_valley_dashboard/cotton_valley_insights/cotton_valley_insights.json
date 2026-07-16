@@ -1,0 +1,78 @@
+{
+ "cards": [
+  {
+   "card": "Total Order"
+  },
+  {
+   "card": "Total Pending orders"
+  },
+  {
+   "card": "Total Proccessing orders"
+  },
+  {
+   "card": "Total shipped Orders"
+  },
+  {
+   "card": "Total Order Income"
+  },
+  {
+   "card": "Pending orders Income"
+  },
+  {
+   "card": "Processing order income"
+  },
+  {
+   "card": "shipped Orders Income"
+  }
+ ],
+ "charts": [
+  {
+   "chart": "Numbers of orders",
+   "width": "Full"
+  },
+  {
+   "chart": "Order Status Summary",
+   "width": "Half"
+  },
+  {
+   "chart": "Excellent Sales Reps",
+   "width": "Half"
+  },
+  {
+   "chart": "Customers",
+   "width": "Full"
+  },
+  {
+   "chart": "New customers",
+   "width": "Full"
+  },
+  {
+   "chart": "Best Selling",
+   "width": "Half"
+  },
+  {
+   "chart": "Top Categaory Wise sale",
+   "width": "Half"
+  },
+  {
+   "chart": "Top 5 States",
+   "width": "Half"
+  },
+  {
+   "chart": "Top 5 Cities",
+   "width": "Half"
+  }
+ ],
+ "creation": "2026-07-15 13:43:12.321489",
+ "dashboard_name": "Cotton Valley Insights",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-07-16 21:27:02.233300",
+ "modified_by": "Administrator",
+ "module": "Cotton Valley",
+ "name": "Cotton Valley Insights",
+ "owner": "Administrator"
+}
