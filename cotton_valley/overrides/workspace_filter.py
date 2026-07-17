@@ -1,39 +1,51 @@
 import frappe
 
-ROLE_NAME = "In house SR"
-
-ALLOWED_HOME_SHORTCUTS = {
-    "CV Customer",
-    "CV Sales Order",
-    "CV Sales Invoice",
-    "UDC Customer",
-    "UDC Sales Order",
-    "UDC Sales Invoice",
+ROLE_ALLOWED_HOME_SHORTCUTS = {
+    "In house SR": {
+        "CV Customer",
+        "CV Sales Order",
+        "CV Sales Invoice",
+        "UDC Customer",
+        "UDC Sales Order",
+        "UDC Sales Invoice",
+    },
+    "In house SR Product": {
+        "CV Product",
+        "UDC Product",
+    },
 }
 
 ALLOWED_WORKSPACES = {"Home", "Dashboard V1"}
 
 
-def _is_limited_user():
-    """Check if the current user should be filtered.
+def _get_allowed_shortcuts():
+    """Return the set of Home shortcuts allowed for the current user, or None if unrestricted.
 
-    Only apply filtering to users who have the 'In house SR' role
-    but do NOT have Administrator or System Manager privileges.
+    Only restricts users who hold one of the roles in ROLE_ALLOWED_HOME_SHORTCUTS
+    and do NOT have Administrator or System Manager privileges. A user matching
+    more than one restricted role sees the union of their allowed shortcuts.
     """
     user = frappe.session.user
     if user == "Administrator":
-        return False
+        return None
 
     roles = frappe.get_roles()
     if "System Manager" in roles:
-        return False
+        return None
 
-    return ROLE_NAME in roles
+    allowed = set()
+    matched = False
+    for role_name, shortcuts in ROLE_ALLOWED_HOME_SHORTCUTS.items():
+        if role_name in roles:
+            matched = True
+            allowed |= shortcuts
+
+    return allowed if matched else None
 
 
 def filter_workspace_sidebar(pages):
-    """Remove sidebar workspaces not in the allowed list for In house SR users."""
-    if not _is_limited_user():
+    """Remove sidebar workspaces not in the allowed list for restricted users."""
+    if _get_allowed_shortcuts() is None:
         return pages
 
     if isinstance(pages, dict) and "pages" in pages:
@@ -46,8 +58,9 @@ def filter_workspace_sidebar(pages):
 
 
 def filter_home_page(result, page_name):
-    """Filter Home workspace shortcuts for In house SR users."""
-    if not _is_limited_user():
+    """Filter Home workspace shortcuts for restricted users."""
+    allowed_shortcuts = _get_allowed_shortcuts()
+    if allowed_shortcuts is None:
         return result
 
     if page_name != "Home":
@@ -61,12 +74,12 @@ def filter_home_page(result, page_name):
     if isinstance(shortcuts, dict) and "items" in shortcuts:
         shortcuts["items"] = [
             s for s in shortcuts["items"]
-            if _get_label(s) in ALLOWED_HOME_SHORTCUTS
+            if _get_label(s) in allowed_shortcuts
         ]
     elif isinstance(shortcuts, list):
         result["shortcuts"] = [
             s for s in shortcuts
-            if _get_label(s) in ALLOWED_HOME_SHORTCUTS
+            if _get_label(s) in allowed_shortcuts
         ]
 
     # Filter cards (link cards) - hide all for limited users on Home

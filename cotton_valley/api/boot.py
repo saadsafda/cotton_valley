@@ -1,34 +1,44 @@
 import frappe
 
-ROLE_NAME = "In house SR"
-ALLOWED_SEARCH_DOCTYPES = {"Sales Order", "Sales Invoice", "Customer"}
+ROLE_ALLOWED_SEARCH_DOCTYPES = {
+    "In house SR": {"Sales Order", "Sales Invoice", "Customer"},
+    "In house SR Product": {"Item"},
+}
 ALLOWED_WORKSPACES = {"Home", "Dashboard V1"}
 
 def extend_bootinfo(bootinfo):
     """Extend bootinfo to restrict search and visibility for specific roles."""
-    if _is_limited_user():
-        _restrict_bootinfo(bootinfo)
+    allowed_search_doctypes = _get_allowed_search_doctypes()
+    if allowed_search_doctypes is not None:
+        _restrict_bootinfo(bootinfo, allowed_search_doctypes)
 
-def _is_limited_user():
-    """Check if the current user should be restricted."""
+def _get_allowed_search_doctypes():
+    """Return allowed search doctypes for the current user, or None if unrestricted."""
     user = frappe.session.user
     if user == "Administrator":
-        return False
+        return None
 
     roles = frappe.get_roles()
     if "System Manager" in roles:
-        return False
+        return None
 
-    return ROLE_NAME in roles
+    allowed = set()
+    matched = False
+    for role_name, doctypes in ROLE_ALLOWED_SEARCH_DOCTYPES.items():
+        if role_name in roles:
+            matched = True
+            allowed |= doctypes
 
-def _restrict_bootinfo(bootinfo):
+    return allowed if matched else None
+
+def _restrict_bootinfo(bootinfo, allowed_search_doctypes):
     """Apply strict restrictions to the bootinfo payload for the restricted user."""
-    
+
     # 1. Restrict Doctypes in search (Awesome Bar)
     if "user" in bootinfo and "can_search" in bootinfo.user:
         bootinfo.user.can_search = [
             d for d in bootinfo.user.can_search
-            if d in ALLOWED_SEARCH_DOCTYPES
+            if d in allowed_search_doctypes
         ]
         
     # 2. Restrict Workspaces in search and sidebar

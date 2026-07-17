@@ -1,22 +1,35 @@
 /**
- * Client-side workspace filter for "In house SR" role.
+ * Client-side workspace filter for "In house SR" / "In house SR Product" roles.
  * Supplements server-side filtering as a safety net.
  */
 (function () {
-    var ROLE = "In house SR";
+    var ROLE_SHORTCUTS = {
+        "In house SR": [
+            "CV Customer", "CV Sales Order", "CV Sales Invoice",
+            "UDC Customer", "UDC Sales Order", "UDC Sales Invoice"
+        ],
+        "In house SR Product": ["CV Product", "UDC Product"]
+    };
     var ALLOWED_SIDEBAR = ["Home", "Dashboard V1"];
-    var ALLOWED_SHORTCUTS = [
-        "CV Customer", "CV Sales Order", "CV Sales Invoice",
-        "UDC Customer", "UDC Sales Order", "UDC Sales Invoice"
-    ];
-    var ALLOWED_SEARCH_DOCTYPES = ["Sales Order", "Sales Invoice", "Customer"];
 
     function hasRole() {
         if (!frappe.user_roles) return false;
         // Never filter Administrator or System Manager users
         if (frappe.session.user === "Administrator") return false;
         if (frappe.user_roles.indexOf("System Manager") !== -1) return false;
-        return frappe.user_roles.indexOf(ROLE) !== -1;
+        return Object.keys(ROLE_SHORTCUTS).some(function (role) {
+            return frappe.user_roles.indexOf(role) !== -1;
+        });
+    }
+
+    function getAllowedShortcuts() {
+        var allowed = [];
+        Object.keys(ROLE_SHORTCUTS).forEach(function (role) {
+            if (frappe.user_roles.indexOf(role) !== -1) {
+                allowed = allowed.concat(ROLE_SHORTCUTS[role]);
+            }
+        });
+        return allowed;
     }
 
     function filterSidebar() {
@@ -33,9 +46,10 @@
         if (!hasRole()) return;
         if (window.location.pathname.toLowerCase() !== "/app/home") return;
 
+        var allowedShortcuts = getAllowedShortcuts();
         document.querySelectorAll(".shortcut-widget-box, .widget.shortcut-widget-box").forEach(function (w) {
             var lbl = w.querySelector(".widget-label") || w.querySelector(".ellipsis");
-            if (lbl && ALLOWED_SHORTCUTS.indexOf(lbl.textContent.trim()) === -1) {
+            if (lbl && allowedShortcuts.indexOf(lbl.textContent.trim()) === -1) {
                 var col = w.closest("[class*=col]");
                 if (col) col.style.display = "none";
                 else w.style.display = "none";

@@ -37,7 +37,7 @@
    "label": "Top 5 Cities"
   }
  ],
- "content": "[{\"id\":\"qG0s346AFl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Dashboad</span>\",\"col\":12}},{\"id\":\"9a0Hb0G9c5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V1\",\"col\":3}},{\"id\":\"M15xmNH2EA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V2\",\"col\":3}},{\"id\":\"Pb_k6pbQc-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"NIo_wUNExV\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Numbers of orders\",\"col\":12}},{\"id\":\"hZwsliGu0d\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Order Status Summary\",\"col\":6}},{\"id\":\"iL91yLPU6L\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Excellent Sales Reps\",\"col\":6}},{\"id\":\"r8pUJKmWcO\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customers\",\"col\":12}},{\"id\":\"slQ_1Xt19l\",\"type\":\"chart\",\"data\":{\"chart_name\":\"New customers\",\"col\":12}},{\"id\":\"njobcaJO_x\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Best Selling\",\"col\":6}},{\"id\":\"_JQxeMLpfX\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Categaory Wise sale\",\"col\":6}},{\"id\":\"YZELkHnSyg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 States\",\"col\":6}},{\"id\":\"-cxRvZNJzg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Cities\",\"col\":6}}]",
+ "content": "[{\"id\":\"qG0s346AFl\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Dashboad</span>\",\"col\":12}},{\"id\":\"9a0Hb0G9c5\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V1\",\"col\":3}},{\"id\":\"M15xmNH2EA\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard V2\",\"col\":3}},{\"id\":\"Pb_k6pbQc-\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"sbAs2_u3K1\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Order\",\"col\":4}},{\"id\":\"VC4cioN_K4\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Pending orders\",\"col\":4}},{\"id\":\"BYyWWMgi3A\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Proccessing orders\",\"col\":4}},{\"id\":\"HoEwKI0oJu\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Order Income\",\"col\":4}},{\"id\":\"--sVYKT_cj\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Pending orders Income\",\"col\":4}},{\"id\":\"CbH3z6YWkF\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Processing order income\",\"col\":4}},{\"id\":\"pK8-miF4Kb\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total shipped Orders\",\"col\":4}},{\"id\":\"VB3W9B2ccw\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"shipped Orders Income\",\"col\":4}},{\"id\":\"NIo_wUNExV\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Numbers of orders\",\"col\":12}},{\"id\":\"hZwsliGu0d\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Order Status Summary\",\"col\":6}},{\"id\":\"iL91yLPU6L\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Excellent Sales Reps\",\"col\":6}},{\"id\":\"r8pUJKmWcO\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Customers\",\"col\":12}},{\"id\":\"slQ_1Xt19l\",\"type\":\"chart\",\"data\":{\"chart_name\":\"New customers\",\"col\":12}},{\"id\":\"njobcaJO_x\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Best Selling\",\"col\":6}},{\"id\":\"_JQxeMLpfX\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top Categaory Wise sale\",\"col\":6}},{\"id\":\"YZELkHnSyg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 States\",\"col\":6}},{\"id\":\"-cxRvZNJzg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Top 5 Cities\",\"col\":6}}]",
  "creation": "2025-10-10 02:14:29.864535",
  "custom_blocks": [],
  "docstatus": 0,
@@ -50,11 +50,44 @@
  "is_hidden": 0,
  "label": "Dashboard V1",
  "links": [],
- "modified": "2026-07-15 21:24:02.371943",
+ "modified": "2026-07-17 14:49:25.730901",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Dashboard V1",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total Order",
+   "number_card_name": "Total Order"
+  },
+  {
+   "label": "Total Pending orders",
+   "number_card_name": "Total Pending orders"
+  },
+  {
+   "label": "Total Proccessing orders",
+   "number_card_name": "Total Proccessing orders"
+  },
+  {
+   "label": "Total Order Income",
+   "number_card_name": "Total Order Income"
+  },
+  {
+   "label": "Pending orders Income",
+   "number_card_name": "Pending orders Income"
+  },
+  {
+   "label": "Processing order income",
+   "number_card_name": "Processing order income"
+  },
+  {
+   "label": "Total shipped Orders",
+   "number_card_name": "Total shipped Orders"
+  },
+  {
+   "label": "shipped Orders Income",
+   "number_card_name": "shipped Orders Income"
+  }
+ ],
  "owner": "saad@gmail.com",
  "parent_page": "",
  "public": 1,
