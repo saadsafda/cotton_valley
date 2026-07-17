@@ -49,9 +49,12 @@ def _sanitize_submit_datetime(doc):
 def _auto_populate_recommended_products(doc):
 	"""
 	If the "Recommended Products" grid (custom_recommended) is empty, fill it
-	with up to RECOMMENDED_PRODUCTS_LIMIT other active items that share at
-	least one Product Category with this item. If no other item exists in
-	any of its categories, nothing is added.
+	with up to RECOMMENDED_PRODUCTS_LIMIT other active items that share the
+	same Subcategory (custom_sub_category) as this item. Subcategory is used
+	instead of the broader Category so recommendations are actually similar
+	items (e.g. a bottle recommends other bottles, not everything tagged
+	under a wide category). If this item has no subcategory, or no other
+	item shares it, nothing is added.
 	"""
 	if not doc.meta.get_field("custom_recommended"):
 		return
@@ -62,16 +65,12 @@ def _auto_populate_recommended_products(doc):
 	if not doc.name:
 		return
 
-	category_ids = [
-		row.product_category
-		for row in (doc.get("custom_product_categories") or [])
-		if row.product_category
-	]
-	if not category_ids:
+	sub_category = doc.get("custom_sub_category")
+	if not sub_category:
 		return
 
-	conditions = ["c.product_category IN %s", "i.name != %s", "i.hide = 0"]
-	values = [category_ids, doc.name]
+	conditions = ["i.custom_sub_category = %s", "i.name != %s", "i.hide = 0"]
+	values = [sub_category, doc.name]
 
 	if doc.company:
 		conditions.append("i.company = %s")
@@ -81,7 +80,6 @@ def _auto_populate_recommended_products(doc):
 		f"""
 		SELECT DISTINCT i.name
 		FROM `tabItem` i
-		INNER JOIN `tabProduct Categoris` c ON c.parent = i.name
 		WHERE {" AND ".join(conditions)}
 		""",
 		tuple(values),
