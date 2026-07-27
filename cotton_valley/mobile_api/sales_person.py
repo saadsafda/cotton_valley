@@ -178,7 +178,7 @@ def check_device_registration(deviceId, device_model, device_os):
                 "device_id": deviceId,
                 "device_model": device_model,
                 "device_os": device_os,
-                "approved": 1
+                "approved": 0
             })
             if registration.name:
                 registration.save(ignore_permissions=True)
