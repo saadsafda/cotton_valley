@@ -213,7 +213,9 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
     client_latitude = None if not client_latitude or client_latitude == "null" else client_latitude
     client_longitude = None if not client_longitude or client_longitude == "null" else client_longitude
 
-    if not customer:
+    # get_current_customer returns {"status": "error", ...} on failure, which is
+    # truthy - checking for the id is what actually detects a missing customer.
+    if not customer or not customer.get("id"):
         return "Customer not found"
 
     customer_id = customer["id"]
