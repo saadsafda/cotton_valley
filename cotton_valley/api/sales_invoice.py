@@ -68,6 +68,15 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
     try:
         if isinstance(items, str):
             items = frappe.parse_json(items)
+
+        # An empty item list leaves si.items empty, and ERPNext's
+        # set_payment_schedule() then does items[0] -> IndexError.
+        if not items:
+            return {
+                "status": "error",
+                "message": "Cannot create a Sales Invoice without any items."
+            }
+
         # Fetch the Sales Order document
         if not frappe.db.exists("Sales Order", sales_order):
             return {

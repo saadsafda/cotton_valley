@@ -213,7 +213,9 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
     client_latitude = None if not client_latitude or client_latitude == "null" else client_latitude
     client_longitude = None if not client_longitude or client_longitude == "null" else client_longitude
 
-    if not customer:
+    # get_current_customer returns {"status": "error", ...} on failure, which is
+    # truthy - checking for the id is what actually detects a missing customer.
+    if not customer or not customer.get("id"):
         return "Customer not found"
 
     customer_id = customer["id"]
@@ -462,31 +464,37 @@ def apply_coupon(code, company=None):
 @frappe.whitelist()
 def push_to_erp(sales_orders):
     """
-    Push Sales Orders to external ERP system using curl.
-    Updates push_to_erp field to 1 after successful push.
+    Push Sales Orders to external ERP system using the ERP bulk endpoint.
+
+    All line items of an order are sent in a single request (in the `detail`
+    array) so that an order is either fully accepted or fully rejected — this
+    avoids the "halfway processed on ERP" partial-failure problem that the
+    previous per-item implementation could leave behind.
+
+    Updates push_to_erp field to 1 after a successful push.
     """
     import json
     import subprocess
     import time
-    
+
     if isinstance(sales_orders, str):
         sales_orders = json.loads(sales_orders)
-    # ERP API configuration
-    CV_ERP_URL = "https://erp.cottonvalley.us/ords/ctnvly_api/order/ord"
+    # ERP API configuration (bulk endpoint: one request per order)
+    CV_ERP_URL = "https://erp.cottonvalley.us/ords/ctnvly_api/order/bulk"
 
-    UDC_ERP_URL = "https://erp.universaldc.us/ords/unvdst_api/order/ord"
+    UDC_ERP_URL = "https://erp.universaldc.us/ords/unvdst_api/order/bulk"
 
     username = CV_USER
     password = CV_PASSWORD
 
     udc_username = UDC_USER
     udc_password = UDC_PASSWORD
-    
+
     results = {
         "success": [],
         "failed": []
     }
-    
+
     for so_name in sales_orders:
         try:
             # Get Sales Order document
@@ -494,170 +502,173 @@ def push_to_erp(sales_orders):
 
             if so_doc.docstatus != 1:
                 frappe.throw(f"{so_name} is not submitted. Only submitted orders can be pushed to ERP.")
-            
+
             # Check if already pushed
             if so_doc.get("push_to_erp") == 1:
                 frappe.throw(f"{so_name} Already pushed to ERP")
-            
-            # Track successful item pushes
-            pushed_items = []
-            # Collect ERP responses for each item to store on the Sales Order
-            erp_responses = []
-            # if so_doc.company == "Cotton Valley":
-            #     frappe.throw("Cotton Valley Sales Order cannot be pushed to ERP via this method.")
-            
-            # Prepare payload for each item in the Sales Order
-            total_items = len(so_doc.items)
-            for item in so_doc.items:
-                customer_erp_id = ""
-                if so_doc.company == "Cotton Valley":
-                    customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "cv_customer_id") or ""
-                else:
-                    customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""
-                    
-                if customer_erp_id in ["", None]:
-                    frappe.throw("Please add erp customer id")
 
-                payload = {
-                    "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
-                    "customer_id": customer_erp_id,
-                    "trnrefno": so_doc.name,
-                    "customer_note": so_doc.get("custom_notes") or "",
-                    "everst_so_no": "",
+            if not so_doc.items:
+                frappe.throw(f"{so_name} has no items to push to ERP.")
+
+            # Resolve the ERP customer id for this company
+            if so_doc.company == "Cotton Valley":
+                customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "cv_customer_id") or ""
+            else:
+                customer_erp_id = frappe.db.get_value("Customer", so_doc.customer, "udc_customer_id") or ""
+
+            if customer_erp_id in ["", None]:
+                frappe.throw("Please add erp customer id")
+
+            # inventoryItem is a single top-level value on the bulk endpoint.
+            # "REG" for Regular orders, otherwise the product type (e.g. "COD").
+            inventory_item = "REG" if so_doc.get("product_type") == "Regular" else so_doc.get("product_type")
+
+            # Build the single bulk payload for the whole order
+            detail = [
+                {
                     "item_id": item.item_code,
-                    "qty": str(int(item.qty)),
-                    "rate": str(float(item.rate)),
-                    "inventoryItem": item.idx,  # default to idx for tracking, will be overridden for UDC Regular items
-                    "itemCount": total_items
+                    "qty": int(item.qty),
+                    "rate": float(item.rate),
                 }
+                for item in so_doc.items
+            ]
 
-                if so_doc.company == "UDC":
-                    payload["inventoryItem"] = "REG" if so_doc.get("product_type") == "Regular" else so_doc.get("product_type")
-                
-                # Make API call using curl (more reliable for problematic connections)
-                max_attempts = 3
-                last_error = None
+            payload = {
+                "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
+                "customer_id": customer_erp_id,
+                "trnrefno": so_doc.name,
+                "customer_note": so_doc.get("custom_notes") or "",
+                "everst_so_no": "",
+                "inventoryItem": inventory_item,
+                "itemCount": len(detail),
+                "detail": detail,
+            }
 
-                for attempt in range(max_attempts):
-                    try:
-                        # Prepare curl command with TLS settings for Oracle ORDS
-                        # Use -w to output HTTP status code
-                        curl_command = [
-                            'curl',
-                            '-X', 'POST',
-                            '-H', 'Content-Type: application/json',
-                            '-H', 'Accept: application/json',
-                            '-u', f'{username}:{password}' if so_doc.company == "Cotton Valley" else f'{udc_username}:{udc_password}',
-                            '--data', json.dumps(payload),
-                            '--insecure',  # Skip SSL verification
-                            '--tlsv1.2',  # Force TLS 1.2 (Oracle ORDS common requirement)
-                            '--max-time', '60',
-                            '--connect-timeout', '30',
-                            '--compressed',  # Enable compression
-                            '-w', '\n%{http_code}',  # Output HTTP status code at the end
-                            '-v',  # Verbose output for debugging
-                            so_doc.company == "Cotton Valley" and CV_ERP_URL or UDC_ERP_URL
-                        ]
-                        
-                        # Execute curl command
-                        result = subprocess.run(
-                            curl_command,
-                            capture_output=True,
-                            text=True,
-                            timeout=90
-                        )
-                        
-                        # Extract HTTP status code from output
-                        output_lines = result.stdout.strip().split('\n')
-                        http_status = None
-                        response_body = ""
-                        
-                        if len(output_lines) >= 2:
-                            try:
-                                http_status = int(output_lines[-1])
-                                response_body = '\n'.join(output_lines[:-1])
-                            except ValueError:
-                                response_body = result.stdout.strip()
-                        else:
+            # Make a single API call for the whole order using curl
+            # (curl is more reliable for these Oracle ORDS connections).
+            max_attempts = 3
+            last_error = None
+            erp_response = None
+
+            for attempt in range(max_attempts):
+                try:
+                    # Prepare curl command with TLS settings for Oracle ORDS
+                    # Use -w to output HTTP status code
+                    curl_command = [
+                        'curl',
+                        '-X', 'POST',
+                        '-H', 'Content-Type: application/json',
+                        '-H', 'Accept: application/json',
+                        '-u', f'{username}:{password}' if so_doc.company == "Cotton Valley" else f'{udc_username}:{udc_password}',
+                        '--data', json.dumps(payload),
+                        '--insecure',  # Skip SSL verification
+                        '--tlsv1.2',  # Force TLS 1.2 (Oracle ORDS common requirement)
+                        '--max-time', '120',
+                        '--connect-timeout', '30',
+                        '--compressed',  # Enable compression
+                        '-w', '\n%{http_code}',  # Output HTTP status code at the end
+                        '-v',  # Verbose output for debugging
+                        so_doc.company == "Cotton Valley" and CV_ERP_URL or UDC_ERP_URL
+                    ]
+
+                    # Execute curl command
+                    result = subprocess.run(
+                        curl_command,
+                        capture_output=True,
+                        text=True,
+                        timeout=150
+                    )
+
+                    # Extract HTTP status code from output
+                    output_lines = result.stdout.strip().split('\n')
+                    http_status = None
+                    response_body = ""
+
+                    if len(output_lines) >= 2:
+                        try:
+                            http_status = int(output_lines[-1])
+                            response_body = '\n'.join(output_lines[:-1])
+                        except ValueError:
                             response_body = result.stdout.strip()
-                        
-                        # Check if curl executed and HTTP status is success (2xx)
-                        if result.returncode == 0 and http_status and 200 <= http_status < 300:
-                            # Success
-                            pushed_items.append(item.item_code)
-                            erp_responses.append({
-                                "item_code": item.item_code,
-                                "http_status": http_status,
-                                "response": response_body
-                            })
-                            break  # Success, exit retry loop
+                    else:
+                        response_body = result.stdout.strip()
+
+                    # Check if curl executed and HTTP status is success (2xx)
+                    if result.returncode == 0 and http_status and 200 <= http_status < 300:
+                        # Success
+                        erp_response = {
+                            "http_status": http_status,
+                            "item_count": len(detail),
+                            "response": response_body
+                        }
+                        break  # Success, exit retry loop
+                    else:
+                        # Determine error type
+                        if http_status == 401:
+                            error_msg = f"Authentication Failed (HTTP 401): Invalid credentials for ERP system.\nPlease verify ERP_USERNAME and ERP_PASSWORD.\nResponse: {response_body}"
+                        elif http_status == 403:
+                            error_msg = f"Access Forbidden (HTTP 403): User does not have permission to access this endpoint.\nResponse: {response_body}"
+                        elif http_status and http_status >= 400:
+                            error_msg = f"HTTP Error {http_status}: {response_body}"
+                        elif result.returncode != 0:
+                            error_msg = f"Curl failed with code {result.returncode}.\nStderr: {result.stderr}\nStdout: {result.stdout}"
+                            # Check for specific SSL/TLS errors
+                            if "Connection reset by peer" in result.stderr or result.returncode == 35:
+                                error_msg = "SSL/TLS Connection Error: The ERP server is rejecting the connection. This typically means:\n1. Your server IP needs to be whitelisted on their firewall\n2. Contact the ERP administrator to add your IP to their allowlist\n3. Or there may be SSL/TLS certificate issues on their end"
                         else:
-                            # Determine error type
-                            if http_status == 401:
-                                error_msg = f"Authentication Failed (HTTP 401): Invalid credentials for ERP system.\nPlease verify ERP_USERNAME and ERP_PASSWORD.\nResponse: {response_body}"
-                            elif http_status == 403:
-                                error_msg = f"Access Forbidden (HTTP 403): User does not have permission to access this endpoint.\nResponse: {response_body}"
-                            elif http_status and http_status >= 400:
-                                error_msg = f"HTTP Error {http_status}: {response_body}"
-                            elif result.returncode != 0:
-                                error_msg = f"Curl failed with code {result.returncode}.\nStderr: {result.stderr}\nStdout: {result.stdout}"
-                                # Check for specific SSL/TLS errors
-                                if "Connection reset by peer" in result.stderr or result.returncode == 35:
-                                    error_msg = "SSL/TLS Connection Error: The ERP server is rejecting the connection. This typically means:\n1. Your server IP needs to be whitelisted on their firewall\n2. Contact the ERP administrator to add your IP to their allowlist\n3. Or there may be SSL/TLS certificate issues on their end"
-                            else:
-                                error_msg = f"Unexpected error: HTTP Status: {http_status}, Response: {response_body}"
-                            
-                            last_error = error_msg
-                            
-                            # Don't retry authentication errors - they won't succeed
-                            if http_status in [401, 403]:
-                                raise Exception(error_msg)
-                            
-                            if attempt < max_attempts - 1:  # Not last attempt
-                                frappe.log_error(
-                                    message=f"Attempt {attempt + 1} failed for {item.item_code}: {error_msg}. Retrying...",
-                                    title="ERP Push Retry"
-                                )
-                                time.sleep(5)  # Longer wait before retry
-                            else:
-                                raise Exception(error_msg)
-                            
-                    except Exception as e:
-                        last_error = str(e)
+                            error_msg = f"Unexpected error: HTTP Status: {http_status}, Response: {response_body}"
+
+                        last_error = error_msg
+
+                        # Don't retry authentication errors - they won't succeed
+                        if http_status in [401, 403]:
+                            raise Exception(error_msg)
+
                         if attempt < max_attempts - 1:  # Not last attempt
                             frappe.log_error(
-                                message=f"Attempt {attempt + 1} failed for {item.item_code}: {str(e)}. Retrying...",
-                                title="ERP Push Error"
+                                message=f"Attempt {attempt + 1} failed for {so_name}: {error_msg}. Retrying...",
+                                title="ERP Push Retry"
                             )
-                            time.sleep(3)  # Wait before retry
+                            time.sleep(5)  # Longer wait before retry
                         else:
-                            raise Exception(f"All {max_attempts} attempts failed. Last error: {last_error}")
-            
-            # Only mark as pushed if all items were successfully pushed
-            if len(pushed_items) == len(so_doc.items):
+                            raise Exception(error_msg)
+
+                except Exception as e:
+                    last_error = str(e)
+                    if attempt < max_attempts - 1:  # Not last attempt
+                        frappe.log_error(
+                            message=f"Attempt {attempt + 1} failed for {so_name}: {str(e)}. Retrying...",
+                            title="ERP Push Error"
+                        )
+                        time.sleep(3)  # Wait before retry
+                    else:
+                        raise Exception(f"All {max_attempts} attempts failed. Last error: {last_error}")
+
+            # The whole order was accepted by the bulk endpoint
+            if erp_response is not None:
                 so_doc.db_set("push_to_erp", 1, update_modified=True)
                 so_doc.db_set("order_status", "Processing", update_modified=True)
-                so_doc.db_set("response", json.dumps(erp_responses, indent=2), update_modified=True)
+                so_doc.db_set("response", json.dumps(erp_response, indent=2), update_modified=True)
                 frappe.db.commit()
-                
+
                 results["success"].append({
                     "order": so_name,
-                    "message": f"Successfully pushed {len(pushed_items)} item(s) to ERP"
+                    "message": f"Successfully pushed {len(detail)} item(s) to ERP"
                 })
             else:
-                raise Exception(f"Only {len(pushed_items)} of {len(so_doc.items)} items were pushed successfully")
-            
+                raise Exception(last_error or "ERP push failed with no response")
+
         except Exception as e:
             frappe.log_error(
                 message=f"Error pushing Sales Order {so_name} to ERP: {str(e)}",
                 title="ERP Push Error"
             )
-            # Persist whatever responses were collected along with the error
+            # Persist the error (and any ERP response captured) on the order
             if 'so_doc' in locals() and so_doc:
                 try:
                     error_payload = {
                         "error": str(e),
-                        "responses": locals().get("erp_responses", [])
+                        "response": locals().get("erp_response"),
                     }
                     so_doc.db_set("response", json.dumps(error_payload, indent=2), update_modified=True)
                     frappe.db.commit()
