@@ -66,6 +66,7 @@ frappe.query_reports["Buyer Catalog"] = {
 				};
 			}
 		},
+		{ fieldname: "in_stock_only", label: __("In Stock Only"), fieldtype: "Check", default: 0 },
 		{
 			fieldname: "sort",
 			label: __("Sort"),

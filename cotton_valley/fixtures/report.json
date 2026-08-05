@@ -7,6 +7,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -84,6 +85,7 @@
     "role": "In house SR"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -94,6 +96,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -129,6 +132,7 @@
     "role": "Sales Manager"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -139,6 +143,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -174,6 +179,7 @@
     "role": "Sales User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -184,6 +190,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -200,6 +207,12 @@
   "report_script": null,
   "report_type": "Script Report",
   "roles": [
+   {
+    "parent": "Buyer Catalog",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Catalog"
+   },
    {
     "parent": "Buyer Catalog",
     "parentfield": "roles",
@@ -261,6 +274,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -271,6 +285,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -286,7 +301,15 @@
   "report_name": "Product Catalog",
   "report_script": null,
   "report_type": "Script Report",
-  "roles": [],
+  "roles": [
+   {
+    "parent": "Product Catalog",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales Catalog"
+   }
+  ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -297,6 +320,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -374,6 +398,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -384,6 +409,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -461,6 +487,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -471,6 +498,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -530,6 +558,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -540,6 +569,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -611,6 +641,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -621,6 +652,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -698,6 +730,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -708,6 +741,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -785,6 +819,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -795,6 +830,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -872,6 +908,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -882,6 +919,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -947,6 +985,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -957,6 +996,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1022,6 +1062,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1032,6 +1073,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1097,6 +1139,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1107,6 +1150,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1115,7 +1159,7 @@
   "modified": "2026-07-17 20:03:55.249298",
   "module": "Cotton Valley",
   "name": "Top Shipping Cities",
-  "prepared_report": 1,
+  "prepared_report": 0,
   "query": "",
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -1172,6 +1216,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1182,6 +1227,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1190,7 +1236,7 @@
   "modified": "2026-07-17 20:03:55.193074",
   "module": "Cotton Valley",
   "name": "Best Selling Products",
-  "prepared_report": 1,
+  "prepared_report": 0,
   "query": "",
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -1247,6 +1293,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1257,6 +1304,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1334,6 +1382,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1344,6 +1393,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1409,6 +1459,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1419,6 +1470,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1484,6 +1536,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1494,6 +1547,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1571,6 +1625,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1581,6 +1636,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1658,6 +1714,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1668,6 +1725,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1733,6 +1791,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1743,6 +1802,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1808,6 +1868,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1818,6 +1879,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1883,6 +1945,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1893,6 +1956,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -1958,6 +2022,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -1968,6 +2033,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -1991,6 +2057,7 @@
     "role": "System Manager"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2001,6 +2068,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2066,6 +2134,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2076,6 +2145,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2141,6 +2211,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2151,6 +2222,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2216,6 +2288,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2226,6 +2299,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2291,6 +2365,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2301,6 +2376,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2336,6 +2412,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2346,6 +2423,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [
    {
     "default": "",
@@ -2388,6 +2466,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2398,6 +2477,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2406,7 +2486,7 @@
   "modified": "2026-07-15 20:49:30.817253",
   "module": "Cotton Valley",
   "name": "Sales Person-wise Summary",
-  "prepared_report": 1,
+  "prepared_report": 0,
   "query": null,
   "ref_doctype": "Sales Order",
   "reference_report": null,
@@ -2463,6 +2543,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2473,6 +2554,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2550,6 +2632,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2560,6 +2643,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -2625,6 +2709,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2635,6 +2720,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2700,6 +2786,7 @@
     "role": "Employee"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2710,6 +2797,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -2787,6 +2875,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2797,6 +2886,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -2838,6 +2928,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2848,6 +2939,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -2919,6 +3011,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -2929,6 +3022,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3000,6 +3094,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3010,6 +3105,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3081,6 +3177,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3091,6 +3188,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3162,6 +3260,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3172,6 +3271,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3243,6 +3343,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3253,6 +3354,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3324,6 +3426,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3334,6 +3437,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -3411,6 +3515,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3421,6 +3526,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3492,6 +3598,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3502,6 +3609,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3579,6 +3687,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3589,6 +3698,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3660,6 +3770,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3670,6 +3781,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3741,6 +3853,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3751,6 +3864,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3828,6 +3942,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3838,6 +3953,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3909,6 +4025,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -3919,6 +4036,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -3996,6 +4114,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4006,6 +4125,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4077,6 +4197,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4087,6 +4208,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4158,6 +4280,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4168,6 +4291,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4239,6 +4363,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4249,6 +4374,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4320,6 +4446,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4330,6 +4457,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4407,6 +4535,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4417,6 +4546,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4488,6 +4618,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4498,6 +4629,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4569,6 +4701,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4579,6 +4712,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4650,6 +4784,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4660,6 +4795,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4731,6 +4867,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4741,6 +4878,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4812,6 +4950,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4822,6 +4961,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -4893,6 +5033,7 @@
     "role": "Desk User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4903,6 +5044,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "No",
   "javascript": null,
@@ -4974,6 +5116,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -4984,6 +5127,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5055,6 +5199,7 @@
     "role": "Sales Person"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -5065,6 +5210,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5124,6 +5270,7 @@
     "role": "Accounts Manager"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -5134,6 +5281,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5223,6 +5371,7 @@
     "role": "In house SR"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -5233,6 +5382,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5241,7 +5391,7 @@
   "modified": "2026-07-17 20:03:55.218410",
   "module": "Cotton Valley",
   "name": "Categaory wise sale",
-  "prepared_report": 1,
+  "prepared_report": 0,
   "query": null,
   "ref_doctype": "Item",
   "reference_report": null,
@@ -5310,6 +5460,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -5320,6 +5471,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5340,6 +5492,12 @@
     "parent": "Catalog Modern Grid",
     "parentfield": "roles",
     "parenttype": "Report",
+    "role": "Sales Catalog"
+   },
+   {
+    "parent": "Catalog Modern Grid",
+    "parentfield": "roles",
+    "parenttype": "Report",
     "role": "Stock Manager"
    },
    {
@@ -5397,6 +5555,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  },
  {
@@ -5407,6 +5566,7 @@
   "disabled": 0,
   "docstatus": 0,
   "doctype": "Report",
+  "doctype_to_sync": [],
   "filters": [],
   "is_standard": "Yes",
   "javascript": null,
@@ -5427,6 +5587,12 @@
     "parent": "Catalog Old Bridge",
     "parentfield": "roles",
     "parenttype": "Report",
+    "role": "Sales Catalog"
+   },
+   {
+    "parent": "Catalog Old Bridge",
+    "parentfield": "roles",
+    "parenttype": "Report",
     "role": "Stock Manager"
    },
    {
@@ -5484,6 +5650,7 @@
     "role": "ERPNext User"
    }
   ],
+  "snapshot_report": 0,
   "timeout": 0
  }
 ]

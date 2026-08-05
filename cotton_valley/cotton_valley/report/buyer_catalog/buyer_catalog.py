@@ -7,7 +7,7 @@ import os
 
 import frappe
 from frappe import _
-from frappe.utils import flt, formatdate, get_url, today
+from frappe.utils import cint, flt, formatdate, get_url, today
 
 SEP = "||"
 
@@ -726,6 +726,9 @@ def _build_product_rows(filters):
 
 	if filters.get("item_group"):
 		conditions.append("it.item_group = %(item_group)s")
+
+	if cint(filters.get("in_stock_only")):
+		conditions.append("IFNULL(it.available_stock, 0) > 0")
 
 	child_dt, cat_field, subcat_child_field, subcat_item_field = _resolve_categories_table()
 	grade_field = _get_item_grade_fieldname()

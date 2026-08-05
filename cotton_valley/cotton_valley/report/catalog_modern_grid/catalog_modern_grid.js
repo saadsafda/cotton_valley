@@ -42,6 +42,7 @@ frappe.query_reports["Catalog Modern Grid"] = {
 				};
 			}
 		},
+		{ fieldname: "in_stock_only", label: __("In Stock Only"), fieldtype: "Check", default: 0 },
 		{ fieldname: "hide_price", label: __("Hide Price in PDF"), fieldtype: "Check", default: 0 },
 		{
 			fieldname: "sort",

@@ -5,7 +5,7 @@ import os
 
 import frappe
 from frappe import _
-from frappe.utils import get_url, get_fullname, now_datetime, flt
+from frappe.utils import get_url, get_fullname, now_datetime, flt, cint
 
 SEP = "||"
 
@@ -126,6 +126,9 @@ def get_data(filters):
 
     if filters.get("item_group"):
         conditions.append("it.item_group = %(item_group)s")
+
+    if cint(filters.get("in_stock_only")):
+        conditions.append("IFNULL(it.available_stock, 0) > 0")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field = _resolve_table_multiselect()
 
@@ -419,7 +422,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     overflow: hidden;
 }
 
-/* UPC / CASE PACK / STOCK rows */
+/* ITEM UPC / CASE PACK / CASES PER PALLET / STOCK rows */
 .info-table {
     width: 100%;
     border-collapse: collapse;
@@ -434,8 +437,9 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     white-space: nowrap;
     overflow: hidden;
 }
-.info-table .col-left  { width: 50%; }
-.info-table .col-right { width: 50%; text-align: right; overflow: visible; white-space: normal; }
+.info-table .col-left  { text-align: left; }
+.info-table .col-right { text-align: right; overflow: visible; }
+.info-table .col-full  { text-align: left; }
 .info-table .lbl-gray  { color: #888; }
 
 /* BADGE */
@@ -511,9 +515,16 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                     </div>
                     <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
                     <table class="info-table">
+                        <colgroup>
+                            <col style="width:42%;">
+                            <col style="width:58%;">
+                        </colgroup>
                         <tr>
-                            <td class="col-left"><span class="lbl-gray">UPC: </span>{{ p.upc or "" }}</td>
-                            <td class="col-right"><span class="lbl-gray">CA: </span>{{ p.case_pack or "" }}</td>
+                            <td class="col-full" colspan="2"><span class="lbl-gray">Item UPC: </span>{{ p.upc or "" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="col-left"><span class="lbl-gray">Case Pack: </span>{{ p.case_pack or "" }}</td>
+                            <td class="col-right"><span class="lbl-gray">Cases Per Pallet: </span>{{ p.cases_per_pallet or "" }}</td>
                         </tr>
                         <tr>
                             <td class="col-left"><span class="lbl-gray">Stock: </span></td>
@@ -614,6 +625,8 @@ def _get_products_for_pdf(filters):
         conditions.append("it.company = %(company)s")
     if filters.get("item_group"):
         conditions.append("it.item_group = %(item_group)s")
+    if cint(filters.get("in_stock_only")):
+        conditions.append("IFNULL(it.available_stock, 0) > 0")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 
@@ -674,6 +687,7 @@ def _get_products_for_pdf(filters):
             ip.price_list_rate,
             ip.currency,
             IFNULL(it.custom_case_pack, 0) as case_pack,
+            IFNULL(it.custom_case_per_pallet, 0) as cases_per_pallet,
             IFNULL(it.available_stock, 0) as available_stock,
             {cat_codes_select} as category_codes,
             {sub_codes_select} as subcategory_codes
@@ -708,6 +722,12 @@ def _get_products_for_pdf(filters):
         except (ValueError, TypeError):
             cp_num = 0.0
 
+        cases_per_pallet = r.get("cases_per_pallet") or 0
+        try:
+            cpp_num = float(cases_per_pallet) if cases_per_pallet else 0.0
+        except (ValueError, TypeError):
+            cpp_num = 0.0
+
         unit_price_val = (price / cp_num) if cp_num > 0 else None
         show_unit_price = (cp_num >= 1 and unit_price_val is not None)
 
@@ -725,6 +745,7 @@ def _get_products_for_pdf(filters):
             "image_url": _abs_url(r.image_path),
             "upc": r.upc,
             "case_pack": int(cp_num) if cp_num and float(cp_num).is_integer() else (cp_num if cp_num else ""),
+            "cases_per_pallet": int(cpp_num) if cpp_num and float(cpp_num).is_integer() else (cpp_num if cpp_num else ""),
             "piece_uom": "PCS",
 
             "case_price": _fmt_money_compact(price, currency=currency),
