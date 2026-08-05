@@ -332,14 +332,22 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 }
 .footer-note { font-size: 10px; font-weight: 600; color: #555; text-align: center; }
 
-/* GRID */
+/* GRID (table-based: WeasyPrint paginates multi-row tables far more
+   reliably than CSS Grid, which drifts/overflows once content spans
+   many pages) */
 .grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
     margin-top: 4px;
 }
+.grid col {
+    width: 25%;
+}
 .card {
+    width: 25%;
+    vertical-align: top;
+    padding: 3px;
     page-break-inside: avoid;
     break-inside: avoid;
 }
@@ -348,23 +356,26 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     border: 1.5px solid #c8c8c8;
     border-radius: 8px;
     background: #ffffff;
-    padding: 6px;
+    padding: 5px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    min-height: 155px;
+    height: 198px;
 }
 
-/* IMAGE */
+/* IMAGE - absorbs the card's leftover height so the text block below
+   always sits flush with the bottom edge (WeasyPrint honours flex-grow
+   but ignores `margin-top: auto` in flex containers) */
 .imgbox {
     text-align: center;
-    margin-bottom: 6px;
-    height: 100px;
+    margin-bottom: 5px;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow: hidden;
 }
 .imgbox img {
     max-width: 100%;
-    max-height: 96px;
+    max-height: 80px;
     object-fit: contain;
 }
 
@@ -379,7 +390,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     font-size: 9px;
     font-weight: 400;
     color: #333;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     line-height: 1.3;
 }
 .item-line b {
@@ -415,10 +426,9 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .desc-line {
     font-size: 8.5px;
     color: #7f7f7f;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     line-height: 1.3;
-    max-height: 23px;
-    line-clamp: 2;
+    max-height: 46px;
     overflow: hidden;
 }
 
@@ -430,7 +440,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     table-layout: fixed;
 }
 .info-table td {
-    padding: 1px 0;
+    padding: 0.5px 0;
     font-size: 8.5px;
     color: #7f7f7f;
     vertical-align: middle;
@@ -494,53 +504,60 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
         {% if footer_note %}<div class="footer-note">{{ footer_note }}</div>{% endif %}
     </div>
 
-    <div class="grid">
-        {% for p in products %}
-            <div class="card">
-                <div class="card-box">
-                    <div class="imgbox">
-                        {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
-                    </div>
-                    <div class="item-line">
-                        <table>
-                            <tr>
-                                <td style="width:55%;"><span class="il-code"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></span></td>
-                                <td class="il-price" style="width:45%;">
-                                    {% if not hide_price %}
-                                        {{ p.case_price }}{% if p.show_unit_price %}<span class="sep">~</span>{{ p.unit_price }}{% endif %}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
-                    <table class="info-table">
-                        <colgroup>
-                            <col style="width:42%;">
-                            <col style="width:58%;">
-                        </colgroup>
-                        <tr>
-                            <td class="col-full" colspan="2"><span class="lbl-gray">Item UPC: </span>{{ p.upc or "" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="col-left"><span class="lbl-gray">Case Pack: </span>{{ p.case_pack or "" }}</td>
-                            <td class="col-right"><span class="lbl-gray">Cases Per Pallet: </span>{{ p.cases_per_pallet or "" }}</td>
-                        </tr>
-                        <tr>
-                            <td class="col-left"><span class="lbl-gray">Stock: </span></td>
-                            <td class="col-right">
-                                {% if p.in_stock %}
-                                    <span class="badge in">{{ p.stock_qty }}</span>
-                                {% else %}
-                                    <span class="badge out">Out of Stock</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+    <table class="grid">
+        <colgroup>
+            <col><col><col><col>
+        </colgroup>
+        {% for row in products|batch(4) %}
+            <tr>
+                {% for p in row %}
+                    <td class="card">
+                        <div class="card-box">
+                            <div class="imgbox">
+                                {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
+                            </div>
+                            <div class="item-line">
+                                <table>
+                                    <tr>
+                                        <td style="width:55%;"><span class="il-code"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></span></td>
+                                        <td class="il-price" style="width:45%;">
+                                            {% if not hide_price %}
+                                                {{ p.case_price }}{% if p.show_unit_price %}<span class="sep">~</span>{{ p.unit_price }}{% endif %}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
+                            <table class="info-table">
+                                <colgroup>
+                                    <col style="width:42%;">
+                                    <col style="width:58%;">
+                                </colgroup>
+                                <tr>
+                                    <td class="col-full" colspan="2"><span class="lbl-gray">Item UPC: </span>{{ p.upc or "" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="col-left"><span class="lbl-gray">Case Pack: </span>{{ p.case_pack or "" }}</td>
+                                    <td class="col-right"><span class="lbl-gray">Cases Per Pallet: </span>{{ p.cases_per_pallet or "" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="col-left"><span class="lbl-gray">Stock: </span></td>
+                                    <td class="col-right">
+                                        {% if p.in_stock %}
+                                            <span class="badge in">{{ p.stock_qty }}</span>
+                                        {% else %}
+                                            <span class="badge out">Out of Stock</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                {% endfor %}
+            </tr>
         {% endfor %}
-    </div>
+    </table>
 
 </body>
 </html>
