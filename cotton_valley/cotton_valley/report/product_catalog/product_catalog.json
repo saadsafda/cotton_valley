@@ -19,6 +19,37 @@
  "ref_doctype": "Item",
  "report_name": "Product Catalog",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Item Manager"
+  },
+  {
+   "role": "Maintenance User"
+  },
+  {
+   "role": "Manufacturing User"
+  },
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "Desk User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "ERPNext User"
+  }
+ ],
  "timeout": 0
 }
