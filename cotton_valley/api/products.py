@@ -2093,7 +2093,7 @@ def get_catalog_price_list_link_options(doctype, txt, searchfield, start, page_l
 
 
 @frappe.whitelist()
-def download_custom_catalog(items, company=None, price_list=None):
+def download_custom_catalog(items, company=None, price_list=None, item_group=None):
     try:
         # Parse the JSON string list of Item Names passed from JS
         if isinstance(items, str):
@@ -2107,6 +2107,7 @@ def download_custom_catalog(items, company=None, price_list=None):
 
         company = (company or "").strip()
         price_list = (price_list or "").strip()
+        item_group = (item_group or "").strip()
 
         if not company:
             frappe.throw(_("Company is required"))
@@ -2131,7 +2132,10 @@ def download_custom_catalog(items, company=None, price_list=None):
             "company": company,
         }
 
-        data = frappe.get_all("Item", 
+        if item_group:
+            item_filters["item_group"] = item_group
+
+        data = frappe.get_all("Item",
             filters=item_filters,
             fields=["image", "item_code", "item_name", "custom_sub_category as subcategory",  
                     "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
@@ -2142,6 +2146,8 @@ def download_custom_catalog(items, company=None, price_list=None):
         )
         
         if not data:
+            if item_group:
+                frappe.throw(_("No items found for Product Type {0}").format(item_group))
             frappe.throw(_("No items found"))
         # 2. Setup Excel
         output = io.BytesIO()
