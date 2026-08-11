@@ -238,11 +238,21 @@ def create_or_update_sales_order(items, notes="", submit_datetime=nowdate(), com
         )
 
         if so:
-            draft_doc = frappe.get_doc("Sales Order", so[0].name)
-            # delete draft cart after extracting items
-            frappe.delete_doc("Sales Order", draft_doc.name, ignore_permissions=True)
-            frappe.db.commit()
-        
+            # Delete the draft cart. The order being placed is built from the
+            # request payload, not from this draft, so failing to remove it must
+            # not block checkout - a draft linked to a Sales Invoice raises
+            # LinkExistsError (417) and would otherwise fail the whole order.
+            try:
+                frappe.delete_doc("Sales Order", so[0].name, ignore_permissions=True)
+                frappe.db.commit()
+            except frappe.LinkExistsError:
+                frappe.db.rollback()
+                frappe.log_error(
+                    "Draft cart cleanup skipped",
+                    f"Could not delete draft {so[0].name} for {customer_id}: linked to another document.",
+                )
+
+
         regular_items = [i for i in items if i.get("product_type") == "Regular"]
         cod_items = [i for i in items if i.get("product_type") == "COD"]
 
