@@ -403,7 +403,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #333; margin: 0; p
     font-weight: 400;
     color: #1a1a1a;
     line-height: 1.2;
-    height: 18px;
+    max-height: 18px;
     overflow: hidden;
     margin-bottom: 1px;
 }
@@ -543,8 +543,8 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #333; margin: 0; p
         {% for p in row %}
             <td class="card">
                 <div class="card-box">
-                    <div class="name-line">{{ p.item_name }}</div>
                     <div class="code-line">{{ p.item_code }}</div>
+                    <div class="name-line">{{ p.item_name }}</div>
                     <div class="body-row">
                         <div class="body-cell tables-cell">
                             <div class="detail-box">

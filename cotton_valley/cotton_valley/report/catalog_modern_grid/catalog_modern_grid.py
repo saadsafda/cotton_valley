@@ -381,11 +381,11 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 
 /* LABELS */
 .lbl-gray {
-    color: #7f7f7f;
-    font-weight: 400;
+    color: #5a5a5a;
+    font-weight: 600;
 }
 
-/* ITEM CODE + INLINE PRICE */
+/* ITEM CODE */
 .item-line {
     font-size: 9px;
     font-weight: 400;
@@ -401,31 +401,39 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     font-weight: 700;
     color: #111;
 }
-.item-line table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-.item-line td { padding: 0; vertical-align: middle; }
 .item-line .il-code {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.item-line .il-price {
-    text-align: right;
+
+/* PRICE ROW - pinned to the bottom of the card, spread edge to edge */
+.price-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 4px;
+}
+.price-line .pl-case,
+.price-line .pl-unit {
     font-weight: 700;
     color: #f71c1c;
     white-space: nowrap;
     font-size: 9px;
 }
-.item-line .il-price .sep {
-    color: #888;
-    font-weight: 400;
-    margin: 0 2px;
+.price-line .unit {
+    color: #333;
+    font-weight: 600;
+    font-size: 7px;
+    margin-left: 1px;
 }
 
 /* DESC */
 .desc-line {
     font-size: 8.5px;
-    color: #7f7f7f;
+    color: #333333;
+    font-weight: 500;
     margin-bottom: 1px;
     line-height: 1.3;
     max-height: 46px;
@@ -442,7 +450,8 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .info-table td {
     padding: 0.5px 0;
     font-size: 8.5px;
-    color: #7f7f7f;
+    color: #333333;
+    font-weight: 500;
     vertical-align: middle;
     white-space: nowrap;
     overflow: hidden;
@@ -450,7 +459,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
 .info-table .col-left  { text-align: left; }
 .info-table .col-right { text-align: right; overflow: visible; }
 .info-table .col-full  { text-align: left; }
-.info-table .lbl-gray  { color: #888; }
+.info-table .lbl-gray  { color: #5a5a5a; font-weight: 600; }
 
 /* BADGE */
 .badge {
@@ -468,9 +477,9 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     border: 1px solid #ffcdd2;
 }
 .badge.in {
-    background: #ffcdd2;
-    color: #f71c1c;
-    border: 1px solid #ffcdd2;
+    background: #2e7d32;
+    color: #ffffff;
+    border: 1px solid #2e7d32;
 }
 </style>
 </head>
@@ -517,16 +526,7 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                                 {% if p.image_url %}<img src="{{ p.image_url }}">{% endif %}
                             </div>
                             <div class="item-line">
-                                <table>
-                                    <tr>
-                                        <td style="width:55%;"><span class="il-code"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></span></td>
-                                        <td class="il-price" style="width:45%;">
-                                            {% if not hide_price %}
-                                                {{ p.case_price }}{% if p.show_unit_price %}<span class="sep">~</span>{{ p.unit_price }}{% endif %}
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                </table>
+                                <span class="il-code"><span class="lbl-gray">Item: </span><b>{{ p.item_code }}</b></span>
                             </div>
                             <div class="desc-line"><span class="lbl-gray">Desc: </span>{{ p.desc }}</div>
                             <table class="info-table">
@@ -552,6 +552,12 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
                                     </td>
                                 </tr>
                             </table>
+                            {% if not hide_price %}
+                            <div class="price-line">
+                                <span class="pl-case">{{ p.case_price }}<span class="unit">CA</span></span>
+                                {% if p.show_unit_price %}<span class="pl-unit">{{ p.unit_price }}<span class="unit">pcs</span></span>{% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </td>
                 {% endfor %}

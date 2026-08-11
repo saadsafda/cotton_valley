@@ -2093,7 +2093,7 @@ def get_catalog_price_list_link_options(doctype, txt, searchfield, start, page_l
 
 
 @frappe.whitelist()
-def download_custom_catalog(items, company=None, price_list=None, item_group=None):
+def download_custom_catalog(items, company=None, price_list=None):
     try:
         # Parse the JSON string list of Item Names passed from JS
         if isinstance(items, str):
@@ -2107,7 +2107,6 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
 
         company = (company or "").strip()
         price_list = (price_list or "").strip()
-        item_group = (item_group or "").strip()
 
         if not company:
             frappe.throw(_("Company is required"))
@@ -2132,12 +2131,10 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
             "company": company,
         }
 
-        if item_group:
-            item_filters["item_group"] = item_group
-
         data = frappe.get_all("Item",
             filters=item_filters,
-            fields=["image", "item_code", "item_name", "custom_sub_category as subcategory",  
+            fields=["image", "item_code", "item_name", "item_group as product_type",
+                    "custom_sub_category as subcategory",
                     "custom_case_pack as case_pack", "custom_package_length_inch as case_length",
                     "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
                     "custom_weight_lbs as net_weight","custom_pallet_ti as pallet_ti",
@@ -2146,8 +2143,6 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
         )
         
         if not data:
-            if item_group:
-                frappe.throw(_("No items found for Product Type {0}").format(item_group))
             frappe.throw(_("No items found"))
         # 2. Setup Excel
         output = io.BytesIO()
@@ -2170,12 +2165,13 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
         worksheet.set_column('A:A', 25)
         worksheet.set_column('B:B', 15)
         worksheet.set_column('C:C', 35)
-        worksheet.set_column('D:I', 20)
-        worksheet.set_column('J:J', 20)
-        worksheet.set_column('K:L', 10)
-        worksheet.set_column('M:M', 20)
-        worksheet.set_column('N:O', 20)
-        worksheet.set_column('P:Q', 20)
+        worksheet.set_column('D:D', 20)
+        worksheet.set_column('E:J', 20)
+        worksheet.set_column('K:K', 20)
+        worksheet.set_column('L:M', 10)
+        worksheet.set_column('N:N', 20)
+        worksheet.set_column('O:P', 20)
+        worksheet.set_column('Q:R', 20)
 
         # --- COMPANY HEADER ---
         worksheet.set_row(0, 60)
@@ -2194,11 +2190,11 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
 
         company_banner_name = get_company_banner_name(company)
         worksheet.set_row(8, 30)
-        worksheet.merge_range(8, 0, 8, 18, company_banner_name, company_banner_fmt)
+        worksheet.merge_range(8, 0, 8, 19, company_banner_name, company_banner_fmt)
 
         # --- HEADERS ---
         headers = [
-            "Picture", "Code", "Description", "Category", "SubCategory", 
+            "Picture", "Code", "Description", "Product Type", "Category", "SubCategory",
             "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
             "Case-Height(INCH)", "Net-Weight(LBS)", "TI", "HI", "Cases/Pallet Trucking",
             "Price in Case", "Price in Piece", "Item UPC", "CBM", 
@@ -2208,9 +2204,9 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
         start_row = 9
         worksheet.set_row(start_row, 30)
         for col, title in enumerate(headers):
-            if col in [13, 14]:  # Price in Case, Price in Piece
+            if col in [14, 15]:  # Price in Case, Price in Piece
                 fmt = header_yellow
-            elif col in [10, 11]:  # TI, HI
+            elif col in [11, 12]:  # TI, HI
                 fmt = header_green
             else:
                 fmt = header_blue
@@ -2307,31 +2303,32 @@ def download_custom_catalog(items, company=None, price_list=None, item_group=Non
 
             worksheet.write(row, 1, item.get("item_code", "") or "-", text_fmt)
             worksheet.write(row, 2, item.get("item_name", "") or "-", text_fmt)
-            worksheet.write(row, 3, categoryName, text_fmt)
-            worksheet.write(row, 4, subcategoryName or "-", text_fmt)
-            worksheet.write(row, 5, item.get("case_pack", "") or "-", text_fmt)
-            worksheet.write(row, 6, item.get("case_length", "") or "-", text_blue_fmt)
-            worksheet.write(row, 7, item.get("case_width", "") or "-", text_blue_fmt)
-            worksheet.write(row, 8, item.get("case_height", "") or "-", text_blue_fmt)
-            worksheet.write(row, 9, item.get("net_weight", "") or "-", text_blue_fmt)
-            worksheet.write(row, 10, item.get("pallet_ti", "") or "-", text_green_fmt)
-            worksheet.write(row, 11, item.get("pallet_hi", "") or "-", text_green_fmt)
-            worksheet.write(row, 12, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
+            worksheet.write(row, 3, item.get("product_type", "") or "-", text_fmt)
+            worksheet.write(row, 4, categoryName, text_fmt)
+            worksheet.write(row, 5, subcategoryName or "-", text_fmt)
+            worksheet.write(row, 6, item.get("case_pack", "") or "-", text_fmt)
+            worksheet.write(row, 7, item.get("case_length", "") or "-", text_blue_fmt)
+            worksheet.write(row, 8, item.get("case_width", "") or "-", text_blue_fmt)
+            worksheet.write(row, 9, item.get("case_height", "") or "-", text_blue_fmt)
+            worksheet.write(row, 10, item.get("net_weight", "") or "-", text_blue_fmt)
+            worksheet.write(row, 11, item.get("pallet_ti", "") or "-", text_green_fmt)
+            worksheet.write(row, 12, item.get("pallet_hi", "") or "-", text_green_fmt)
+            worksheet.write(row, 13, item.get("cases_per_pallet", "") or "-", text_blue_fmt)
 
             selected_price = item_price_map.get(item.get("item_code"))
             if selected_price is None:
-                worksheet.write_blank(row, 13, None, price_fmt)
                 worksheet.write_blank(row, 14, None, price_fmt)
+                worksheet.write_blank(row, 15, None, price_fmt)
             else:
                 case_pack = flt(item.get("case_pack", 0) or 0)
                 piece_price = selected_price / case_pack if case_pack else selected_price
-                worksheet.write(row, 13, selected_price, price_fmt)
-                worksheet.write(row, 14, piece_price, price_fmt)
+                worksheet.write(row, 14, selected_price, price_fmt)
+                worksheet.write(row, 15, piece_price, price_fmt)
 
-            worksheet.write(row, 15, item.get("item_upc", "") or "-", text_fmt)
-            worksheet.write(row, 16, item.get("cbm", "") or "-", text_fmt)
-            worksheet.write(row, 17, item.get("available_stock", "") or "-", text_fmt)
-            worksheet.write(row, 18, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
+            worksheet.write(row, 16, item.get("item_upc", "") or "-", text_fmt)
+            worksheet.write(row, 17, item.get("cbm", "") or "-", text_fmt)
+            worksheet.write(row, 18, item.get("available_stock", "") or "-", text_fmt)
+            worksheet.write(row, 19, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
             row += 1
 
         workbook.close()
