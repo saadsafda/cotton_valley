@@ -5,7 +5,7 @@ import os
 
 import frappe
 from frappe import _
-from frappe.utils import get_url, get_fullname, now_datetime, flt
+from frappe.utils import get_url, get_fullname, now_datetime, flt, cint
 
 SEP = "||"
 
@@ -146,6 +146,9 @@ def get_data(filters):
 
     if filters.get("item_group"):
         conditions.append("it.item_group = %(item_group)s")
+
+    if cint(filters.get("in_stock_only")):
+        conditions.append("IFNULL(it.available_stock, 0) > 0")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 
@@ -637,6 +640,8 @@ def _get_products_for_pdf(filters):
         conditions.append("it.company = %(company)s")
     if filters.get("item_group"):
         conditions.append("it.item_group = %(item_group)s")
+    if cint(filters.get("in_stock_only")):
+        conditions.append("IFNULL(it.available_stock, 0) > 0")
 
     child_dt, cat_field, subcat_child_field, subcat_item_field, upc_field = _resolve_categories_table()
 

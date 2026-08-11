@@ -81,6 +81,7 @@ frappe.listview_settings['Item'] = {
                         reqd: 1,
                         onchange: function () {
                             export_dialog.set_value('price_list', '');
+                            export_dialog.set_value('item_group', '');
                         }
                     },
                     {
@@ -97,7 +98,27 @@ frappe.listview_settings['Item'] = {
                                 }
                             };
                         },
-                        reqd: 1
+                        reqd: 1,
+                        onchange: function () {
+                            export_dialog.set_value('item_group', '');
+                        }
+                    },
+                    {
+                        fieldname: 'item_group',
+                        label: __('Product Type'),
+                        fieldtype: 'Link',
+                        options: 'Item Group',
+                        get_query: function () {
+                            const company = export_dialog ? export_dialog.get_value('company') : '';
+                            const price_list = export_dialog ? export_dialog.get_value('price_list') : '';
+                            return {
+                                query: 'cotton_valley.cotton_valley.report.product_catalog.product_catalog.get_product_types',
+                                filters: {
+                                    company: company || '',
+                                    price_list: price_list || ''
+                                }
+                            };
+                        }
                     }
                 ],
                 primary_action_label: __('Export'),
@@ -139,6 +160,14 @@ frappe.listview_settings['Item'] = {
                         price_list_input.name = 'price_list';
                         price_list_input.value = values.price_list;
                         form.appendChild(price_list_input);
+
+                        if (values.item_group) {
+                            const item_group_input = document.createElement('input');
+                            item_group_input.type = 'hidden';
+                            item_group_input.name = 'item_group';
+                            item_group_input.value = values.item_group;
+                            form.appendChild(item_group_input);
+                        }
 
                         const csrf = document.createElement('input');
                         csrf.type = 'hidden';

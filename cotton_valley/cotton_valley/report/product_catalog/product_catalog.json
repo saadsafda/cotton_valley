@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2026-02-18 09:28:00.281298",
+ "modified": "2026-08-06 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Catalog",
@@ -19,6 +19,37 @@
  "ref_doctype": "Item",
  "report_name": "Product Catalog",
  "report_type": "Script Report",
- "roles": [],
+ "roles": [
+  {
+   "role": "Stock Manager"
+  },
+  {
+   "role": "Purchase User"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Item Manager"
+  },
+  {
+   "role": "Maintenance User"
+  },
+  {
+   "role": "Manufacturing User"
+  },
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "Desk User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "ERPNext User"
+  }
+ ],
  "timeout": 0
 }
