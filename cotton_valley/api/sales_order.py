@@ -199,6 +199,24 @@ def get_cart(company=None):
 DUPLICATE_ORDER_WINDOW_SECONDS = 600
 
 
+def _refresh_read_snapshot():
+    """
+    Start a fresh transaction so later reads can see other requests' commits.
+
+    Frappe runs a whole request in one transaction with autocommit off and never
+    sets an isolation level, so MariaDB's default REPEATABLE READ applies: the
+    consistent-read snapshot is pinned at the request's first SELECT and only a
+    commit refreshes it.
+
+    The checkout filelock serialises execution but not visibility. Without this
+    call the duplicate check below reads a snapshot taken before the request we
+    just queued behind wrote anything, finds nothing, and creates the very order
+    it exists to suppress - which is how a checkout that has already been
+    committed by a concurrent request lands a second time.
+    """
+    frappe.db.commit()
+
+
 def _items_fingerprint(rows):
     """
     Stable, order-independent hash of the (item_code, qty) pairs in a cart.
@@ -227,14 +245,22 @@ def _find_recent_duplicate_order(customer_id, company, item_list, product_type=N
     with identical lines and hand that one back instead.
     """
     if payment_reference:
+        paid_filters = {
+            "customer": customer_id,
+            "company": company,
+            "docstatus": 1,
+            "custom_payment_reference": payment_reference,
+        }
+        # A split checkout stamps the same reference on both the Regular and the
+        # COD order. Without narrowing by product_type the COD pass matches the
+        # Regular order that was just written and suppresses a leg the customer
+        # actually ordered.
+        if product_type:
+            paid_filters["product_type"] = product_type
+
         already_paid = frappe.get_all(
             "Sales Order",
-            filters={
-                "customer": customer_id,
-                "company": company,
-                "docstatus": 1,
-                "custom_payment_reference": payment_reference,
-            },
+            filters=paid_filters,
             pluck="name",
             limit=1,
         )
@@ -328,6 +354,10 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
         # Serialise checkouts per customer so two in-flight requests cannot both
         # run the duplicate check, both see nothing, and both create an order.
         with filelock(f"cv-checkout-{customer_id}-{company}", timeout=60):
+            # Only safe once the lock is held: the request we were waiting on has
+            # finished committing both its Regular and its COD order by now.
+            _refresh_read_snapshot()
+
             so = frappe.get_all(
                 "Sales Order",
                 filters={"customer": customer_id, "docstatus": 0, "company": company},
@@ -430,6 +460,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
             checkout_lock.enter_context(
                 filelock(f"cv-checkout-{customer_id}-{company}", timeout=60)
             )
+            _refresh_read_snapshot()
 
         # Cotton Valley submits the existing draft cart rather than building a new
         # doc, but a second call finds no draft (the first one is docstatus 1 now)
