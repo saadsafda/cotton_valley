@@ -26,8 +26,10 @@ def _apply_sales_invoice_items(si, items, discount_percentage, sales_order):
             "sales_order": sales_order,
         }
         if item.get("discount_percentage"):
+            item_dict["margin_type"] = "Percentage"
             item_dict["discount_percentage"] = item.get("discount_percentage")
         if item.get("discount_amount"):
+            item_dict["margin_type"] = "Amount"
             item_dict["discount_amount"] = item.get("discount_amount")
         si.append("items", item_dict)
     if discount_percentage > 0:
@@ -51,7 +53,7 @@ def _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order):
 
 
 @frappe.whitelist()
-def create_sales_invoice(sales_order, erp_si_number, items, discount_percentage=0):
+def create_sales_invoice(sales_order, items, discount_percentage=0, erp_si_number=''):
     """
     Create a Sales Invoice from a Sales Order with specified items.
     
