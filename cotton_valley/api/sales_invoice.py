@@ -1,7 +1,7 @@
 import frappe
 
 
-def _set_sales_invoice_customer_fields(si, customer_id, company):
+def _set_sales_invoice_customer_fields(si, customer_id, company, erp_si_number):
     sales_person, account_number = frappe.db.get_value(
         "Customer", customer_id, ["sales_person", "account_number"]
     )
@@ -11,6 +11,7 @@ def _set_sales_invoice_customer_fields(si, customer_id, company):
 
     si.custom_customer_sales_representative = sales_person
     si.custom_customer_account_number = account_number
+    si.erp_si_number = erp_si_number
 
 
 def _apply_sales_invoice_items(si, items, discount_percentage, sales_order):
@@ -50,7 +51,7 @@ def _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order):
 
 
 @frappe.whitelist()
-def create_sales_invoice(sales_order, items, discount_percentage=0):
+def create_sales_invoice(sales_order, erp_si_number, items, discount_percentage=0):
     """
     Create a Sales Invoice from a Sales Order with specified items.
     
@@ -113,7 +114,7 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
                     "allocated_amount": member.allocated_amount
                 })
 
-        _set_sales_invoice_customer_fields(si, so.customer, so.company)
+        _set_sales_invoice_customer_fields(si, so.customer, so.company, erp_si_number)
 
         _apply_sales_invoice_items(si, items, discount_percentage, sales_order)
         _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order)
