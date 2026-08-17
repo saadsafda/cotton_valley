@@ -308,8 +308,73 @@ def _find_recent_duplicate_order(customer_id, company, item_list, product_type=N
     return None
 
 
+def _submitted_order(order_id, customer_id, company, item_list):
+    """
+    Return `order_id` if it names an order this customer already submitted for
+    this same cart.
+
+    The storefront sends the draft cart's name with every checkout, so a retry
+    of a call that already succeeded is identifiable by document identity rather
+    than by guessing from a time window.
+
+    The lines still have to match. `orderId` can lag the cart by a beat - the
+    sync that refreshes it is debounced - and honouring a stale pointer would
+    suppress a genuinely new order instead of a duplicate, which is worse than
+    the problem being fixed.
+    """
+    if not order_id:
+        return None
+
+    row = frappe.db.get_value(
+        "Sales Order",
+        order_id,
+        ["name", "docstatus", "customer", "company"],
+        as_dict=True,
+    )
+    if not row or row.customer != customer_id or row.company != company:
+        return None
+    if row.docstatus != 1:
+        return None
+
+    placed_rows = frappe.get_all(
+        "Sales Order Item",
+        filters={"parent": row.name},
+        fields=["item_code", "qty"],
+    )
+    if _items_fingerprint(placed_rows) != _items_fingerprint(item_list or []):
+        return None
+
+    return row.name
+
+
+def _draft_order(order_id, customer_id, company):
+    """
+    Name of the draft cart to write into, preferring the one the client named.
+
+    Falls back to "any draft for this customer" for callers that send no order
+    id, and for carts created before it was honoured.
+    """
+    if order_id:
+        row = frappe.db.get_value(
+            "Sales Order",
+            order_id,
+            ["name", "docstatus", "customer", "company"],
+            as_dict=True,
+        )
+        if row and row.docstatus == 0 and row.customer == customer_id and row.company == company:
+            return row.name
+
+    existing = frappe.get_all(
+        "Sales Order",
+        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        fields=["name"],
+        limit=1,
+    )
+    return existing[0].name if existing else None
+
+
 @frappe.whitelist(allow_guest=True)
-def create_or_update_sales_order(items, notes="", submit_datetime=None, company=None, submit=False, payment_reference=None, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None):
+def create_or_update_sales_order(items, notes="", submit_datetime=None, company=None, submit=False, payment_reference=None, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, order_id=None, orderId=None):
     """
     Create or update a Sales Order from cart.
     Requires logged-in user (removed allow_guest to prevent bot abuse).
@@ -333,6 +398,11 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
     client_ip = None if not client_ip or client_ip == "null" else client_ip
     client_latitude = None if not client_latitude or client_latitude == "null" else client_latitude
     client_longitude = None if not client_longitude or client_longitude == "null" else client_longitude
+    # Frappe matches posted keys to parameter names exactly, so the storefront's
+    # `orderId` was being dropped on the floor. Accept both spellings rather
+    # than requiring the two Next.js apps to redeploy in lockstep with this.
+    order_id = order_id or orderId
+    order_id = None if not order_id or order_id == "null" else order_id
 
     # get_current_customer returns {"status": "error", ...} on failure, which is
     # truthy - checking for the id is what actually detects a missing customer.
@@ -358,17 +428,11 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
             # finished committing both its Regular and its COD order by now.
             _refresh_read_snapshot()
 
-            so = frappe.get_all(
-                "Sales Order",
-                filters={"customer": customer_id, "docstatus": 0, "company": company},
-                fields=["name"],
-                limit=1,
-            )
+            draft_name = _draft_order(order_id, customer_id, company)
 
-            if so:
-                draft_doc = frappe.get_doc("Sales Order", so[0].name)
+            if draft_name:
                 # delete draft cart after extracting items
-                frappe.delete_doc("Sales Order", draft_doc.name, ignore_permissions=True)
+                frappe.delete_doc("Sales Order", draft_name, ignore_permissions=True)
                 frappe.db.commit()
 
             regular_items = [i for i in items if i.get("product_type") == "Regular"]
@@ -462,11 +526,21 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
             )
             _refresh_read_snapshot()
 
-        # Cotton Valley submits the existing draft cart rather than building a new
-        # doc, but a second call finds no draft (the first one is docstatus 1 now)
-        # and happily creates and submits another order - same duplicate, so the
-        # same guard applies here.
-        if submit:
+            # The draft the client named is the idempotency key: if it is already
+            # submitted, this call is a retry of one that succeeded, so hand back
+            # the same order instead of building a second one.
+            already = _submitted_order(order_id, customer_id, company, items)
+            if already:
+                frappe.logger("cotton_valley").warning(
+                    f"Repeat submit of {already} for {customer_id}/{company}; "
+                    f"returning the existing order"
+                )
+                return already
+
+            # Cotton Valley submits the existing draft cart rather than building a
+            # new doc, but a second call finds no draft (the first one is docstatus
+            # 1 now) and happily creates and submits another order - same
+            # duplicate, so the same guard applies here.
             duplicate = _find_recent_duplicate_order(
                 customer_id, company, items, payment_reference=payment_reference
             )
@@ -477,12 +551,7 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                 )
                 return duplicate
 
-        so = frappe.get_all(
-            "Sales Order",
-            filters={"customer": customer_id, "docstatus": 0, "company": company},
-            fields=["name"],
-            limit=1,
-        )
+        draft_name = _draft_order(order_id, customer_id, company)
 
         def _populate_and_save(so_doc, is_new=False):
             """Populate fields on the Sales Order and save it."""
@@ -543,38 +612,59 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
             frappe.db.commit()
             return so_doc.name
 
+        def _new_cart_doc():
+            fresh = frappe.new_doc("Sales Order")
+            fresh.customer = customer_id
+            fresh.customer_account_number = customer_account_number
+            fresh.order_type = "Shopping Cart"
+            fresh.selling_price_list = price_level
+            return fresh
+
         so_doc = None
         is_new = False
-        if so:
-            so_doc = frappe.get_doc("Sales Order", so[0].name)
+        if draft_name:
+            so_doc = frappe.get_doc("Sales Order", draft_name)
         else:
-            so_doc = frappe.new_doc("Sales Order")
-            so_doc.customer = customer_id
-            so_doc.customer_account_number = customer_account_number
-            so_doc.order_type = "Shopping Cart"
-            so_doc.selling_price_list = price_level
+            so_doc = _new_cart_doc()
             is_new = True
 
         try:
             return _populate_and_save(so_doc, is_new=is_new)
         except Exception:
-            # On conflict/error, reload the document and retry
             frappe.db.rollback()
-            so = frappe.get_all(
-                "Sales Order",
-                filters={"customer": customer_id, "docstatus": 0, "company": company},
-                fields=["name"],
-                limit=1,
-            )
-            if so:
-                so_doc = frappe.get_doc("Sales Order", so[0].name)
+
+            if submit:
+                # Never rebuild a checkout. The on_submit chain can commit the
+                # order before it has finished, so an exception here does not
+                # mean the order was not placed - and building a fresh doc in
+                # that case submits a second identical order, which is exactly
+                # the duplicate this endpoint exists to prevent. Return the
+                # order if it landed; otherwise let the failure surface so the
+                # customer sees an error rather than a silent double order.
+                _refresh_read_snapshot()
+
+                placed = _submitted_order(
+                    getattr(so_doc, "name", None), customer_id, company, items
+                ) or _find_recent_duplicate_order(
+                    customer_id, company, items, payment_reference=payment_reference
+                )
+                if placed:
+                    frappe.logger("cotton_valley").warning(
+                        f"Checkout for {customer_id}/{company} raised after order "
+                        f"{placed} was committed; returning it instead of retrying"
+                    )
+                    return placed
+                raise
+
+            # Cart sync only. Retrying against a freshly read draft recovers from
+            # the timestamp mismatch a concurrent sync causes, and the worst case
+            # is a spare draft rather than a spare order.
+            retry_draft = _draft_order(order_id, customer_id, company)
+            if retry_draft:
+                so_doc = frappe.get_doc("Sales Order", retry_draft)
                 is_new = False
             else:
-                so_doc = frappe.new_doc("Sales Order")
-                so_doc.customer = customer_id
-                so_doc.customer_account_number = customer_account_number
-                so_doc.order_type = "Shopping Cart"
-                so_doc.selling_price_list = price_level
+                so_doc = _new_cart_doc()
                 is_new = True
 
             return _populate_and_save(so_doc, is_new=is_new)

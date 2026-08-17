@@ -95,12 +95,47 @@ def update_customer_order_summary(doc, method):
         "last_order_date": doc.custom_last_order_date
     })
 
-    frappe.db.commit()
+    # Deliberately no commit here. on_submit runs inside the checkout request's
+    # transaction; committing made docstatus=1 durable before the side effects
+    # below had run, so any later failure left the caller's error handler
+    # rebuilding an order that had in fact already been placed. That is how one
+    # checkout produced two identical submitted orders seconds apart. Let the
+    # request commit once, at the end.
 
     # make_delivery_note_on_submit(doc, method)
     decrease_stock(doc, method)
-    send_sales_order_confirmation_email(doc, method)
     notify_customer_on_status_change(doc, method)
+
+    # The confirmation email (inline SMTP) and the ERP push (a curl subprocess,
+    # three attempts at up to 150s each) are slow and depend on third parties.
+    # Run inline they blocked the checkout response well past the storefront's
+    # timeout, so customers saw a failure for an order that had committed and
+    # placed it again. enqueue_after_commit keeps the job from firing if the
+    # transaction rolls back, and the job_id makes a redelivery a no-op.
+    frappe.enqueue(
+        "cotton_valley.server_scripts.sales_order.process_sales_order_side_effects",
+        queue="long",
+        timeout=900,
+        enqueue_after_commit=True,
+        deduplicate=True,
+        job_id=f"so-side-effects-{doc.name}",
+        sales_order=doc.name,
+    )
+
+
+def process_sales_order_side_effects(sales_order):
+    """
+    Slow, third-party-dependent work for a Sales Order that is already committed.
+
+    Runs in a background worker so the checkout request can return as soon as
+    the order is durable. Nothing here may raise into the caller: the order is
+    placed, and a failed email or an unreachable ERP must not be reported as a
+    failed checkout.
+    """
+    doc = frappe.get_doc("Sales Order", sales_order)
+
+    send_sales_order_confirmation_email(doc, "on_submit")
+
     try:
         push_to_erp([doc.name])
     except Exception as exc:
@@ -261,7 +296,9 @@ def decrease_stock(doc, method):
             current_threshold = to_int(frappe.db.get_value("Item", item.item_code, "threshold_stock"))
             new_threshold = max(0, current_threshold - qty)  # Don't go below 0
             frappe.db.set_value("Item", item.item_code, "threshold_stock", new_threshold)
-        frappe.db.commit()
+        # No commit: this runs inside the checkout transaction and is committed
+        # with the order. Committing here would make the submit durable early
+        # and reintroduce the duplicate-order path described in on_submit.
     except Exception as e:
         frappe.log_error("Threshold Stock Error", f"Error decreasing threshold stock: {str(e)}")
 
