@@ -1,7 +1,8 @@
 import frappe
+from frappe.utils import flt
 
 
-def _set_sales_invoice_customer_fields(si, customer_id, company):
+def _set_sales_invoice_customer_fields(si, customer_id, company, erp_si_number):
     sales_person, account_number = frappe.db.get_value(
         "Customer", customer_id, ["sales_person", "account_number"]
     )
@@ -11,23 +12,52 @@ def _set_sales_invoice_customer_fields(si, customer_id, company):
 
     si.custom_customer_sales_representative = sales_person
     si.custom_customer_account_number = account_number
+    si.erp_si_number = erp_si_number
 
 
 def _apply_sales_invoice_items(si, items, discount_percentage, sales_order):
     # Rebuild items to ensure updates are applied after reloads.
     si.items = []
     for item in items:
+        item_discount_percentage = flt(item.get("discount_percentage"))
+        item_discount_amount = flt(item.get("discount_amount"))
+
+        # The incoming rate is the list price, before any discount. Every
+        # margin/discount field is computed off price_list_rate and is skipped
+        # entirely when it is 0 (see calculate_margin), so send it there and let
+        # ERPNext derive the net rate from the discount below.
+        price_list_rate = flt(item.get("price_list_rate")) or flt(item.get("rate"))
+
         item_dict = {
             "item_code": item.get("item_code"),
             "qty": item.get("qty"),
-            "rate": item.get("rate"),
-            "amount": item.get("amount"),
+            "price_list_rate": price_list_rate,
             "sales_order": sales_order,
         }
-        if item.get("discount_percentage"):
-            item_dict["discount_percentage"] = item.get("discount_percentage")
-        if item.get("discount_amount"):
-            item_dict["discount_amount"] = item.get("discount_amount")
+
+        # margin_type is a markup (rate_with_margin = price_list_rate + margin),
+        # not a discount, and it only applies when paired with an amount.
+        margin_type = item.get("margin_type")
+        margin_rate_or_amount = flt(item.get("margin_rate_or_amount"))
+        if margin_type in ("Percentage", "Amount") and margin_rate_or_amount:
+            item_dict["margin_type"] = margin_type
+            item_dict["margin_rate_or_amount"] = margin_rate_or_amount
+
+        # Discounts stay on the discount fields; ERPNext applies them after the
+        # margin. Sending both would let discount_percentage win and overwrite
+        # discount_amount, so prefer the percentage when both are supplied.
+        if item_discount_percentage:
+            # Left with no rate, calculate_item_values derives it from the
+            # discount for us.
+            item_dict["discount_percentage"] = item_discount_percentage
+        elif item_discount_amount:
+            # discount_amount is only self-applied for rows carrying a pricing
+            # rule, so set the resulting rate here.
+            item_dict["discount_amount"] = item_discount_amount
+            item_dict["rate"] = price_list_rate - item_discount_amount
+        else:
+            item_dict["rate"] = price_list_rate
+
         si.append("items", item_dict)
     if discount_percentage > 0:
         si.apply_discount_on = "Grand Total"
@@ -50,7 +80,7 @@ def _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order):
 
 
 @frappe.whitelist()
-def create_sales_invoice(sales_order, items, discount_percentage=0):
+def create_sales_invoice(sales_order, items, discount_percentage=0, erp_si_number=''):
     """
     Create a Sales Invoice from a Sales Order with specified items.
     
@@ -113,7 +143,7 @@ def create_sales_invoice(sales_order, items, discount_percentage=0):
                     "allocated_amount": member.allocated_amount
                 })
 
-        _set_sales_invoice_customer_fields(si, so.customer, so.company)
+        _set_sales_invoice_customer_fields(si, so.customer, so.company, erp_si_number)
 
         _apply_sales_invoice_items(si, items, discount_percentage, sales_order)
         _save_sales_invoice_with_retry(si, items, discount_percentage, sales_order)
