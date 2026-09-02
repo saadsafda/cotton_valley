@@ -187,10 +187,49 @@ def send_sales_order_confirmation_email(doc, method):
             if email_template.custom_cc_email:
                 cc_emails = [row.email for row in email_template.custom_cc_email if row.email]
 
+            # Customer Info box: prefer the values already denormalised onto the
+            # Sales Order (fetched from Customer), fall back to the Customer doc.
+            def clean(value):
+                """Drop empty/placeholder values so the email never renders them."""
+                value = str(value).strip() if value is not None else ""
+                return "" if value in ("", "-", "None") else value
+
+            customer_info = (
+                frappe.db.get_value(
+                    "Customer",
+                    doc.customer,
+                    [
+                        "customer_name",
+                        "custom_last_name",
+                        "custom_company_name",
+                        "custom_phone_number",
+                        "custom_cell_phone",
+                    ],
+                    as_dict=True,
+                )
+                or {}
+            ) if doc.customer else {}
+
+            customer_full_name = " ".join(
+                part
+                for part in [
+                    clean(doc.get("customer_name")) or clean(customer_info.get("customer_name")),
+                    clean(customer_info.get("custom_last_name")),
+                ]
+                if part
+            )
+
             # Prepare template arguments
             template_args = {
                 "firstname": frappe.db.get_value("Customer", doc.customer, "customer_name"),
                 "lastname": frappe.db.get_value("Customer", doc.customer, "custom_last_name"),
+                "customerName": customer_full_name,
+                "companyName": clean(doc.get("customer_company_name"))
+                    or clean(customer_info.get("custom_company_name")),
+                "customerPhone": clean(doc.get("custom_customer_phone"))
+                    or clean(customer_info.get("custom_phone_number"))
+                    or clean(doc.get("custom_customer_cell_phone"))
+                    or clean(customer_info.get("custom_cell_phone")),
                 "order": doc.name,
                 "salesRepName": doc.custom_customer_sales_representative,
                 "salesRepPhone": frappe.db.get_value("Employee", sales_person.employee, "cell_number") if doc.custom_customer_sales_representative else None,
