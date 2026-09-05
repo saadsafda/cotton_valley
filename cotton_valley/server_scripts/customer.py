@@ -822,7 +822,16 @@ def validate_sales_team(doc, method=None):
 
 		primary = primary_by_company.get(row.company, default_primary)
 		if row.sales_person == primary:
-			# Already covered by the primary field for this company.
+			# Already covered by the primary field for this company. Keep the row
+			# so the assignment stays visible (silently dropping it looks like the
+			# save failed), but mark it as the primary.
+			key = (row.sales_person, row.company)
+			if key in seen:
+				continue
+			seen.add(key)
+
+			row.is_primary = 1
+			cleaned.append(row)
 			continue
 
 		key = (row.sales_person, row.company)
