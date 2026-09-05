@@ -409,7 +409,10 @@ def get_panding_payments():
         permitted_sales_persons = get_user_sales_persons(current_user)
         team_customers = get_customers_for_sales_persons(permitted_sales_persons)
 
-        panding_customer_amount = frappe.db.get_list('Sales Invoice',
+        # `get_all`: access is decided by the sales-team rules above. `get_list`
+        # also applies per-Company User Permissions, which hide a rep's own
+        # invoices for the other company.
+        panding_customer_amount = frappe.get_all('Sales Invoice',
             filters={'docstatus': 0},
             or_filters={
                 'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
@@ -495,7 +498,10 @@ def get_submit_payments():
         permitted_sales_persons = get_user_sales_persons(current_user)
         team_customers = get_customers_for_sales_persons(permitted_sales_persons)
 
-        submit_customer_amount = frappe.db.get_list('Sales Invoice',
+        # `get_all`: access is decided by the sales-team rules above. `get_list`
+        # also applies per-Company User Permissions, which hide a rep's own
+        # invoices for the other company.
+        submit_customer_amount = frappe.get_all('Sales Invoice',
             filters={'docstatus': 1},
             or_filters={
                 'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],

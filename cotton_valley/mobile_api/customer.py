@@ -32,7 +32,11 @@ def get_all_customers():
         # listed in the custom_additional_sales_team child table.
         permitted_customers = get_customers_for_sales_persons(permitted_sales_persons)
 
-        customers = frappe.get_list("Customer",
+        # `get_all` (not `get_list`): access is already decided by the sales-team
+        # rules above. `get_list` additionally applies User Permissions, which on
+        # this site are set per-Company and silently hide a rep's own customers
+        # whose `register_company` is the other company (e.g. UDC).
+        customers = frappe.get_all("Customer",
             filters={"name": ["in", permitted_customers]} if permitted_customers else {"name": ["in", [""]]},
             page_length=0,
             fields=["name", "customer_name", "custom_email_address", "custom_phone_number", "image", "disabled",
