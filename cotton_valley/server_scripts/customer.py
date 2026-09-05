@@ -796,3 +796,43 @@ def download_customer_registration_form_pdf_html(customer=None):
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Customer Registration PDF (HTML) Error")
         frappe.throw("PDF generate nahi ho raha. Please confirm wkhtmltopdf installed/configured.")
+
+
+def validate_sales_team(doc, method=None):
+	"""Keep the additional sales team table clean.
+
+	The primary reps (`sales_person` / `udc_sales_person`) are owned by the ERP
+	sync, so they are never stored here. This drops rows that merely repeat the
+	primary rep for their company, plus any duplicates.
+	"""
+	rows = doc.get("custom_additional_sales_team") or []
+	if not rows:
+		return
+
+	primary_by_company = {
+		"UDC": doc.get("udc_sales_person"),
+	}
+	default_primary = doc.get("sales_person")
+
+	cleaned = []
+	seen = set()
+	for row in rows:
+		if not row.sales_person or not row.company:
+			continue
+
+		primary = primary_by_company.get(row.company, default_primary)
+		if row.sales_person == primary:
+			# Already covered by the primary field for this company.
+			continue
+
+		key = (row.sales_person, row.company)
+		if key in seen:
+			continue
+		seen.add(key)
+
+		row.is_primary = 0
+		cleaned.append(row)
+
+	doc.custom_additional_sales_team = cleaned
+	for idx, row in enumerate(cleaned, start=1):
+		row.idx = idx

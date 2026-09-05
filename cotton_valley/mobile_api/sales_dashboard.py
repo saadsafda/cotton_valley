@@ -1,4 +1,5 @@
 import frappe
+from cotton_valley.api.sales_team import get_customers_for_sales_persons
 from datetime import datetime, timedelta
 from frappe.utils import nowdate
 from erpnext.accounts.utils import get_fiscal_year
@@ -359,9 +360,12 @@ def get_monthly_sales_data():
                 for sale in sales_orders:
                     actual_sales_by_month[sale.month] = float(sale.total_sales or 0)
                 
-                # Get total customers for this sales person
+                # Total customers this rep is on the sales team of: primary rep
+                # (CV or UDC) plus any shared customers from the additional
+                # sales team child table.
+                team_customers = get_customers_for_sales_persons([sales_person_name])
                 total_customers = frappe.db.count("Customer", {
-                    "sales_person": sales_person_name,
+                    "name": ["in", team_customers or [""]],
                     "disabled": 0
                 })
                 

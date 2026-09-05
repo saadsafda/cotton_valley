@@ -203,6 +203,7 @@ doc_events = {
         "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"
     },
     "Customer": {
+        "validate": "cotton_valley.server_scripts.customer.validate_sales_team",
         "before_save": "cotton_valley.server_scripts.customer.get_location_from_ip",
 		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache_on_customer_payment_change",
     },

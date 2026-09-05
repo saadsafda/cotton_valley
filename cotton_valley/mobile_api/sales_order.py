@@ -1,4 +1,9 @@
 import frappe
+from cotton_valley.api.sales_team import (
+    get_acting_sales_person,
+    get_customers_for_sales_persons,
+    get_user_sales_persons,
+)
 from frappe.utils import nowdate # type: ignore
 
 
@@ -54,9 +59,12 @@ def get_sales_person_orders(company=None, customer=None):
             }
         
     
-        # Build filters for sales orders
+        # A rep sees an order when it is credited to them OR when it belongs to a
+        # customer whose sales team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons, company)
+
         base_filters = {
-            "custom_customer_sales_representative": sales_person,
             "order_status": ["not in", ["Shipped"]]
         }
 
@@ -65,11 +73,17 @@ def get_sales_person_orders(company=None, customer=None):
 
         if customer:
             base_filters["customer"] = customer
-        
+
+        or_filters = {
+            "custom_customer_sales_representative": ["in", permitted_sales_persons or [""]],
+            "customer": ["in", team_customers or [""]],
+        }
+
         # Get sales orders
         sales_orders = frappe.get_all(
             "Sales Order",
             filters=base_filters,
+            or_filters=or_filters,
             fields=[
                 "name", "customer", "customer_name",
                 "customer_account_number as account_number", "customer_company_name as customer_company", "submit_datetime as transaction_date", 
@@ -135,9 +149,9 @@ def get_sales_person_orders(company=None, customer=None):
                 order["status_label"] = "Cancelled"
         
         # Get total count for pagination
-        total_count = frappe.db.count("Sales Order", base_filters)
-        
-        # Get summary statistics
+        total_count = len(sales_orders)
+
+        # Summary statistics over the same widened scope as the list above.
         stats = frappe.db.sql("""
             SELECT 
                 COUNT(*) as total_orders,
@@ -146,8 +160,12 @@ def get_sales_person_orders(company=None, customer=None):
                 SUM(CASE WHEN docstatus = 2 THEN 1 ELSE 0 END) as cancelled_orders,
                 SUM(CASE WHEN docstatus = 1 THEN grand_total ELSE 0 END) as total_value
             FROM `tabSales Order`
-            WHERE custom_customer_sales_representative = %s
-        """, (sales_person,), as_dict=True)
+            WHERE custom_customer_sales_representative IN %(sales_persons)s
+                OR customer IN %(customers)s
+        """, {
+            "sales_persons": permitted_sales_persons or [""],
+            "customers": team_customers or [""],
+        }, as_dict=True)
         
         return {
             "status": "success",
@@ -248,14 +266,17 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
                     "rate": row["rate"],
                     "delivery_date": nowdate(),
                 })
-            sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
+            # Credit the rep who actually made the sale: the logged-in user's own
+            # Sales Person when they are on this customer's team, otherwise the
+            # customer's primary rep (web/guest orders have no logged-in rep).
+            sales_person = get_acting_sales_person(customer_id, company)
+            account_number = frappe.db.get_value(
+                "Customer",
+                customer_id,
+                "udc_account_number" if company == "UDC" else "account_number",
+            )
             so_doc.custom_customer_sales_representative = sales_person
             so_doc.customer_account_number = account_number
-            if company == "UDC":
-                sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-                account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
-                so_doc.custom_customer_sales_representative = sales_person
-                so_doc.customer_account_number = account_number
             if sales_person:
                 so_doc.sales_team = []
                 so_doc.append("sales_team", {
@@ -328,11 +349,9 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
             "rate": row["rate"],
             "delivery_date": nowdate(),
         })
-    sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    # Credit the rep who actually made the sale (see make_so above).
+    sales_person = get_acting_sales_person(customer_id, company)
     so_doc.custom_customer_sales_representative = sales_person
-    if company == "UDC":
-        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-        so_doc.custom_customer_sales_representative = sales_person
     if sales_person:
         so_doc.sales_team = []
         so_doc.append("sales_team", {
@@ -385,9 +404,17 @@ def get_panding_payments():
                 "message": "Employee is not a sales person"
             }
 
-        # get all sales invoices with pending payments for this sales person
+        # Invoices credited to this rep OR belonging to a customer whose sales
+        # team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons)
+
         panding_customer_amount = frappe.db.get_list('Sales Invoice',
-            filters={'docstatus': 0, 'custom_customer_sales_representative': sales_person},
+            filters={'docstatus': 0},
+            or_filters={
+                'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
+                'customer': ['in', team_customers or [""]],
+            },
             fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
         for record in panding_customer_amount:
@@ -463,9 +490,17 @@ def get_submit_payments():
                 "message": "Employee is not a sales person"
             }
 
-        # get all sales invoices with pending payments for this sales person
+        # Invoices credited to this rep OR belonging to a customer whose sales
+        # team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons)
+
         submit_customer_amount = frappe.db.get_list('Sales Invoice',
-            filters={'docstatus': 1, 'custom_customer_sales_representative': sales_person},
+            filters={'docstatus': 1},
+            or_filters={
+                'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
+                'customer': ['in', team_customers or [""]],
+            },
             fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
 

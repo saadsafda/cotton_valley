@@ -1,14 +1,18 @@
 import frappe
 from frappe.utils import flt
 
+from cotton_valley.api.sales_team import get_acting_sales_person
+
 
 def _set_sales_invoice_customer_fields(si, customer_id, company, erp_si_number):
-    sales_person, account_number = frappe.db.get_value(
-        "Customer", customer_id, ["sales_person", "account_number"]
+    # Credit the logged-in rep when they are on this customer's sales team,
+    # otherwise fall back to the customer's primary rep.
+    sales_person = get_acting_sales_person(customer_id, company)
+    account_number = frappe.db.get_value(
+        "Customer",
+        customer_id,
+        "udc_account_number" if company == "UDC" else "account_number",
     )
-    if company == "UDC":
-        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-        account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
 
     si.custom_customer_sales_representative = sales_person
     si.custom_customer_account_number = account_number

@@ -5,6 +5,11 @@ import frappe
 import json
 from frappe.utils import getdate
 
+from cotton_valley.api.sales_team import (
+	get_customer_sales_team,
+	get_customers_for_sales_persons,
+)
+
 
 def execute(filters=None):
 	columns = [
@@ -23,9 +28,17 @@ def execute(filters=None):
 	customer_filters = {}
 	
 	if filters and filters.get("sales_person"):
-		customer_filters["sales_person"] = filters.get("sales_person")
-	
-	if filters and filters.get("customer"):
+		# Match customers where the filtered rep is anywhere on the sales team:
+		# the CV/UDC primary rep or an additional rep in the child table.
+		team_customers = get_customers_for_sales_persons([filters.get("sales_person")])
+
+		# Honour a customer filter alongside the sales person filter.
+		if filters.get("customer"):
+			team_customers = [c for c in team_customers if c == filters.get("customer")]
+
+		customer_filters["name"] = ["in", team_customers or [""]]
+
+	elif filters and filters.get("customer"):
 		customer_filters["name"] = filters.get("customer")
 	
 	if filters and filters.get("cv_price_level"):
@@ -87,8 +100,10 @@ def execute(filters=None):
 					include_row = False
 		
 		if include_row:
+			# Show every rep on the customer's team, not just the CV primary.
+			team = get_customer_sales_team(cust.name)
 			data.append({
-				"sales_person": cust.sales_person,
+				"sales_person": ", ".join(team) if team else cust.sales_person,
 				"customer_name": cust.customer_name,
 				"cv_price": cust.price_list_for_cv,
 				"udc_price": cust.price_list_for_udc,
