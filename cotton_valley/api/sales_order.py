@@ -776,6 +776,21 @@ def push_to_erp(sales_orders):
             if customer_erp_id in ["", None]:
                 frappe.throw("Please add erp customer id")
 
+            # Resolve the ERP sales rep id for this company. The rep credited on
+            # the order carries its ERP id on the Sales Person record, split per
+            # company the same way the customer ids are.
+            sales_person = so_doc.get("custom_customer_sales_representative")
+            if not sales_person and so_doc.get("sales_team"):
+                sales_person = so_doc.sales_team[0].sales_person
+
+            sales_person_erp_id = ""
+            if sales_person:
+                sales_person_erp_id = frappe.db.get_value(
+                    "Sales Person",
+                    sales_person,
+                    "sales_person_id" if so_doc.company == "Cotton Valley" else "udc_sales_person_id",
+                ) or ""
+
             # inventoryItem is a single top-level value on the bulk endpoint.
             # "REG" for Regular orders, otherwise the product type (e.g. "COD").
             inventory_item = "REG" if so_doc.get("product_type") == "Regular" else so_doc.get("product_type")
@@ -793,6 +808,7 @@ def push_to_erp(sales_orders):
             payload = {
                 "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
                 "customer_id": customer_erp_id,
+                "sales_rep_id": sales_person_erp_id,
                 "trnrefno": so_doc.name,
                 "customer_note": so_doc.get("custom_notes") or "",
                 "everst_so_no": "",
