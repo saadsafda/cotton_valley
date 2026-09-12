@@ -808,7 +808,7 @@ def push_to_erp(sales_orders):
             payload = {
                 "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
                 "customer_id": customer_erp_id,
-                "sales_rep_id": sales_person_erp_id,
+                "sprid": sales_person_erp_id,
                 "trnrefno": so_doc.name,
                 "customer_note": so_doc.get("custom_notes") or "",
                 "everst_so_no": "",
