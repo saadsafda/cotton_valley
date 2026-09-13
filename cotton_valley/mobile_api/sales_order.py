@@ -182,14 +182,84 @@ def get_sales_person_orders(company=None, customer=None):
         }
 
 
+def _resolve_address(address_id, address_payload, customer_id, address_type, company):
+    """
+    Return an Address name that actually exists, or None.
+
+    The app can submit an order whose address was created offline, in which
+    case `address_id` is a device-local placeholder ("local_addr_...") that
+    this site has never seen. Assigning it to the Sales Order makes Frappe's
+    link validation throw "Address <id> not found" and the whole order is
+    refused - the order is lost for a reason the rep cannot act on.
+
+    So: use the id when it resolves; otherwise create the address from the
+    fields the app sent alongside it and use that. When there is nothing to
+    create from, return None so the order is saved without an address rather
+    than rejected outright.
+    """
+    address_id = None if not address_id or address_id == "null" else address_id
+
+    if address_id and frappe.db.exists("Address", address_id):
+        return address_id
+
+    address_payload = frappe.parse_json(address_payload) if isinstance(address_payload, str) else address_payload
+    if not isinstance(address_payload, dict) or not customer_id:
+        if address_id:
+            frappe.logger("cotton_valley").warning(
+                f"Dropping unknown address {address_id} for customer {customer_id}; "
+                "no address payload was sent to create it from"
+            )
+        return None
+
+    address_type = address_payload.get("address_type") or address_type
+    if address_type not in ["Shipping", "Billing"]:
+        address_type = "Shipping"
+
+    try:
+        address_doc = frappe.get_doc({
+            "doctype": "Address",
+            "address_title": address_payload.get("address_title") or f"{customer_id}-{address_type}",
+            "address_type": address_type,
+            "address_line1": address_payload.get("address_line1") or address_payload.get("street"),
+            "address_line2": address_payload.get("address_line2"),
+            "city": address_payload.get("city"),
+            "state": address_payload.get("state"),
+            "pincode": address_payload.get("pincode"),
+            "country": address_payload.get("country"),
+            "phone": address_payload.get("phone"),
+            "email_id": address_payload.get("email_id"),
+            "company": company,
+            "links": [{
+                "link_doctype": "Customer",
+                "link_name": customer_id
+            }]
+        })
+        address_doc.insert(ignore_permissions=True)
+        frappe.logger("cotton_valley").info(
+            f"Created address {address_doc.name} for customer {customer_id} "
+            f"from order payload (placeholder was {address_id})"
+        )
+        return address_doc.name
+    except Exception:
+        # An unusable address must not cost the rep the order: log it and let
+        # the order through without one.
+        frappe.log_error(frappe.get_traceback(), "Create Order Address Failed")
+        return None
+
+
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None):
+def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None, billing_address=None, shipping_address=None):
     """
     Create or update a Sales Order from cart.
     items = [
       {"item_code": "ITEM-001", "qty": 2, "rate": 500},
       {"item_code": "ITEM-002", "qty": 1, "rate": 300},
     ]
+
+    billing_address / shipping_address are optional field payloads sent
+    alongside the ids. They are used only when the matching id does not
+    resolve, so an order placed against an address created offline creates
+    that address here instead of being rejected.
     """
     items = frappe.parse_json(items)
 
@@ -211,6 +281,16 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
 
     customer_name = frappe.db.get_value("Customer", customer_id, "customer_name")
     will_submit = bool(submit and customer_name != "New Opportunity")
+
+    # Resolve both addresses before any Sales Order is built, so an id the
+    # server has never seen (an address created offline) is created here
+    # rather than failing link validation and costing the rep the order.
+    billing_address_id = _resolve_address(
+        billing_address_id, billing_address, customer_id, "Billing", company
+    )
+    shipping_address_id = _resolve_address(
+        shipping_address_id, shipping_address, customer_id, "Shipping", company
+    )
 
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
