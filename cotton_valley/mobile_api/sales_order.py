@@ -1,4 +1,9 @@
 import frappe
+from cotton_valley.api.sales_team import (
+    get_acting_sales_person,
+    get_customers_for_sales_persons,
+    get_user_sales_persons,
+)
 from frappe.utils import nowdate # type: ignore
 
 
@@ -54,9 +59,12 @@ def get_sales_person_orders(company=None, customer=None):
             }
         
     
-        # Build filters for sales orders
+        # A rep sees an order when it is credited to them OR when it belongs to a
+        # customer whose sales team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons, company)
+
         base_filters = {
-            "custom_customer_sales_representative": sales_person,
             "order_status": ["not in", ["Shipped"]]
         }
 
@@ -65,11 +73,17 @@ def get_sales_person_orders(company=None, customer=None):
 
         if customer:
             base_filters["customer"] = customer
-        
+
+        or_filters = {
+            "custom_customer_sales_representative": ["in", permitted_sales_persons or [""]],
+            "customer": ["in", team_customers or [""]],
+        }
+
         # Get sales orders
         sales_orders = frappe.get_all(
             "Sales Order",
             filters=base_filters,
+            or_filters=or_filters,
             fields=[
                 "name", "customer", "customer_name",
                 "customer_account_number as account_number", "customer_company_name as customer_company", "submit_datetime as transaction_date", 
@@ -135,9 +149,9 @@ def get_sales_person_orders(company=None, customer=None):
                 order["status_label"] = "Cancelled"
         
         # Get total count for pagination
-        total_count = frappe.db.count("Sales Order", base_filters)
-        
-        # Get summary statistics
+        total_count = len(sales_orders)
+
+        # Summary statistics over the same widened scope as the list above.
         stats = frappe.db.sql("""
             SELECT 
                 COUNT(*) as total_orders,
@@ -146,8 +160,12 @@ def get_sales_person_orders(company=None, customer=None):
                 SUM(CASE WHEN docstatus = 2 THEN 1 ELSE 0 END) as cancelled_orders,
                 SUM(CASE WHEN docstatus = 1 THEN grand_total ELSE 0 END) as total_value
             FROM `tabSales Order`
-            WHERE custom_customer_sales_representative = %s
-        """, (sales_person,), as_dict=True)
+            WHERE custom_customer_sales_representative IN %(sales_persons)s
+                OR customer IN %(customers)s
+        """, {
+            "sales_persons": permitted_sales_persons or [""],
+            "customers": team_customers or [""],
+        }, as_dict=True)
         
         return {
             "status": "success",
@@ -164,14 +182,84 @@ def get_sales_person_orders(company=None, customer=None):
         }
 
 
+def _resolve_address(address_id, address_payload, customer_id, address_type, company):
+    """
+    Return an Address name that actually exists, or None.
+
+    The app can submit an order whose address was created offline, in which
+    case `address_id` is a device-local placeholder ("local_addr_...") that
+    this site has never seen. Assigning it to the Sales Order makes Frappe's
+    link validation throw "Address <id> not found" and the whole order is
+    refused - the order is lost for a reason the rep cannot act on.
+
+    So: use the id when it resolves; otherwise create the address from the
+    fields the app sent alongside it and use that. When there is nothing to
+    create from, return None so the order is saved without an address rather
+    than rejected outright.
+    """
+    address_id = None if not address_id or address_id == "null" else address_id
+
+    if address_id and frappe.db.exists("Address", address_id):
+        return address_id
+
+    address_payload = frappe.parse_json(address_payload) if isinstance(address_payload, str) else address_payload
+    if not isinstance(address_payload, dict) or not customer_id:
+        if address_id:
+            frappe.logger("cotton_valley").warning(
+                f"Dropping unknown address {address_id} for customer {customer_id}; "
+                "no address payload was sent to create it from"
+            )
+        return None
+
+    address_type = address_payload.get("address_type") or address_type
+    if address_type not in ["Shipping", "Billing"]:
+        address_type = "Shipping"
+
+    try:
+        address_doc = frappe.get_doc({
+            "doctype": "Address",
+            "address_title": address_payload.get("address_title") or f"{customer_id}-{address_type}",
+            "address_type": address_type,
+            "address_line1": address_payload.get("address_line1") or address_payload.get("street"),
+            "address_line2": address_payload.get("address_line2"),
+            "city": address_payload.get("city"),
+            "state": address_payload.get("state"),
+            "pincode": address_payload.get("pincode"),
+            "country": address_payload.get("country"),
+            "phone": address_payload.get("phone"),
+            "email_id": address_payload.get("email_id"),
+            "company": company,
+            "links": [{
+                "link_doctype": "Customer",
+                "link_name": customer_id
+            }]
+        })
+        address_doc.insert(ignore_permissions=True)
+        frappe.logger("cotton_valley").info(
+            f"Created address {address_doc.name} for customer {customer_id} "
+            f"from order payload (placeholder was {address_id})"
+        )
+        return address_doc.name
+    except Exception:
+        # An unusable address must not cost the rep the order: log it and let
+        # the order through without one.
+        frappe.log_error(frappe.get_traceback(), "Create Order Address Failed")
+        return None
+
+
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None):
+def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None, billing_address=None, shipping_address=None):
     """
     Create or update a Sales Order from cart.
     items = [
       {"item_code": "ITEM-001", "qty": 2, "rate": 500},
       {"item_code": "ITEM-002", "qty": 1, "rate": 300},
     ]
+
+    billing_address / shipping_address are optional field payloads sent
+    alongside the ids. They are used only when the matching id does not
+    resolve, so an order placed against an address created offline creates
+    that address here instead of being rejected.
     """
     items = frappe.parse_json(items)
 
@@ -193,6 +281,16 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
 
     customer_name = frappe.db.get_value("Customer", customer_id, "customer_name")
     will_submit = bool(submit and customer_name != "New Opportunity")
+
+    # Resolve both addresses before any Sales Order is built, so an id the
+    # server has never seen (an address created offline) is created here
+    # rather than failing link validation and costing the rep the order.
+    billing_address_id = _resolve_address(
+        billing_address_id, billing_address, customer_id, "Billing", company
+    )
+    shipping_address_id = _resolve_address(
+        shipping_address_id, shipping_address, customer_id, "Shipping", company
+    )
 
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
@@ -248,14 +346,17 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
                     "rate": row["rate"],
                     "delivery_date": nowdate(),
                 })
-            sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
+            # Credit the rep who actually made the sale: the logged-in user's own
+            # Sales Person when they are on this customer's team, otherwise the
+            # customer's primary rep (web/guest orders have no logged-in rep).
+            sales_person = get_acting_sales_person(customer_id, company)
+            account_number = frappe.db.get_value(
+                "Customer",
+                customer_id,
+                "udc_account_number" if company == "UDC" else "account_number",
+            )
             so_doc.custom_customer_sales_representative = sales_person
             so_doc.customer_account_number = account_number
-            if company == "UDC":
-                sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-                account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
-                so_doc.custom_customer_sales_representative = sales_person
-                so_doc.customer_account_number = account_number
             if sales_person:
                 so_doc.sales_team = []
                 so_doc.append("sales_team", {
@@ -328,11 +429,9 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
             "rate": row["rate"],
             "delivery_date": nowdate(),
         })
-    sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+    # Credit the rep who actually made the sale (see make_so above).
+    sales_person = get_acting_sales_person(customer_id, company)
     so_doc.custom_customer_sales_representative = sales_person
-    if company == "UDC":
-        sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-        so_doc.custom_customer_sales_representative = sales_person
     if sales_person:
         so_doc.sales_team = []
         so_doc.append("sales_team", {
@@ -385,9 +484,20 @@ def get_panding_payments():
                 "message": "Employee is not a sales person"
             }
 
-        # get all sales invoices with pending payments for this sales person
-        panding_customer_amount = frappe.db.get_list('Sales Invoice',
-            filters={'docstatus': 0, 'custom_customer_sales_representative': sales_person},
+        # Invoices credited to this rep OR belonging to a customer whose sales
+        # team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons)
+
+        # `get_all`: access is decided by the sales-team rules above. `get_list`
+        # also applies per-Company User Permissions, which hide a rep's own
+        # invoices for the other company.
+        panding_customer_amount = frappe.get_all('Sales Invoice',
+            filters={'docstatus': 0},
+            or_filters={
+                'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
+                'customer': ['in', team_customers or [""]],
+            },
             fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
         for record in panding_customer_amount:
@@ -463,9 +573,20 @@ def get_submit_payments():
                 "message": "Employee is not a sales person"
             }
 
-        # get all sales invoices with pending payments for this sales person
-        submit_customer_amount = frappe.db.get_list('Sales Invoice',
-            filters={'docstatus': 1, 'custom_customer_sales_representative': sales_person},
+        # Invoices credited to this rep OR belonging to a customer whose sales
+        # team they are on (shared customers).
+        permitted_sales_persons = get_user_sales_persons(current_user)
+        team_customers = get_customers_for_sales_persons(permitted_sales_persons)
+
+        # `get_all`: access is decided by the sales-team rules above. `get_list`
+        # also applies per-Company User Permissions, which hide a rep's own
+        # invoices for the other company.
+        submit_customer_amount = frappe.get_all('Sales Invoice',
+            filters={'docstatus': 1},
+            or_filters={
+                'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
+                'customer': ['in', team_customers or [""]],
+            },
             fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
         )
 

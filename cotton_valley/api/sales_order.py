@@ -6,6 +6,7 @@ import frappe # type: ignore
 from frappe.utils import nowdate # type: ignore
 from frappe.utils.synchronization import filelock # type: ignore
 from cotton_valley.api.customer import get_current_customer
+from cotton_valley.api.sales_team import get_acting_sales_person
 from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD, ERP_USERNAME, ERP_PASSWORD
@@ -491,11 +492,10 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                         "warehouse": "Stores - U" if company == "UDC" else "Stores - CV"
                     })
             
-                sales_person = frappe.db.get_value("Customer", customer_id, "sales_person")
+                # Credit the logged-in rep when they are on this customer's sales
+                # team, else the customer's primary rep (guest/web checkout).
+                sales_person = get_acting_sales_person(customer_id, company)
                 so_doc.custom_customer_sales_representative = sales_person
-                if company == "UDC":
-                    sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-                    so_doc.custom_customer_sales_representative = sales_person
                 if sales_person:
                     so_doc.sales_team = []
                     so_doc.append("sales_team", {
@@ -591,14 +591,16 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                     "warehouse": "Stores - U" if company == "UDC" else "Stores - CV"
                 })
 
-            sales_person, account_number = frappe.db.get_value("Customer", customer_id, ["sales_person", "account_number"])
+            # Credit the logged-in rep when they are on this customer's sales
+            # team, else the customer's primary rep (guest/web checkout).
+            sales_person = get_acting_sales_person(customer_id, company)
+            account_number = frappe.db.get_value(
+                "Customer",
+                customer_id,
+                "udc_account_number" if company == "UDC" else "account_number",
+            )
             so_doc.custom_customer_sales_representative = sales_person
             so_doc.customer_account_number = account_number
-            if company == "UDC":
-                sales_person = frappe.db.get_value("Customer", customer_id, "udc_sales_person")
-                account_number = frappe.db.get_value("Customer", customer_id, "udc_account_number")
-                so_doc.custom_customer_sales_representative = sales_person
-                so_doc.customer_account_number = account_number
             if sales_person:
                 so_doc.sales_team = []
                 so_doc.append("sales_team", {
@@ -774,6 +776,21 @@ def push_to_erp(sales_orders):
             if customer_erp_id in ["", None]:
                 frappe.throw("Please add erp customer id")
 
+            # Resolve the ERP sales rep id for this company. The rep credited on
+            # the order carries its ERP id on the Sales Person record, split per
+            # company the same way the customer ids are.
+            sales_person = so_doc.get("custom_customer_sales_representative")
+            if not sales_person and so_doc.get("sales_team"):
+                sales_person = so_doc.sales_team[0].sales_person
+
+            sales_person_erp_id = ""
+            if sales_person:
+                sales_person_erp_id = frappe.db.get_value(
+                    "Sales Person",
+                    sales_person,
+                    "sales_person_id" if so_doc.company == "Cotton Valley" else "udc_sales_person_id",
+                ) or ""
+
             # inventoryItem is a single top-level value on the bulk endpoint.
             # "REG" for Regular orders, otherwise the product type (e.g. "COD").
             inventory_item = "REG" if so_doc.get("product_type") == "Regular" else so_doc.get("product_type")
@@ -791,6 +808,7 @@ def push_to_erp(sales_orders):
             payload = {
                 "order_date": so_doc.submit_datetime.strftime("%d-%b-%y").lower(),
                 "customer_id": customer_erp_id,
+                "sprid": sales_person_erp_id,
                 "trnrefno": so_doc.name,
                 "customer_note": so_doc.get("custom_notes") or "",
                 "everst_so_no": "",

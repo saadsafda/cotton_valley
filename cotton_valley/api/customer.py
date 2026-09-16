@@ -3,6 +3,7 @@ import frappe, secrets # type: ignore
 from frappe.auth import LoginManager # type: ignore
 from frappe.exceptions import AuthenticationError # type: ignore
 from cotton_valley.api.website_theme_setting import get_file
+from cotton_valley.api.sales_team import get_customer_sales_team
 from cotton_valley.api.common import get_customer_from_token
 from frappe.utils import add_days, now_datetime, add_to_date
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD
@@ -441,6 +442,30 @@ def get_current_customer(company=None):
                 "email": sales_employee.get("user_id", ""),
                 "phone": sales_employee.get("cell_number", ""),
             }
+
+        # Full sales team: the primary rep above plus every additional rep, so the
+        # app can show all reps who share this customer.
+        sales_team = []
+        for sp_name in get_customer_sales_team(customer.name, company):
+            sp = frappe.db.get_value(
+                "Sales Person", sp_name,
+                ["name", "sales_person_name", "employee"], as_dict=True
+            )
+            if not sp:
+                continue
+            sp_employee = {}
+            if sp.employee:
+                sp_employee = frappe.db.get_value(
+                    "Employee", {"name": sp.employee}, ["user_id", "cell_number"], as_dict=True
+                ) or {}
+            sales_team.append({
+                "id": sp.name,
+                "name": sp.sales_person_name,
+                "email": sp_employee.get("user_id", ""),
+                "phone": sp_employee.get("cell_number", ""),
+                "is_primary": 1 if sales_rep and sp.name == sales_rep.name else 0,
+            })
+        customer_data['sales_team'] = sales_team
 
         # --- Role ---
         customer_data["role"] = {
