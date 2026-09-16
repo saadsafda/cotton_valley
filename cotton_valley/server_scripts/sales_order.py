@@ -192,7 +192,7 @@ def send_sales_order_confirmation_email(doc, method):
             def clean(value):
                 """Drop empty/placeholder values so the email never renders them."""
                 value = str(value).strip() if value is not None else ""
-                return "" if value in ("", "-", "None") else value
+                return "" if value == "" or value.lower() in ("-", "none", "null") else value
 
             customer_info = (
                 frappe.db.get_value(

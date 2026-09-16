@@ -92,6 +92,19 @@ def get_columns():
             "options": "Sales Person",
             "width": 150
         },
+        
+        {
+            "label": _("From App"),
+            "fieldname": "from_app",
+            "fieldtype": "Check",
+            "width": 90
+        },
+        {
+            "label": _("ERP SI Number"),
+            "fieldname": "erp_si_number",
+            "fieldtype": "Data",
+            "width": 150
+        },
         {
             "label": _("Notes"),
             "fieldname": "notes",
@@ -146,7 +159,11 @@ def get_data(filters):
              FROM `tabSales Team`
              WHERE parent = si.name) AS sales_rep,
 
-            si.remarks AS notes
+            si.remarks AS notes,
+
+            si.custom_from_app AS from_app,
+
+            si.erp_si_number AS erp_si_number
 
         FROM
             `tabSales Invoice` si
