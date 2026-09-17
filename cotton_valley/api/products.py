@@ -2139,7 +2139,8 @@ def download_custom_catalog(items, company=None, price_list=None):
                     "custom_package_width_inch as case_width", "custom_package_height_inch as case_height",
                     "custom_weight_lbs as net_weight","custom_pallet_ti as pallet_ti",
                     "custom_pallet_hi as pallet_hi", "custom_case_per_pallet as cases_per_pallet",
-                    "stock_price", "custom_carton_upc as item_upc", "custom_cbm as cbm", "available_stock", "company"]
+                    "stock_price", "custom_upc as item_upc", "custom_carton_upc as carton_upc",
+                    "custom_cbm as cbm", "available_stock", "company"]
         )
         
         if not data:
@@ -2171,7 +2172,7 @@ def download_custom_catalog(items, company=None, price_list=None):
         worksheet.set_column('L:M', 10)
         worksheet.set_column('N:N', 20)
         worksheet.set_column('O:P', 20)
-        worksheet.set_column('Q:R', 20)
+        worksheet.set_column('Q:S', 20)
 
         # --- COMPANY HEADER ---
         worksheet.set_row(0, 60)
@@ -2190,14 +2191,14 @@ def download_custom_catalog(items, company=None, price_list=None):
 
         company_banner_name = get_company_banner_name(company)
         worksheet.set_row(8, 30)
-        worksheet.merge_range(8, 0, 8, 19, company_banner_name, company_banner_fmt)
+        worksheet.merge_range(8, 0, 8, 20, company_banner_name, company_banner_fmt)
 
         # --- HEADERS ---
         headers = [
             "Picture", "Code", "Description", "Product Type", "Category", "SubCategory",
-            "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)", 
+            "Master Case Pack", "Case-Length(INCH)",  "Case-Width(INCH)",
             "Case-Height(INCH)", "Net-Weight(LBS)", "TI", "HI", "Cases/Pallet Trucking",
-            "Price in Case", "Price in Piece", "Item UPC", "CBM", 
+            "Price in Case", "Price in Piece", "Item UPC", "Carton UPC", "CBM",
             "Available Stock", "Stock in Pieces"
         ]
         
@@ -2326,9 +2327,10 @@ def download_custom_catalog(items, company=None, price_list=None):
                 worksheet.write(row, 15, piece_price, price_fmt)
 
             worksheet.write(row, 16, item.get("item_upc", "") or "-", text_fmt)
-            worksheet.write(row, 17, item.get("cbm", "") or "-", text_fmt)
-            worksheet.write(row, 18, item.get("available_stock", "") or "-", text_fmt)
-            worksheet.write(row, 19, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
+            worksheet.write(row, 17, item.get("carton_upc", "") or "-", text_fmt)
+            worksheet.write(row, 18, item.get("cbm", "") or "-", text_fmt)
+            worksheet.write(row, 19, item.get("available_stock", "") or "-", text_fmt)
+            worksheet.write(row, 20, (flt(item.get("available_stock", 0) or 0) * flt(item.get("case_pack", 1) or 1)), text_fmt)
             row += 1
 
         workbook.close()
