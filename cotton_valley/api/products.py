@@ -2184,7 +2184,7 @@ def download_custom_catalog(items, company=None, price_list=None):
             worksheet.insert_image('A1', logo_path, {'x_scale': 1, 'y_scale': 1, 'x_offset': 10, 'y_offset': 5})
         
         # Company information
-        worksheet.write('A2', 'Universal Distribution LLC 326 APPLEGARTH ROAD MONROE, NJ 08831 | Cotton Valley LLC, 96 Distribution Blvd, Edison NJ 08817', company_info_fmt)
+        worksheet.write('A2', 'Universal Distribution LLC 326 APPLEGARTH ROAD MONROE, NJ 08831 | Cotton Valley LLC, 326 APPLEGARTH ROAD MONROE, NJ 08831', company_info_fmt)
         worksheet.write('A3', '(732) 248 4276 | (732) 248-4276', company_info_fmt)
         worksheet.write('A4', ' info@universaldc.com | info@cottonvalley.net', company_info_fmt)
         worksheet.write('A5', 'universaldc.com | cottonValley.net', company_info_fmt)

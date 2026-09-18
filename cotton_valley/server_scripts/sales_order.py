@@ -2,6 +2,7 @@ import os
 import mimetypes
 import frappe
 from frappe import _
+from frappe.utils import flt
 from io import BytesIO
 import json
 import re
@@ -141,6 +142,67 @@ def process_sales_order_side_effects(sales_order):
     except Exception as exc:
         frappe.log_error("Sales Order on_submit", f"Push to ERP failed for {doc.name}: {exc}")
 
+CUBIC_INCH_TO_CBM = 61023.744
+DEFAULT_FULL_CONTAINER_PALLET_CAPACITY = 28
+
+
+def calculate_shipping_load_summary(items, full_container_capacity=DEFAULT_FULL_CONTAINER_PALLET_CAPACITY):
+    """
+    Mirror of the storefront's shippingLoadCalculator.js so the order
+    confirmation email shows the same numbers the customer saw at checkout.
+    """
+    item_codes = list({row.item_code for row in items if row.item_code})
+    item_meta = {}
+    if item_codes:
+        rows = frappe.get_all(
+            "Item",
+            filters={"item_code": ["in", item_codes]},
+            fields=[
+                "item_code",
+                "custom_package_length_inch",
+                "custom_package_width_inch",
+                "custom_package_height_inch",
+                "custom_pallet_ti",
+                "custom_pallet_hi",
+            ],
+        )
+        item_meta = {row.item_code: row for row in rows}
+
+    total_pallets = 0.0
+    total_cbm = 0.0
+
+    for row in items:
+        meta = item_meta.get(row.item_code)
+        if not meta:
+            continue
+
+        qty = flt(row.qty)
+        length = flt(meta.custom_package_length_inch)
+        width = flt(meta.custom_package_width_inch)
+        height = flt(meta.custom_package_height_inch)
+        ti = flt(meta.custom_pallet_ti)
+        hi = flt(meta.custom_pallet_hi)
+
+        if not (qty > 0 and length > 0 and width > 0 and height > 0 and ti > 0 and hi > 0):
+            continue
+
+        cases_per_pallet = ti * hi
+        case_cbm = (length * width * height) / CUBIC_INCH_TO_CBM
+
+        total_pallets += qty / cases_per_pallet
+        total_cbm += qty * case_cbm
+
+    fill_ratio = (total_pallets / full_container_capacity) * 100 if full_container_capacity > 0 else 0
+    remaining_capacity_percent = max(0, min(100, 100 - fill_ratio))
+
+    return {
+        "totalOrderPallets": total_pallets,
+        "totalOrderCBM": total_cbm,
+        "fullContainerPalletCapacity": full_container_capacity,
+        "remainingContainerCapacityPercent": remaining_capacity_percent,
+    }
+
+
 @frappe.whitelist()
 def send_sales_order_confirmation_email(doc, method):
     """
@@ -219,6 +281,8 @@ def send_sales_order_confirmation_email(doc, method):
                 if part
             )
 
+            shipping_load_summary = calculate_shipping_load_summary(doc.items)
+
             # Prepare template arguments
             template_args = {
                 "firstname": frappe.db.get_value("Customer", doc.customer, "customer_name"),
@@ -230,6 +294,10 @@ def send_sales_order_confirmation_email(doc, method):
                     or clean(customer_info.get("custom_phone_number"))
                     or clean(doc.get("custom_customer_cell_phone"))
                     or clean(customer_info.get("custom_cell_phone")),
+                "totalOrderPallets": f"{shipping_load_summary['totalOrderPallets']:.2f}",
+                "totalOrderCBM": f"{shipping_load_summary['totalOrderCBM']:.2f}",
+                "fullContainerPalletCapacity": shipping_load_summary["fullContainerPalletCapacity"],
+                "remainingContainerCapacityPercent": round(shipping_load_summary["remainingContainerCapacityPercent"]),
                 "order": doc.name,
                 "salesRepName": doc.custom_customer_sales_representative,
                 "salesRepPhone": frappe.db.get_value("Employee", sales_person.employee, "cell_number") if doc.custom_customer_sales_representative else None,
