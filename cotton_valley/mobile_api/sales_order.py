@@ -64,9 +64,7 @@ def get_sales_person_orders(company=None, customer=None):
         permitted_sales_persons = get_user_sales_persons(current_user)
         team_customers = get_customers_for_sales_persons(permitted_sales_persons, company)
 
-        base_filters = {
-            "order_status": ["not in", ["Shipped"]]
-        }
+        base_filters = {}
 
         if company:
             base_filters["company"] = company
