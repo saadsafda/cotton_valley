@@ -3,6 +3,11 @@ frappe.ui.form.on('Sales Order', {
         fetch_customer_details(frm);
     },
     refresh(frm) {
+        ["custom_total_order_pallets", "custom_total_cbm"].forEach((fieldname) =>
+            frm.set_df_property(fieldname, "formatter", format_shipping_load_value)
+        );
+        frm.set_df_property("custom_remaining_container_capacity", "formatter", format_remaining_capacity_value);
+
         if (!frm.is_new()) {
             frm.add_custom_button(__('Restore Last Deleted Items'), function() {
                 frappe.confirm(
@@ -137,6 +142,27 @@ frappe.ui.form.on('Sales Order', {
     }
 
 });
+
+// Display-only: round half up like the storefront's formatShippingLoadValue
+// (Frappe's own Float formatter uses Banker's Rounding). frm.doc keeps full precision.
+function format_shipping_load_value(value, df, options, doc) {
+    if (value === null || value === undefined || value === "") {
+        return frappe.form.formatters.Float(value, df, options, doc);
+    }
+    const rounded = Math.round(flt(value) * 100) / 100;
+    return frappe.form.formatters.Float(
+        rounded, { ...df, precision: 2 }, { ...options, always_show_decimals: true }, doc
+    );
+}
+
+// Whole-number percent like the storefront's formatTruckLoadPercent. Built here because
+// Frappe's Percent formatter treats precision 0 as unset and falls back to 3 decimals.
+function format_remaining_capacity_value(value, df, options, doc) {
+    if (value === null || value === undefined || value === "") {
+        return frappe.form.formatters.Percent(value, df, options, doc);
+    }
+    return frappe.form.formatters._right(format_number(Math.round(flt(value)), null, 0) + "%", options);
+}
 
 function push_single_order_to_erp(frm) {
     frappe.call({
