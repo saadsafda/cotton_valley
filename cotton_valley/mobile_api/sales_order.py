@@ -64,9 +64,7 @@ def get_sales_person_orders(company=None, customer=None):
         permitted_sales_persons = get_user_sales_persons(current_user)
         team_customers = get_customers_for_sales_persons(permitted_sales_persons, company)
 
-        base_filters = {
-            "order_status": ["not in", ["Shipped"]]
-        }
+        base_filters = {}
 
         if company:
             base_filters["company"] = company
@@ -89,7 +87,12 @@ def get_sales_person_orders(company=None, customer=None):
                 "customer_account_number as account_number", "customer_company_name as customer_company", "submit_datetime as transaction_date", 
                 "delivery_date", "order_status as status", "docstatus", "grand_total", "currency",
                 "company", "custom_mode_of_payment", "custom_notes",
-                "custom_customer_sales_representative as sales_representative", "from_app", "order_type",
+                "custom_customer_sales_representative as sales_representative", "from_app",
+                # Two distinct fields, both sent as-is: `order_type` is the stock
+                # ERPNext classification ("Shopping Cart" for app orders), while
+                # `product_type` carries the UDC Regular/COD arrangement the app
+                # filters on.
+                "order_type", "product_type",
                 "creation", "modified", "owner"
             ],
             order_by="creation desc",
@@ -498,7 +501,7 @@ def get_panding_payments():
                 'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
                 'customer': ['in', team_customers or [""]],
             },
-            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
+            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus", "order_type", "product_type"],
         )
         for record in panding_customer_amount:
             # get customer email and phone and sales invoice items
@@ -587,10 +590,10 @@ def get_submit_payments():
                 'custom_customer_sales_representative': ['in', permitted_sales_persons or [""]],
                 'customer': ['in', team_customers or [""]],
             },
-            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus"],
+            fields=['name', 'customer', 'customer_name', 'company', 'custom_customer_account_number as account_number', 'grand_total', "posting_date as transaction_date", "order_status as status", "docstatus", "order_type", "product_type"],
         )
 
-        
+
         for record in submit_customer_amount:
             # get customer email and phone and sales invoice items
             customer_details = frappe.db.get_value(
