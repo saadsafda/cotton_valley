@@ -1,4 +1,5 @@
 import os
+import math
 import mimetypes
 import frappe
 from frappe import _
@@ -192,15 +193,29 @@ def calculate_shipping_load_summary(items, full_container_capacity=DEFAULT_FULL_
         total_pallets += qty / cases_per_pallet
         total_cbm += qty * case_cbm
 
-    fill_ratio = (total_pallets / full_container_capacity) * 100 if full_container_capacity > 0 else 0
-    remaining_capacity_percent = max(0, min(100, 100 - fill_ratio))
-
     return {
         "totalOrderPallets": total_pallets,
         "totalOrderCBM": total_cbm,
         "fullContainerPalletCapacity": full_container_capacity,
-        "remainingContainerCapacityPercent": remaining_capacity_percent,
+        "remainingContainerCapacityPercent": remaining_container_capacity_percent(total_pallets, full_container_capacity),
     }
+
+
+def remaining_container_capacity_percent(total_pallets, full_container_capacity=DEFAULT_FULL_CONTAINER_PALLET_CAPACITY):
+    fill_ratio = (total_pallets / full_container_capacity) * 100 if full_container_capacity > 0 else 0
+    return max(0, min(100, 100 - fill_ratio))
+
+
+def js_round(value):
+    """JavaScript Math.round: exact .5 rounds up, where Python's round() rounds to even."""
+    floor = math.floor(value)
+    return floor + 1 if value - floor >= 0.5 else floor
+
+
+def js_round_to(value, precision=2):
+    """The storefront's roundTo() in shippingLoadCalculator.js."""
+    factor = 10 ** precision
+    return js_round(value * factor) / factor
 
 
 @frappe.whitelist()
@@ -281,7 +296,21 @@ def send_sales_order_confirmation_email(doc, method):
                 if part
             )
 
-            shipping_load_summary = calculate_shipping_load_summary(doc.items)
+            # UDC split orders store the full-cart load at checkout; older orders
+            # (fields empty/0) and Cotton Valley fall back to this order's own items.
+            stored_pallets = flt(doc.get("custom_total_order_pallets"))
+            stored_cbm = flt(doc.get("custom_total_cbm"))
+            if doc.company != "Cotton Valley" and (stored_pallets > 0 or stored_cbm > 0):
+                # Pre-rounded the way the website rounds, so the :.2f / round()
+                # formatting in template_args prints the same digits the customer saw.
+                shipping_load_summary = {
+                    "totalOrderPallets": js_round_to(stored_pallets, 2),
+                    "totalOrderCBM": js_round_to(stored_cbm, 2),
+                    "fullContainerPalletCapacity": DEFAULT_FULL_CONTAINER_PALLET_CAPACITY,
+                    "remainingContainerCapacityPercent": js_round(remaining_container_capacity_percent(stored_pallets)),
+                }
+            else:
+                shipping_load_summary = calculate_shipping_load_summary(doc.items)
 
             # Prepare template arguments
             template_args = {

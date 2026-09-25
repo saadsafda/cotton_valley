@@ -374,6 +374,33 @@ def _draft_order(order_id, customer_id, company):
     return existing[0].name if existing else None
 
 
+def _shipping_load_totals(rows, log_title, customer_id, company, order_id):
+    """
+    (total pallets, total CBM) at full precision, stored on the Sales Order and shown
+    in the confirmation email. Nothing in pricing, stock or the ERP push reads them,
+    so a failure is logged and returns (0, 0) rather than blocking checkout; the email
+    then falls back to each order's own items. A stored 0 therefore means either no
+    item had complete shipping dimensions or the calculation failed (see Error Log).
+    """
+    try:
+        # Local import: server_scripts.sales_order imports this module at load time.
+        from cotton_valley.server_scripts.sales_order import calculate_shipping_load_summary
+
+        load = calculate_shipping_load_summary(rows)
+        return load["totalOrderPallets"], load["totalOrderCBM"]
+    except Exception:
+        frappe.log_error(
+            title=log_title,
+            message=(
+                f"Customer: {customer_id}\nCompany: {company}\nDraft/order id: {order_id}\n"
+                f"Items (item_code, qty, product_type): "
+                f"{[(r.get('item_code'), r.get('qty'), r.get('product_type')) for r in rows]}\n\n"
+                f"{frappe.get_traceback()}"
+            ),
+        )
+        return 0, 0
+
+
 @frappe.whitelist(allow_guest=True)
 def create_or_update_sales_order(items, notes="", submit_datetime=None, company=None, submit=False, payment_reference=None, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, order_id=None, orderId=None):
     """
@@ -439,9 +466,16 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
             regular_items = [i for i in items if i.get("product_type") == "Regular"]
             cod_items = [i for i in items if i.get("product_type") == "COD"]
 
+            # Both split orders carry the full-cart load so each email matches the cart the customer saw.
+            combined_total_pallets, combined_total_cbm = _shipping_load_totals(
+                [frappe._dict(i) for i in regular_items + cod_items],
+                "UDC combined shipping load calculation failed",
+                customer_id, company, order_id,
+            )
+
             created_orders = []
 
-            def make_so(item_list, so_type):
+            def make_so(item_list, so_type, combined_total_pallets, combined_total_cbm):
                 if not item_list:
                     return None
 
@@ -482,6 +516,8 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                 if payment_method:
                     so_doc.custom_mode_of_payment = payment_method
                 so_doc.custom_payment_reference = payment_reference if submit else None
+                so_doc.custom_total_order_pallets = combined_total_pallets
+                so_doc.custom_total_cbm = combined_total_cbm
 
                 for row in item_list:
                     so_doc.append("items", {
@@ -511,9 +547,9 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                 return so_doc.name
 
             if len(regular_items) > 0:
-                make_so(regular_items, "Regular")
+                make_so(regular_items, "Regular", combined_total_pallets, combined_total_cbm)
             if len(cod_items) > 0:
-                make_so(cod_items, "COD")
+                make_so(cod_items, "COD", combined_total_pallets, combined_total_cbm)
 
             return created_orders
 
@@ -590,6 +626,14 @@ def create_or_update_sales_order(items, notes="", submit_datetime=None, company=
                     "delivery_date": nowdate(),
                     "warehouse": "Stores - U" if company == "UDC" else "Stores - CV"
                 })
+
+            # Cotton Valley never splits, so its own items are the whole order.
+            # Cart syncs (submit=False) skip this; the checkout call rebuilds the items anyway.
+            if submit and company == "Cotton Valley":
+                so_doc.custom_total_order_pallets, so_doc.custom_total_cbm = _shipping_load_totals(
+                    so_doc.items, "Cotton Valley shipping load calculation failed",
+                    customer_id, company, order_id,
+                )
 
             # Credit the logged-in rep when they are on this customer's sales
             # team, else the customer's primary rep (guest/web checkout).
