@@ -445,8 +445,8 @@ body { font-family: Arial, sans-serif; font-size: 9px; color: #4a4a4a; margin: 0
     white-space: nowrap;
     overflow: hidden;
 }
-.info-table .col-left  { width: 50%; }
-.info-table .col-right { width: 50%; text-align: right; overflow: visible; white-space: normal; }
+.info-table .col-left  { width: 55%; }
+.info-table .col-right { width: 45%; text-align: right; overflow: visible; white-space: normal; }
 .info-table .lbl-gray  { color: #888; }
 
 /* BADGE */
