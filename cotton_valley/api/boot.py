@@ -1,10 +1,12 @@
 import frappe
 
+from cotton_valley.overrides.workspace_filter import get_allowed_workspaces
+
 ROLE_ALLOWED_SEARCH_DOCTYPES = {
     "In house SR": {"Sales Order", "Sales Invoice", "Customer"},
     "In house SR Product": {"Item"},
+    "In House SR Catalog": set(),
 }
-ALLOWED_WORKSPACES = {"Home", "Dashboard V1"}
 
 def extend_bootinfo(bootinfo):
     """Extend bootinfo to restrict search and visibility for specific roles."""
@@ -42,11 +44,12 @@ def _restrict_bootinfo(bootinfo, allowed_search_doctypes):
         ]
         
     # 2. Restrict Workspaces in search and sidebar
+    allowed_workspaces = get_allowed_workspaces() or set()
     if "allowed_workspaces" in bootinfo:
         bootinfo.allowed_workspaces = [
             w for w in bootinfo.allowed_workspaces
-            if w.get("name") in ALLOWED_WORKSPACES
-            or w.get("title") in ALLOWED_WORKSPACES
+            if w.get("name") in allowed_workspaces
+            or w.get("title") in allowed_workspaces
         ]
         
     # 3. Strip all reports from search

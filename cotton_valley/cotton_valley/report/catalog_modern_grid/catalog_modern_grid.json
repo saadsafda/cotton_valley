@@ -50,6 +50,9 @@
   },
   {
    "role": "ERPNext User"
+  },
+  {
+   "role": "In House SR Catalog"
   }
  ],
  "timeout": 0

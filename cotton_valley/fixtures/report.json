@@ -255,6 +255,12 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   },
+   {
+    "parent": "Buyer Catalog",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In House SR Catalog"
    }
   ],
   "timeout": 0
@@ -5325,6 +5331,12 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   },
+   {
+    "parent": "Catalog Modern Grid",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In House SR Catalog"
    }
   ],
   "timeout": 0
@@ -5411,6 +5423,12 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   },
+   {
+    "parent": "Catalog Old Bridge",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In House SR Catalog"
    }
   ],
   "timeout": 0

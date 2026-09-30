@@ -15,7 +15,34 @@ ROLE_ALLOWED_HOME_SHORTCUTS = {
     },
 }
 
-ALLOWED_WORKSPACES = {"Home", "Dashboard V1"}
+ROLE_ALLOWED_WORKSPACES = {
+    "In house SR": {"Home", "Dashboard V1"},
+    "In house SR Product": {"Home", "Dashboard V1"},
+    "In House SR Catalog": {"Catalog"},
+}
+
+
+def _is_unrestricted_user():
+    return frappe.session.user == "Administrator" or "System Manager" in frappe.get_roles()
+
+
+def get_allowed_workspaces():
+    """Return the set of workspaces allowed for the current user, or None if unrestricted.
+
+    A user matching more than one restricted role sees the union of their allowed workspaces.
+    """
+    if _is_unrestricted_user():
+        return None
+
+    roles = frappe.get_roles()
+    allowed = set()
+    matched = False
+    for role_name, workspaces in ROLE_ALLOWED_WORKSPACES.items():
+        if role_name in roles:
+            matched = True
+            allowed |= workspaces
+
+    return allowed if matched else None
 
 
 def _get_allowed_shortcuts():
@@ -25,14 +52,10 @@ def _get_allowed_shortcuts():
     and do NOT have Administrator or System Manager privileges. A user matching
     more than one restricted role sees the union of their allowed shortcuts.
     """
-    user = frappe.session.user
-    if user == "Administrator":
+    if _is_unrestricted_user():
         return None
 
     roles = frappe.get_roles()
-    if "System Manager" in roles:
-        return None
-
     allowed = set()
     matched = False
     for role_name, shortcuts in ROLE_ALLOWED_HOME_SHORTCUTS.items():
@@ -45,26 +68,30 @@ def _get_allowed_shortcuts():
 
 def filter_workspace_sidebar(pages):
     """Remove sidebar workspaces not in the allowed list for restricted users."""
-    if _get_allowed_shortcuts() is None:
+    allowed_workspaces = get_allowed_workspaces()
+    if allowed_workspaces is None:
         return pages
 
     if isinstance(pages, dict) and "pages" in pages:
         pages["pages"] = [
             p for p in pages["pages"]
-            if p.get("name") in ALLOWED_WORKSPACES
-            or p.get("title") in ALLOWED_WORKSPACES
+            if p.get("name") in allowed_workspaces
+            or p.get("title") in allowed_workspaces
         ]
     return pages
 
 
 def filter_home_page(result, page_name):
     """Filter Home workspace shortcuts for restricted users."""
-    allowed_shortcuts = _get_allowed_shortcuts()
-    if allowed_shortcuts is None:
-        return result
-
     if page_name != "Home":
         return result
+
+    allowed_shortcuts = _get_allowed_shortcuts()
+    if allowed_shortcuts is None:
+        # Catalog-only users have no Home shortcuts at all
+        if get_allowed_workspaces() is None:
+            return result
+        allowed_shortcuts = set()
 
     if not isinstance(result, dict):
         return result

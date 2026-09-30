@@ -1,5 +1,5 @@
 /**
- * Client-side workspace filter for "In house SR" / "In house SR Product" roles.
+ * Client-side workspace filter for "In house SR" / "In house SR Product" / "In House SR Catalog" roles.
  * Supplements server-side filtering as a safety net.
  */
 (function () {
@@ -8,9 +8,14 @@
             "CV Customer", "CV Sales Order", "CV Sales Invoice",
             "UDC Customer", "UDC Sales Order", "UDC Sales Invoice"
         ],
-        "In house SR Product": ["CV Product", "UDC Product"]
+        "In house SR Product": ["CV Product", "UDC Product"],
+        "In House SR Catalog": []
     };
-    var ALLOWED_SIDEBAR = ["Home", "Dashboard V1"];
+    var ROLE_SIDEBAR = {
+        "In house SR": ["Home", "Dashboard V1"],
+        "In house SR Product": ["Home", "Dashboard V1"],
+        "In House SR Catalog": ["Catalog"]
+    };
 
     function hasRole() {
         if (!frappe.user_roles) return false;
@@ -32,11 +37,22 @@
         return allowed;
     }
 
+    function getAllowedSidebar() {
+        var allowed = [];
+        Object.keys(ROLE_SIDEBAR).forEach(function (role) {
+            if (frappe.user_roles.indexOf(role) !== -1) {
+                allowed = allowed.concat(ROLE_SIDEBAR[role]);
+            }
+        });
+        return allowed;
+    }
+
     function filterSidebar() {
         if (!hasRole()) return;
+        var allowedSidebar = getAllowedSidebar();
         document.querySelectorAll(".sidebar-menu .standard-sidebar-item").forEach(function (el) {
             var lbl = el.querySelector(".sidebar-item-label");
-            if (lbl && ALLOWED_SIDEBAR.indexOf(lbl.textContent.trim()) === -1) {
+            if (lbl && allowedSidebar.indexOf(lbl.textContent.trim()) === -1) {
                 el.style.display = "none";
             }
         });
