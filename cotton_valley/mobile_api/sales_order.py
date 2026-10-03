@@ -4,6 +4,7 @@ from cotton_valley.api.sales_team import (
     get_customers_for_sales_persons,
     get_user_sales_persons,
 )
+from cotton_valley.api.app_drafts import NOT_APP_DRAFT, cart_filters
 from frappe.utils import nowdate # type: ignore
 
 
@@ -64,7 +65,9 @@ def get_sales_person_orders(company=None, customer=None):
         permitted_sales_persons = get_user_sales_persons(current_user)
         team_customers = get_customers_for_sales_persons(permitted_sales_persons, company)
 
-        base_filters = {}
+        # App drafts are already listed on the device that saved them, under
+        # Draft Orders; listing them here as well showed every draft twice.
+        base_filters = {"custom_app_draft_id": NOT_APP_DRAFT}
 
         if company:
             base_filters["company"] = company
@@ -163,8 +166,9 @@ def get_sales_person_orders(company=None, customer=None):
                 SUM(CASE WHEN docstatus = 2 THEN 1 ELSE 0 END) as cancelled_orders,
                 SUM(CASE WHEN docstatus = 1 THEN grand_total ELSE 0 END) as total_value
             FROM `tabSales Order`
-            WHERE custom_customer_sales_representative IN %(sales_persons)s
-                OR customer IN %(customers)s
+            WHERE (custom_customer_sales_representative IN %(sales_persons)s
+                OR customer IN %(customers)s)
+                AND IFNULL(custom_app_draft_id, '') = ''
         """, {
             "sales_persons": permitted_sales_persons or [""],
             "customers": team_customers or [""],
@@ -251,7 +255,7 @@ def _resolve_address(address_id, address_payload, customer_id, address_type, com
 
 
 @frappe.whitelist()
-def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None, billing_address=None, shipping_address=None):
+def create_or_update_sales_order(items, customer, notes="", customer_details="", submit_datetime=nowdate(), company=None, submit=False, billing_address_id=None, shipping_address_id=None, delivery_description=None, payment_method=None, client_ip=None, client_latitude=None, client_longitude=None, payment_reference=None, billing_address=None, shipping_address=None, app_draft_id=None):
     """
     Create or update a Sales Order from cart.
     items = [
@@ -263,12 +267,17 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     alongside the ids. They are used only when the matching id does not
     resolve, so an order placed against an address created offline creates
     that address here instead of being rejected.
+
+    app_draft_id names the app draft this order was submitted from. Its draft
+    Sales Order (see save_app_draft) is deleted once the order exists, so the
+    draft does not linger in ERPNext next to the real order.
     """
     items = frappe.parse_json(items)
 
     customer = None if not customer or customer == "null" else customer
     company = "Cotton Valley" if not company or company == "null" else company
     payment_reference = None if not payment_reference or payment_reference == "null" else payment_reference
+    app_draft_id = None if not app_draft_id or app_draft_id == "null" else app_draft_id
     billing_address_id = None if not billing_address_id or billing_address_id == "null" else billing_address_id
     shipping_address_id = None if not shipping_address_id or shipping_address_id == "null" else shipping_address_id
     delivery_description = None if not delivery_description or delivery_description == "null" else delivery_description
@@ -298,7 +307,7 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     if submit and company != "Cotton Valley":
         so = frappe.get_all(
             "Sales Order",
-            filters={"customer": customer_id, "docstatus": 0, "company": company},
+            filters=cart_filters(customer_id, company),
             fields=["name"],
             limit=1,
         )
@@ -379,12 +388,13 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
         if len(cod_items) > 0:
             make_so(cod_items, "COD")
 
+        _delete_app_draft(app_draft_id)
         return created_orders
 
 
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        filters=cart_filters(customer_id, company),
         fields=["name"],
         limit=1,
     )
@@ -445,7 +455,129 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     if will_submit:
         so_doc.submit()
     frappe.db.commit()
+    _delete_app_draft(app_draft_id)
     return so_doc.name
+
+
+def _app_draft_name(draft_id):
+    """The draft Sales Order holding app draft [draft_id], if any."""
+    return frappe.db.get_value(
+        "Sales Order", {"custom_app_draft_id": draft_id, "docstatus": 0}, "name"
+    )
+
+
+def _delete_app_draft(draft_id):
+    """Deletes the draft Sales Order for app draft [draft_id]; a no-op if none."""
+    if not draft_id:
+        return
+    name = _app_draft_name(draft_id)
+    if name:
+        frappe.delete_doc("Sales Order", name, ignore_permissions=True)
+        frappe.db.commit()
+
+
+@frappe.whitelist()
+def save_app_draft(draft_id, items, customer, company=None, product_type=None, label=None, notes="", customer_details="", payment_method=None):
+    """
+    Create or update the draft Sales Order for a draft a rep saved in the app.
+
+    Keyed by the app's own draft id, so a rep can keep several drafts for the
+    same customer and re-saving one updates its own Sales Order rather than
+    adding another. The order is marked with custom_app_draft_id, which keeps
+    it out of the customer's shopping cart and the abandoned-cart email (see
+    cotton_valley.api.app_drafts). An empty item list deletes it.
+
+    items = [{"item_code": "ITEM-001", "qty": 2, "rate": 500}, ...]
+    """
+    try:
+        items = frappe.parse_json(items) or []
+        draft_id = None if not draft_id or draft_id == "null" else str(draft_id).strip()
+        customer = None if not customer or customer == "null" else customer
+        company = "Cotton Valley" if not company or company == "null" else company
+        product_type = None if not product_type or product_type == "null" else product_type
+        label = None if not label or label == "null" else label
+        payment_method = None if not payment_method or payment_method == "null" else payment_method
+
+        if not draft_id:
+            return {"status": "error", "message": "Draft id is required."}
+        if not customer or not frappe.db.exists("Customer", customer):
+            return {"status": "error", "message": "Customer not found."}
+
+        if not items:
+            _delete_app_draft(draft_id)
+            return {"status": "success", "name": None}
+
+        name = _app_draft_name(draft_id)
+        if name:
+            so_doc = frappe.get_doc("Sales Order", name)
+            so_doc.items = []
+        elif frappe.db.exists("Sales Order", {"custom_app_draft_id": draft_id}):
+            # Someone already submitted or cancelled this draft in ERPNext.
+            # Recreating it would put a second copy of the order back as a draft.
+            return {
+                "status": "error",
+                "message": "This draft was already submitted or cancelled in ERPNext.",
+            }
+        else:
+            so_doc = frappe.new_doc("Sales Order")
+            so_doc.custom_app_draft_id = draft_id
+            so_doc.order_type = "Shopping Cart"
+
+        so_doc.customer = customer
+        so_doc.company = company
+        so_doc.delivery_date = nowdate()
+        so_doc.from_app = True
+        so_doc.custom_app_draft_label = label
+        so_doc.custom_notes = notes
+        so_doc.customer_details = customer_details
+        if product_type:
+            so_doc.product_type = product_type
+        if payment_method:
+            so_doc.custom_mode_of_payment = payment_method
+
+        for row in items:
+            so_doc.append("items", {
+                "item_code": row["item_code"],
+                "qty": row["qty"],
+                "rate": row["rate"],
+                "delivery_date": nowdate(),
+            })
+
+        # Credit the rep who saved it (see make_so in create_or_update_sales_order).
+        sales_person = get_acting_sales_person(customer, company)
+        so_doc.custom_customer_sales_representative = sales_person
+        so_doc.customer_account_number = frappe.db.get_value(
+            "Customer",
+            customer,
+            "udc_account_number" if company == "UDC" else "account_number",
+        )
+        if sales_person:
+            so_doc.sales_team = []
+            so_doc.append("sales_team", {
+                "sales_person": sales_person,
+                "allocated_percentage": 100
+            })
+
+        so_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+        return {"status": "success", "name": so_doc.name}
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "Save App Draft Failed")
+        return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist()
+def delete_app_draft(draft_id):
+    """Deletes the draft Sales Order for an app draft the rep deleted."""
+    try:
+        draft_id = None if not draft_id or draft_id == "null" else str(draft_id).strip()
+        _delete_app_draft(draft_id)
+        return {"status": "success"}
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "Delete App Draft Failed")
+        return {"status": "error", "message": str(e)}
 
 
 

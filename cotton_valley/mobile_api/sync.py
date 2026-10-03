@@ -219,7 +219,7 @@ def sync_offline_bundle(customer=None, customer_payload=None, addresses=None, or
         "company", "submit", "billing_address_id", "shipping_address_id",
         "delivery_description", "payment_method", "client_ip", "client_latitude",
         "client_longitude", "payment_reference", "billing_address",
-        "shipping_address",
+        "shipping_address", "app_draft_id",
     }
     order_args = {k: v for k, v in order.items() if k in allowed}
 
