@@ -132,6 +132,8 @@ doctype_list_js = {"Customer" : "public/js/customer_list.js", "Item" : "public/j
 # before_install = "cotton_valley.install.before_install"
 # after_install = "cotton_valley.install.after_install"
 
+after_migrate = ["cotton_valley.patches.set_item_default_warehouse.execute"]
+
 # Uninstallation
 # ------------
 
