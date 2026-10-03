@@ -467,25 +467,50 @@ _TARGET_COMPANY = (
     "COALESCE(NULLIF(tgt_item.company, ''), NULLIF(tgt_sub.company, ''), "
     "NULLIF(tgt_cat.company, ''))"
 )
-# Every filter is a no-op when %(company)s is NULL (no company requested).
+# UDC is sold as Regular and COD, which reps treat as separate businesses. An
+# item's arrangement is its Item Group ("Regular"/"COD"); a target row takes its
+# item's, else the row's own Item Group when that is Regular or COD. A row set
+# only on a category (categories have no arrangement) or on "All Item Groups"
+# counts for both.
+_TARGET_PRODUCT_TYPE = (
+    "COALESCE(tgt_item.item_group, "
+    "CASE WHEN sp_target.item_group IN ('Regular', 'COD') "
+    "THEN sp_target.item_group END)"
+)
+# Every filter is a no-op when its parameter is NULL (nothing requested).
 TARGET_COMPANY_FILTER = (
     f"AND (%(company)s IS NULL OR {_TARGET_COMPANY} IS NULL "
-    f"OR {_TARGET_COMPANY} = %(company)s)"
+    f"OR {_TARGET_COMPANY} = %(company)s) "
+    f"AND (%(product_type)s IS NULL OR {_TARGET_PRODUCT_TYPE} IS NULL "
+    f"OR {_TARGET_PRODUCT_TYPE} = %(product_type)s)"
 )
-INVOICE_COMPANY_FILTER = "AND (%(company)s IS NULL OR si.company = %(company)s)"
+# An invoice with no product_type counts as Regular, as it does in the app.
+INVOICE_COMPANY_FILTER = (
+    "AND (%(company)s IS NULL OR si.company = %(company)s) "
+    "AND (%(product_type)s IS NULL "
+    "OR COALESCE(NULLIF(si.product_type, ''), 'Regular') = %(product_type)s)"
+)
 
 
 def _clean_company(company):
     return None if not company or company == "null" else company
 
 
+def _clean_product_type(product_type):
+    """'Regular' or 'COD', or None for both."""
+    if not product_type or product_type == "null":
+        return None
+    return "COD" if str(product_type).strip().lower() == "cod" else "Regular"
+
+
 @frappe.whitelist()
-def get_monthly_data(company=None):
+def get_monthly_data(company=None, product_type=None):
     """
     Monthly target vs achieved for the logged-in rep.
 
     With [company], only that company's targets (see TARGET_COMPANY_JOINS) and
     that company's invoices count, so each company shows its own goal.
+    [product_type] ("Regular"/"COD") narrows it further to one arrangement.
     """
     # --- 1. Get Sales Person (Same as your code) ---
     user = frappe.session.user
@@ -515,6 +540,7 @@ def get_monthly_data(company=None):
         "fy_start_date": fy_dates.year_start_date,
         "fy_end_date": fy_dates.year_end_date,
         "company": _clean_company(company),
+        "product_type": _clean_product_type(product_type),
     }
 
     # --- 3. Run the SQL Query (Slightly optimized) ---
@@ -609,10 +635,11 @@ def get_monthly_data(company=None):
 
 
 @frappe.whitelist()
-def get_category_wise_monthly_data(company=None):
+def get_category_wise_monthly_data(company=None, product_type=None):
     """
-    With [company], only that company's targets and invoices count (see
-    TARGET_COMPANY_JOINS), matching get_monthly_data.
+    With [company] and [product_type], only that company's (and arrangement's)
+    targets and invoices count (see TARGET_COMPANY_JOINS), matching
+    get_monthly_data.
 
     Monthly target vs achieved per Target Detail row, including the
     Product Category, Product Subcategory and Item set on each target row.
@@ -664,6 +691,7 @@ def get_category_wise_monthly_data(company=None):
         "fy_start_date": fy_dates.year_start_date,
         "fy_end_date": fy_dates.year_end_date,
         "company": _clean_company(company),
+        "product_type": _clean_product_type(product_type),
     }
 
     # 3) Monthly targets at (category, subcategory, item, month) granularity.
