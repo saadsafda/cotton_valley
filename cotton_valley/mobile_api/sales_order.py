@@ -269,8 +269,10 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     that address here instead of being rejected.
 
     app_draft_id names the app draft this order was submitted from. Its draft
-    Sales Order (see save_app_draft) is deleted once the order exists, so the
-    draft does not linger in ERPNext next to the real order.
+    Sales Order (see save_app_draft) becomes the order itself, keeping its
+    number, so the portal shows one order rather than a deleted draft and a
+    new one. For UDC items split across Regular and COD, the draft becomes the
+    order of its own arrangement and the other gets a new Sales Order.
     """
     items = frappe.parse_json(items)
 
@@ -322,11 +324,20 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
         cod_items = [i for i in items if i.get("product_type") == "COD"]
 
         created_orders = []
+        app_draft = _app_draft_doc(app_draft_id)
+        # The arrangement the draft becomes: its own, else whichever the order has.
+        app_draft_type = None
+        if app_draft:
+            groups = [t for t, rows in (("Regular", regular_items), ("COD", cod_items)) if rows]
+            app_draft_type = app_draft.product_type if app_draft.product_type in groups else (groups[0] if groups else None)
 
         def make_so(item_list, so_type):
             if not item_list:
                 return None
-            so_doc = frappe.new_doc("Sales Order")
+            if app_draft and so_type == app_draft_type:
+                so_doc = _take_app_draft(app_draft)
+            else:
+                so_doc = frappe.new_doc("Sales Order")
             so_doc.customer = customer_id
             so_doc.order_type = "Shopping Cart"
             so_doc.delivery_date = nowdate()
@@ -400,7 +411,11 @@ def create_or_update_sales_order(items, customer, notes="", customer_details="",
     )
 
     so_doc = {}
-    if so:
+    app_draft = _app_draft_doc(app_draft_id)
+    if app_draft:
+        # Submitting an app draft: it becomes this order (see docstring).
+        so_doc = _take_app_draft(app_draft)
+    elif so:
         so_doc = frappe.get_doc("Sales Order", so[0].name)
         so_doc.items = []  # reset items
     else:
@@ -464,6 +479,26 @@ def _app_draft_name(draft_id):
     return frappe.db.get_value(
         "Sales Order", {"custom_app_draft_id": draft_id, "docstatus": 0}, "name"
     )
+
+
+def _app_draft_doc(draft_id):
+    """The draft Sales Order document for app draft [draft_id], or None."""
+    name = _app_draft_name(draft_id) if draft_id else None
+    return frappe.get_doc("Sales Order", name) if name else None
+
+
+def _take_app_draft(so_doc):
+    """
+    Turns an app draft's Sales Order into the order being placed.
+
+    Its items are replaced by the submitted ones, and it stops being an app
+    draft: cleared of custom_app_draft_id, it shows in order lists and is never
+    deleted as a draft again.
+    """
+    so_doc.items = []
+    so_doc.custom_app_draft_id = None
+    so_doc.order_type = "Shopping Cart"
+    return so_doc
 
 
 def _delete_app_draft(draft_id):
