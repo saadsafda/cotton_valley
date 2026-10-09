@@ -4,6 +4,20 @@ from frappe.utils import get_datetime
 
 RECOMMENDED_PRODUCTS_LIMIT = 5
 
+# Item.company -> default warehouse for that company's Item Default row
+COMPANY_WAREHOUSES = {
+	"UDC": "Stores - U",
+	"Cotton Valley": "Stores - CV",
+}
+
+# Links on Item Default that belong to a specific company and become invalid when the row's company changes
+COMPANY_SPECIFIC_FIELDS = (
+	"expense_account",
+	"income_account",
+	"buying_cost_center",
+	"selling_cost_center",
+)
+
 
 def _clear_product_tags_if_requested(doc):
 	clear_requested = doc.get("clear_product_tags") or doc.get("custom_clear_product_tags")
@@ -96,6 +110,28 @@ def _auto_populate_recommended_products(doc):
 		doc.append("custom_recommended", {"product_name": item_name})
 
 
+def _set_company_item_defaults(doc):
+	"""
+	Keep the Item Defaults row in line with Item.company: the row for that
+	company gets its mapped warehouse. If there is no row for it, the first
+	row is moved to that company (or a new row is added).
+	"""
+	warehouse = COMPANY_WAREHOUSES.get(doc.get("company"))
+	if not warehouse:
+		return
+
+	row = next((d for d in doc.get("item_defaults") or [] if d.company == doc.company), None)
+	if not row and doc.get("item_defaults"):
+		row = doc.item_defaults[0]
+		row.company = doc.company
+		for field in COMPANY_SPECIFIC_FIELDS:
+			row.set(field, None)
+	if not row:
+		row = doc.append("item_defaults", {"company": doc.company})
+
+	row.default_warehouse = warehouse
+
+
 # def _prevent_duplicate_item_price(doc, method=None):
 # 	if doc.doctype != "Item Price":
 # 		return
@@ -122,6 +158,7 @@ def validate(doc, method):
 	_sanitize_submit_datetime(doc)
 	_clear_product_tags_if_requested(doc)
 	_auto_populate_recommended_products(doc)
+	_set_company_item_defaults(doc)
 	# _prevent_duplicate_item_price(doc)
 
 

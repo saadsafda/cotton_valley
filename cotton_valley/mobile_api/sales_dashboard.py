@@ -454,8 +454,64 @@ def get_monthly_sales_data():
         }
     
 
+# A target row's company is the company of whatever it was set on: its item,
+# else its subcategory, else its category. Target Detail itself has no company.
+# A row with none of those set belongs to no company in particular and counts
+# for every company.
+TARGET_COMPANY_JOINS = """
+    LEFT JOIN `tabItem` AS tgt_item ON tgt_item.name = sp_target.item_code
+    LEFT JOIN `tabProduct Subcategory` AS tgt_sub ON tgt_sub.name = sp_target.product_subcategory
+    LEFT JOIN `tabProduct Category` AS tgt_cat ON tgt_cat.name = sp_target.product_category
+"""
+_TARGET_COMPANY = (
+    "COALESCE(NULLIF(tgt_item.company, ''), NULLIF(tgt_sub.company, ''), "
+    "NULLIF(tgt_cat.company, ''))"
+)
+# UDC is sold as Regular and COD, which reps treat as separate businesses. An
+# item's arrangement is its Item Group ("Regular"/"COD"); a target row takes its
+# item's, else the row's own Item Group when that is Regular or COD. A row set
+# only on a category (categories have no arrangement) or on "All Item Groups"
+# counts for both.
+_TARGET_PRODUCT_TYPE = (
+    "COALESCE(tgt_item.item_group, "
+    "CASE WHEN sp_target.item_group IN ('Regular', 'COD') "
+    "THEN sp_target.item_group END)"
+)
+# Every filter is a no-op when its parameter is NULL (nothing requested).
+TARGET_COMPANY_FILTER = (
+    f"AND (%(company)s IS NULL OR {_TARGET_COMPANY} IS NULL "
+    f"OR {_TARGET_COMPANY} = %(company)s) "
+    f"AND (%(product_type)s IS NULL OR {_TARGET_PRODUCT_TYPE} IS NULL "
+    f"OR {_TARGET_PRODUCT_TYPE} = %(product_type)s)"
+)
+# An invoice with no product_type counts as Regular, as it does in the app.
+INVOICE_COMPANY_FILTER = (
+    "AND (%(company)s IS NULL OR si.company = %(company)s) "
+    "AND (%(product_type)s IS NULL "
+    "OR COALESCE(NULLIF(si.product_type, ''), 'Regular') = %(product_type)s)"
+)
+
+
+def _clean_company(company):
+    return None if not company or company == "null" else company
+
+
+def _clean_product_type(product_type):
+    """'Regular' or 'COD', or None for both."""
+    if not product_type or product_type == "null":
+        return None
+    return "COD" if str(product_type).strip().lower() == "cod" else "Regular"
+
+
 @frappe.whitelist()
-def get_monthly_data():
+def get_monthly_data(company=None, product_type=None):
+    """
+    Monthly target vs achieved for the logged-in rep.
+
+    With [company], only that company's targets (see TARGET_COMPANY_JOINS) and
+    that company's invoices count, so each company shows its own goal.
+    [product_type] ("Regular"/"COD") narrows it further to one arrangement.
+    """
     # --- 1. Get Sales Person (Same as your code) ---
     user = frappe.session.user
     employee = frappe.get_all("Employee", filters={"user_id": user}, fields=["name"], pluck="name")
@@ -482,12 +538,14 @@ def get_monthly_data():
         "user": sales_person_name,
         "fiscal_year": current_fiscal_year,
         "fy_start_date": fy_dates.year_start_date,
-        "fy_end_date": fy_dates.year_end_date
+        "fy_end_date": fy_dates.year_end_date,
+        "company": _clean_company(company),
+        "product_type": _clean_product_type(product_type),
     }
 
     # --- 3. Run the SQL Query (Slightly optimized) ---
     # I've simplified the final SELECT to get only what's needed.
-    query_results = frappe.db.sql("""
+    query_results = frappe.db.sql(f"""
         WITH MonthlyTargets AS (
             SELECT
                 dist_pct.month,
@@ -498,9 +556,11 @@ def get_monthly_data():
                 `tabTarget Detail` AS sp_target
             JOIN
                 `tabMonthly Distribution Percentage` AS dist_pct ON sp_target.distribution_id = dist_pct.parent
+            {TARGET_COMPANY_JOINS}
             WHERE
                 sp_target.parent = %(user)s 
                 AND sp_target.fiscal_year = %(fiscal_year)s
+                {TARGET_COMPANY_FILTER}
             GROUP BY
                 dist_pct.month, sp_target.fiscal_year
         ),
@@ -519,6 +579,7 @@ def get_monthly_data():
                 si.docstatus = 1
                 AND st.sales_person = %(user)s
                 AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+                {INVOICE_COMPANY_FILTER}
             GROUP BY
                 MONTHNAME(si.posting_date)
         )
@@ -574,8 +635,12 @@ def get_monthly_data():
 
 
 @frappe.whitelist()
-def get_category_wise_monthly_data():
+def get_category_wise_monthly_data(company=None, product_type=None):
     """
+    With [company] and [product_type], only that company's (and arrangement's)
+    targets and invoices count (see TARGET_COMPANY_JOINS), matching
+    get_monthly_data.
+
     Monthly target vs achieved per Target Detail row, including the
     Product Category, Product Subcategory and Item set on each target row.
 
@@ -625,10 +690,12 @@ def get_category_wise_monthly_data():
         "fiscal_year": current_fiscal_year,
         "fy_start_date": fy_dates.year_start_date,
         "fy_end_date": fy_dates.year_end_date,
+        "company": _clean_company(company),
+        "product_type": _clean_product_type(product_type),
     }
 
     # 3) Monthly targets at (category, subcategory, item, month) granularity.
-    targets = frappe.db.sql("""
+    targets = frappe.db.sql(f"""
         SELECT
             sp_target.product_category    AS product_category,
             sp_target.category_name       AS category_name,
@@ -642,8 +709,10 @@ def get_category_wise_monthly_data():
         FROM `tabTarget Detail` AS sp_target
         JOIN `tabMonthly Distribution Percentage` AS dist_pct
             ON sp_target.distribution_id = dist_pct.parent
+        {TARGET_COMPANY_JOINS}
         WHERE sp_target.parent = %(user)s
           AND sp_target.fiscal_year = %(fiscal_year)s
+          {TARGET_COMPANY_FILTER}
         GROUP BY
             sp_target.product_category,
             sp_target.product_subcategory,
@@ -652,7 +721,7 @@ def get_category_wise_monthly_data():
     """, params, as_dict=True)
 
     # 4) Achieved at item level (most specific).
-    achieved_by_item = frappe.db.sql("""
+    achieved_by_item = frappe.db.sql(f"""
         SELECT
             sii.item_code               AS item_code,
             MONTHNAME(si.posting_date)  AS month,
@@ -663,11 +732,12 @@ def get_category_wise_monthly_data():
         WHERE si.docstatus = 1
           AND st.sales_person = %(user)s
           AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+          {INVOICE_COMPANY_FILTER}
         GROUP BY sii.item_code, MONTHNAME(si.posting_date)
     """, params, as_dict=True)
 
     # 5) Achieved at subcategory level (Item.custom_sub_category).
-    achieved_by_subcat = frappe.db.sql("""
+    achieved_by_subcat = frappe.db.sql(f"""
         SELECT
             it.custom_sub_category      AS product_subcategory,
             MONTHNAME(si.posting_date)  AS month,
@@ -679,13 +749,14 @@ def get_category_wise_monthly_data():
         WHERE si.docstatus = 1
           AND st.sales_person = %(user)s
           AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+          {INVOICE_COMPANY_FILTER}
           AND it.custom_sub_category IS NOT NULL
           AND it.custom_sub_category <> ''
         GROUP BY it.custom_sub_category, MONTHNAME(si.posting_date)
     """, params, as_dict=True)
 
     # 6) Achieved at category level (via Product Categoris child table on Item).
-    achieved_by_category = frappe.db.sql("""
+    achieved_by_category = frappe.db.sql(f"""
         SELECT
             ipc.product_category        AS product_category,
             MONTHNAME(si.posting_date)  AS month,
@@ -698,6 +769,7 @@ def get_category_wise_monthly_data():
         WHERE si.docstatus = 1
           AND st.sales_person = %(user)s
           AND si.posting_date BETWEEN %(fy_start_date)s AND %(fy_end_date)s
+          {INVOICE_COMPANY_FILTER}
         GROUP BY ipc.product_category, MONTHNAME(si.posting_date)
     """, params, as_dict=True)
 

@@ -484,6 +484,9 @@ def send_abandoned_cart_emails():
             filters=[
                 ["Sales Order", "docstatus", "=", 0],
                 ["Sales Order", "creation", ">=", creation],
+                # A draft a rep saved in the app is not the customer's cart and
+                # must not email them (see cotton_valley.api.app_drafts).
+                ["Sales Order", "custom_app_draft_id", "is", "not set"],
             ],
             fields=["name", "customer", "company", "items", "grand_total", "currency", "creation"]
         )

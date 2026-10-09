@@ -7,6 +7,7 @@ from frappe.utils import nowdate # type: ignore
 from frappe.utils.synchronization import filelock # type: ignore
 from cotton_valley.api.customer import get_current_customer
 from cotton_valley.api.sales_team import get_acting_sales_person
+from cotton_valley.api.app_drafts import cart_filters
 from cotton_valley.api.products import get_all_products
 from cotton_valley.api.website_theme_setting import get_file
 from cotton_valley.secrets import CV_USER, CV_PASSWORD, UDC_USER, UDC_PASSWORD, ERP_USERNAME, ERP_PASSWORD
@@ -157,7 +158,7 @@ def get_cart(company=None):
     customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        filters=cart_filters(customer_id, company),
         fields=["name", "grand_total"],
         limit=1,
     )
@@ -359,15 +360,22 @@ def _draft_order(order_id, customer_id, company):
         row = frappe.db.get_value(
             "Sales Order",
             order_id,
-            ["name", "docstatus", "customer", "company"],
+            ["name", "docstatus", "customer", "company", "custom_app_draft_id"],
             as_dict=True,
         )
-        if row and row.docstatus == 0 and row.customer == customer_id and row.company == company:
+        # A rep's app draft is never this customer's cart (see app_drafts).
+        if (
+            row
+            and row.docstatus == 0
+            and not row.custom_app_draft_id
+            and row.customer == customer_id
+            and row.company == company
+        ):
             return row.name
 
     existing = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        filters=cart_filters(customer_id, company),
         fields=["name"],
         limit=1,
     )
@@ -736,7 +744,7 @@ def apply_coupon(code, company=None):
     customer_id = customer["id"]
     so = frappe.get_all(
         "Sales Order",
-        filters={"customer": customer_id, "docstatus": 0, "company": company},
+        filters=cart_filters(customer_id, company),
         fields=["name"],
         limit=1,
     )
