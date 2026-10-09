@@ -13,6 +13,10 @@ from PIL import Image as PILImage  # ✅ required for webp conversion
 mimetypes.add_type("image/webp", ".webp")
 
 
+def mark_shipped(doc, method=None):
+    doc.db_set("order_status", "Shipped", update_modified=False)
+
+
 @frappe.whitelist()
 def download_sales_invoice_excel(sales_invoice):
     doc = frappe.get_doc("Sales Invoice", sales_invoice)

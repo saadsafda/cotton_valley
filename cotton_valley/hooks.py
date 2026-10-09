@@ -199,6 +199,9 @@ doc_events = {
         "before_cancel": "cotton_valley.server_scripts.sales_order.order_cancel",
         "on_cancel": "cotton_valley.server_scripts.sales_order.increase_stock_on_cancel",
 	},
+	"Sales Invoice": {
+		"on_submit": "cotton_valley.server_scripts.sales_invoice.mark_shipped",
+	},
 	"Activity Log": {
         "before_save": "cotton_valley.server_scripts.activity_log.get_location_from_ip"
     },

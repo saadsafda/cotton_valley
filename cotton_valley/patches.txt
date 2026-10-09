@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 cotton_valley.patches.setup_in_house_sr_catalog_role
+cotton_valley.patches.mark_submitted_sales_invoices_shipped
