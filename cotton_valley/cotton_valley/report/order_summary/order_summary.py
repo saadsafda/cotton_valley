@@ -27,6 +27,7 @@ def execute(filters=None):
     if filters.get("company"): conditions += " AND company = %(company)s"
     if filters.get("customer"): conditions += " AND customer = %(customer)s"
     if filters.get("sales_order"): conditions += " AND name = %(sales_order)s"
+    if filters.get("order_status"): conditions += " AND order_status = %(order_status)s"
 
     query = """
         SELECT

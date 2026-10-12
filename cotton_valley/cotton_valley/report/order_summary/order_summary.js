@@ -35,6 +35,12 @@ frappe.query_reports["Order Summary"] = {
             "label": __("Sales Order"),
             "fieldtype": "Link",
             "options": "Sales Order"
+        },
+        {
+            "fieldname": "order_status",
+            "label": __("Order Status"),
+            "fieldtype": "Select",
+            "options": "\nPending\nProcessing\nShipped"
         }
     ],
 
