@@ -221,6 +221,7 @@ doc_events = {
 	},
 	"Item Price": {
 		# "validate": "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
+		"before_insert": "cotton_valley.server_scripts.item_price.before_insert",
 		"before_save": [
 			# "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
 			"cotton_valley.server_scripts.item_price.before_save",
