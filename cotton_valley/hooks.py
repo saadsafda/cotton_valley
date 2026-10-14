@@ -214,7 +214,9 @@ doc_events = {
     },
 	"Item": {
 		"validate": "cotton_valley.server_scripts.item.validate",
-		"before_save": "cotton_valley.server_scripts.item.before_save"
+		"before_save": "cotton_valley.server_scripts.item.before_save",
+		"on_update": "cotton_valley.api.products.clear_product_cache",
+		"on_trash": "cotton_valley.api.products.clear_product_cache"
 	},
     "Scheduled Job Log": {
 		"after_save": "cotton_valley.server_scripts.scheduled_job_log.after_save"
@@ -225,6 +227,8 @@ doc_events = {
 			# "cotton_valley.server_scripts.item._prevent_duplicate_item_price",
 			"cotton_valley.server_scripts.item_price.before_save",
 		],
+		"on_update": "cotton_valley.api.products.clear_product_cache",
+		"on_trash": "cotton_valley.api.products.clear_product_cache",
 	},
     "File": {
 		"after_insert": "cotton_valley.server_scripts.file.after_save",
@@ -234,17 +238,34 @@ doc_events = {
 		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
 	},
 	"Product Category": {
-		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
-		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_update": [
+			"cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+			"cotton_valley.api.products.clear_product_cache",
+		],
+		"on_trash": [
+			"cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+			"cotton_valley.api.products.clear_product_cache",
+		],
 	},
 	"Event Page": {
 		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
 		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
 	},
 	"Brand": {
-		"on_update": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
-		"on_trash": "cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+		"on_update": [
+			"cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+			"cotton_valley.api.products.clear_product_cache",
+		],
+		"on_trash": [
+			"cotton_valley.api.website_theme_setting.clear_website_theme_setting_cache",
+			"cotton_valley.api.products.clear_product_cache",
+		],
 	},
+	"Product Subcategory": {
+		"on_update": "cotton_valley.api.products.clear_product_cache",
+		"on_trash": "cotton_valley.api.products.clear_product_cache",
+	},
+
 }
 
 # Scheduled Tasks
