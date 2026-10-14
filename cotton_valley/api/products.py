@@ -12,6 +12,117 @@ import io
 import os
 import json
 
+# --- product cache ---------------------------------------------------------
+# Product detail payloads are read far more often than they change, so the
+# parts that are identical for every visitor are cached. Stock and the Item
+# row itself are deliberately left uncached so they stay live. Per-item keys
+# are dropped by clear_product_cache; flush_product_cache bumps the version
+# key to abandon all of them at once.
+PRODUCT_CACHE_VERSION_KEY = "cotton_valley:products:version"
+PRODUCT_CACHE_TTL = 60 * 10
+
+
+def _product_cache_version():
+    version = frappe.cache().get_value(PRODUCT_CACHE_VERSION_KEY)
+    if not version:
+        version = 1
+        frappe.cache().set_value(PRODUCT_CACHE_VERSION_KEY, version)
+    return version
+
+
+def flush_product_cache():
+    """Abandon every cached product payload by bumping the version key."""
+    cache = frappe.cache()
+    version = cache.get_value(PRODUCT_CACHE_VERSION_KEY) or 1
+    cache.set_value(PRODUCT_CACHE_VERSION_KEY, int(version) + 1)
+
+
+# Cached entries, grouped by what their key is built from, so an edit only
+# drops the keys it can actually affect. The price/item sync batches touch
+# thousands of rows, and a blanket version bump would keep the cache cold.
+_ITEM_KEYED = ("related", "galleries", "tags", "categories")
+
+
+def clear_product_cache(doc=None, method=None):
+    """Drop the cached entries affected by this document."""
+    if doc is None:
+        return flush_product_cache()
+
+    cache = frappe.cache()
+    doctype = getattr(doc, "doctype", None)
+
+    if doctype == "Product Subcategory":
+        cache.delete_value(_product_cache_key("subcat", doc.name))
+        return
+
+    if doctype == "Brand":
+        cache.delete_value(_product_cache_key("brand", doc.name))
+        return
+
+    if doctype == "Product Category":
+        # "categories" is keyed per item, so there is no single key to drop.
+        return flush_product_cache()
+
+    item_code = getattr(doc, "item_code", None) or doc.name
+
+    if doctype == "Item Price":
+        price_list = getattr(doc, "price_list", None)
+        if price_list:
+            cache.delete_value(_product_cache_key("price", item_code, price_list))
+        return
+
+    for name in _ITEM_KEYED:
+        cache.delete_value(_product_cache_key(name, item_code))
+
+    for price_list in frappe.get_all(
+        "Item Price", filters={"item_code": item_code}, pluck="price_list", distinct=True
+    ):
+        cache.delete_value(_product_cache_key("price", item_code, price_list))
+
+
+def _product_cache_key(method, *parts):
+    suffix = ":".join(str(part) for part in parts)
+    return f"cotton_valley:products:{_product_cache_version()}:{method}:{suffix}"
+
+
+def _cached(method, parts, builder, ttl=PRODUCT_CACHE_TTL):
+    cache_key = _product_cache_key(method, *parts)
+    value = frappe.cache().get_value(cache_key)
+    if value is None:
+        value = builder()
+        frappe.cache().set_value(cache_key, value, expires_in_sec=ttl)
+    return value
+
+
+def get_trending_products(company):
+    """Identical for every visitor, so it is built once per company."""
+    return _cached("trending", (company,), lambda: frappe.get_all(
+        "Item",
+        filters={"custom_no_of_clicks": [">", 0], "company": company},
+        fields=["name"],
+        pluck="name",
+        order_by="custom_no_of_clicks desc",
+        limit_page_length=4,
+    ))
+
+
+def get_price_list_rate(product_id, price_list):
+    """Item Price lookup; invalidated by the Item Price hook."""
+    def build():
+        rows = frappe.db.sql(
+            """
+            SELECT price_list_rate
+            FROM `tabItem Price`
+            WHERE item_code = %s and price_list = %s
+            LIMIT 1
+            """,
+            (product_id, price_list),
+            as_dict=True,
+        )
+        return flt(rows[0]["price_list_rate"]) if rows else 0
+
+    return _cached("price", (product_id, price_list), build)
+
 
 @frappe.whitelist(allow_guest=True)
 def make_product_views(product_id):
@@ -19,11 +130,14 @@ def make_product_views(product_id):
     if not frappe.db.exists("Item", product_id):
         return {"status": "error", "message": "Invalid product ID"}
 
-    # Get current value
-    current_clicks = frappe.db.get_value("Item", product_id, "custom_no_of_clicks") or 0
-
-    # Increment and update
-    frappe.db.set_value("Item", product_id, "custom_no_of_clicks", current_clicks + 1)
+    # Single atomic increment: read-then-write lost counts under concurrency,
+    # and set_value bumped `modified`, which invalidated the cached Item
+    # document on every single product view.
+    frappe.db.sql("""
+        UPDATE `tabItem`
+        SET custom_no_of_clicks = COALESCE(custom_no_of_clicks, 0) + 1
+        WHERE name = %s
+    """, (product_id,))
     frappe.db.commit()
 
     return {"status": "success", "message": "Product views updated successfully"}
@@ -710,23 +824,18 @@ def get_product(product_id, company=None):
     product["stock"] = flt(product["threshold_stock"]) if product.get("set_threshold") else flt(product.get("available_stock", 0))
     
     if product["sub_category"]:
-        subcat_data = frappe.db.get_value(
-            "Product Subcategory",
-            product["sub_category"],
-            ["title"],
-            as_dict=True
+        subcat_title = _cached(
+            "subcat",
+            (product["sub_category"],),
+            lambda: frappe.db.get_value(
+                "Product Subcategory", product["sub_category"], "title"
+            ) or "",
         )
-        if subcat_data:
-            product["sub_category_name"] = subcat_data.title
+        if subcat_title:
+            product["sub_category_name"] = subcat_title
 
     # Example: handle prices (if you have Price List / Item Price doctype)
-    retail_price_data = frappe.db.sql("""
-        SELECT price_list_rate
-        FROM `tabItem Price`
-        WHERE item_code = %s and price_list = %s
-        LIMIT 1
-    """, (product_id, "Retail"), as_dict=True)
-    retail_price = flt(retail_price_data[0]["price_list_rate"]) if retail_price_data else 0
+    retail_price = get_price_list_rate(product_id, "Retail")
 
     if check_customer_token():
         customer = get_customer_from_token()
@@ -741,14 +850,7 @@ def get_product(product_id, company=None):
         if not price_list:
             price_list = "Retail"
 
-        price_data = frappe.db.sql("""
-            SELECT price_list_rate
-            FROM `tabItem Price`
-            WHERE item_code = %s and price_list = %s
-            LIMIT 1
-        """, (product_id, price_list), as_dict=True)
-
-        selected_price = flt(price_data[0]["price_list_rate"]) if price_data else 0
+        selected_price = get_price_list_rate(product_id, price_list)
         product["price"] = selected_price if selected_price > 0 else retail_price
     else:
         product["price"] = retail_price
@@ -770,27 +872,32 @@ def get_product(product_id, company=None):
     else:
         product["stock_status"] = "out_of_stock"
 
-    product["related_products"] = frappe.get_all("Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name")
-    product["trending_products"] = frappe.get_all("Item", filters={"custom_no_of_clicks": [">", 0], "company": company}, fields=["name"], pluck='name', order_by="custom_no_of_clicks desc", limit_page_length=4)
+    product["related_products"] = _cached("related", (product_id,), lambda: frappe.get_all(
+        "Recommended Products", filters={"parent": product_id}, fields=["product_name"], pluck="product_name"
+    ))
+    product["trending_products"] = get_trending_products(company)
 
     product["product_thumbnail"] = get_file(product["product_thumbnail_id"])
     # galleries (attachments of Item)
-    galleries = frappe.get_all(
+    gallery_images = _cached("galleries", (product_id,), lambda: frappe.get_all(
         "Product Images",
         filters={"parent": product_id},
-        fields=["list_index", "image"],
-        order_by="list_index asc"
-    )
-    product["product_galleries"] = [get_file(gallery.image) for gallery in galleries]
+        fields=["image"],
+        order_by="list_index asc",
+        pluck="image",
+    ))
+    product["product_galleries"] = [get_file(image) for image in gallery_images]
     product["meta_title"] = product["name"]
     product["meta_description"] = product["short_description"] or ""
     product["product_meta_image"] = get_file(product["product_thumbnail_id"]) or ""
-    product["product_tags"] = frappe.get_all("Product Tags", filters={"parent": product_id}, fields=["idx", "name1", "color"], order_by="idx asc")
+    product["product_tags"] = _cached("tags", (product_id,), lambda: frappe.get_all(
+        "Product Tags", filters={"parent": product_id}, fields=["idx", "name1", "color"], order_by="idx asc"
+    ))
 
     # thumbnail (first gallery file or image field)
 
     # OPTIMIZED: Fetch categories with all details in ONE query instead of calling get_category_list per category
-    categories = frappe.db.sql("""
+    categories = _cached("categories", (product_id,), lambda: frappe.db.sql("""
         SELECT 
             c.product_category as id,
             pc.title,
@@ -799,7 +906,7 @@ def get_product(product_id, company=None):
         FROM `tabProduct Categoris` c
         INNER JOIN `tabProduct Category` pc ON pc.name = c.product_category
         WHERE c.parent = %s
-    """, (product_id,), as_dict=True)
+    """, (product_id,), as_dict=True))
 
     category_list = []
     for cat in categories:
@@ -822,7 +929,9 @@ def get_product(product_id, company=None):
 
     if product["brand"]:
         # OPTIMIZED: Use get_value instead of get_doc to avoid loading full document
-        brand_data = frappe.db.get_value("Brand", product["brand"], ["name", "brand", "description", "image"], as_dict=True)
+        brand_data = _cached("brand", (product["brand"],), lambda: frappe.db.get_value(
+            "Brand", product["brand"], ["name", "brand", "description", "image"], as_dict=True
+        ))
         if brand_data:
             product["store"] = {
                 "id": brand_data.name,
