@@ -13,6 +13,7 @@ def execute(filters=None):
         {"fieldname": "customer", "label": "Customer#", "fieldtype": "Link", "options": "Customer", "width": 150},
         {"fieldname": "customer_name", "label": "Customer Name", "fieldtype": "Data", "width": 150},
         {"fieldname": "company", "label": "Company", "fieldtype": "Data", "width": 150},
+        {"fieldname": "submit_datetime", "label": "Submit Datetime", "fieldtype": "Datetime", "width": 160},
         {"fieldname": "product_type", "label": "Product Type", "fieldtype": "Data", "width": 120},
         {"fieldname": "from_app", "label": "From App", "fieldtype": "Check", "width": 80}, 
         {"fieldname": "written_by", "label": "Written By", "fieldtype": "Data", "width": 120},
@@ -35,6 +36,7 @@ def execute(filters=None):
             customer,
             customer_name,
             company,
+            submit_datetime,
             from_app,
             product_type,
             owner as written_by,
@@ -46,8 +48,8 @@ def execute(filters=None):
         FROM
             `tabSales Order`
         WHERE
-            transaction_date BETWEEN %(from_date)s AND %(to_date)s
-            AND docstatus != 2
+            DATE(submit_datetime) BETWEEN %(from_date)s AND %(to_date)s
+            AND docstatus = 1
             {conditions}
         ORDER BY company ASC
     """.format(conditions=conditions)
