@@ -201,6 +201,62 @@ def get_product_ids(search=None, company=None):
     return product_ids
 
 
+def parse_price_filter(value):
+    """
+    Parse a price filter value into (low, high); either bound may be None.
+    Formats: "below-10" or "10" (below), "10-20" (range), "above-100" (above).
+    """
+    value = str(value).strip().lower()
+    if value.startswith("below-"):
+        return None, flt(value[len("below-"):])
+    if value.startswith("above-"):
+        return flt(value[len("above-"):]), None
+    if "-" in value:
+        low, high = value.split("-", 1)
+        return flt(low), flt(high)
+    return None, flt(value)
+
+
+def get_price_filtered_item_ids(company, price_list, price=None, pcs_price=None):
+    """
+    Item codes whose effective case price (customer price list, falling back to Retail)
+    matches any of the `price` filters and whose per-piece price matches any of the
+    `pcs_price` filters.
+    """
+    price_expr = "COALESCE(NULLIF(cp.price_list_rate, 0), rp.price_list_rate, 0)"
+    case_pack_expr = "CAST(NULLIF(TRIM(i.custom_case_pack), '') AS DECIMAL(18,6))"
+    pcs_expr = f"({price_expr}) / CASE WHEN {case_pack_expr} > 0 THEN {case_pack_expr} ELSE 1 END"
+
+    def range_conditions(expr, filters):
+        conditions = []
+        for f in filters:
+            low, high = parse_price_filter(f)
+            parts = []
+            if low is not None:
+                parts.append(f"{expr} >= {low}")
+            if high is not None:
+                parts.append(f"{expr} <= {high}")
+            if parts:
+                conditions.append("(" + " AND ".join(parts) + ")")
+        return "(" + " OR ".join(conditions) + ")" if conditions else None
+
+    conditions = ["i.company = %s"]
+    for expr, filters in ((price_expr, price), (pcs_expr, pcs_price)):
+        if filters:
+            condition = range_conditions(expr, filters)
+            if condition:
+                conditions.append(condition)
+
+    rows = frappe.db.sql(f"""
+        SELECT DISTINCT i.name
+        FROM `tabItem` i
+        LEFT JOIN `tabItem Price` cp ON cp.item_code = i.name AND cp.price_list = %s
+        LEFT JOIN `tabItem Price` rp ON rp.item_code = i.name AND rp.price_list = 'Retail'
+        WHERE {' AND '.join(conditions)}
+    """, (price_list, company))
+    return [r[0] for r in rows]
+
+
 @frappe.whitelist(allow_guest=True)
 def get_all_products(ids=None, category=None, subcategory=None, brand=None, sortBy=None, search=None, page=None, attribute=None, producttype=None, company=None, price=None, pcsPrice=None):
     category = None if not category or category == "null" else get_categories_from_string(category)
@@ -215,6 +271,25 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
     brand = None if not brand or brand == "null" else get_categories_from_string(brand)
     price = None if not price or price == "null" else get_categories_from_string(price)
     pcs_price = None if not pcsPrice or pcsPrice == "null" else get_categories_from_string(pcsPrice)
+
+    # --- Price Filters ---
+    # Applied in SQL (as an item id restriction) so pagination and totals stay correct
+    if price or pcs_price:
+        filter_price_list = "Retail"
+        if check_customer_token():
+            customer = get_customer_from_token()
+            if company == "Cotton Valley":
+                filter_price_list = frappe.get_value("Customer", customer, "price_list_for_cv") or "Retail"
+            elif company == "UDC":
+                filter_price_list = frappe.get_value("Customer", customer, "price_list_for_udc") or "Retail"
+
+        price_item_ids = get_price_filtered_item_ids(company, filter_price_list, price, pcs_price)
+        if ids:
+            price_item_ids = set(price_item_ids)
+            price_item_ids = [i for i in ids if i in price_item_ids]
+        if not price_item_ids:
+            return {"data": [], "total": 0, "in_stock_count": 0, "out_of_stock_count": 0}
+        ids = price_item_ids
 
     filters = {"hide": 0}  # only active products
 
@@ -240,6 +315,9 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
             WHERE c.product_category in %s
         """, (category,), as_dict=True)
         product_ids = [p["name"] for p in product_ids]
+        if ids:
+            id_set = set(ids)
+            product_ids = [p for p in product_ids if p in id_set]
 
         if not product_ids:
             return {"data": [], "total": 0}  # no products found for this category
@@ -690,64 +768,7 @@ def get_all_products(ids=None, category=None, subcategory=None, brand=None, sort
         #     if attribute == ["out_stock"] and qty > 0:
         #         continue
 
-        # --- Price Filter (List Support) ---
-        if price:
-            product_price = product["price"]
-            price_match = False
-            
-            for price_filter in price:
-                # Parse price filter format: "10" (below), "10-20" (range), "100" (above)
-                if "-" in str(price_filter):
-                    # Range filter: "10-20"
-                    min_price, max_price = map(float, str(price_filter).split("-"))
-                    if min_price >= product_price <= max_price:
-                        price_match = True
-                        break
-                else:
-                    # Single value - treat as "Below X"
-                    price_value = float(price_filter)
-                    if product_price <= price_value:
-                        price_match = True
-                        break
-            
-            if not price_match:
-                continue
-
-        # --- PCS Price Filter (List Support) ---
-        if pcs_price:
-            case_pack = product.get("case_pack", 1)
-            # Convert case_pack to float/int if it's a string
-            try:
-                case_pack = float(case_pack) if case_pack else 1
-            except (ValueError, TypeError):
-                case_pack = 1
-            
-            if case_pack and case_pack > 0:
-                pcs_product_price = product["price"] / case_pack
-            else:
-                pcs_product_price = 0
-            
-            pcs_price_match = False
-            
-            for pcs_filter in pcs_price:
-                # Parse PCS price filter format
-                if "-" in str(pcs_filter):
-
-                    # Range filter: "1-2"
-                    min_pcs_price, max_pcs_price = map(float, str(pcs_filter).split("-"))
-                    if min_pcs_price >= pcs_product_price <= max_pcs_price:
-                        pcs_price_match = True
-                        break
-                else:
-                    # Single value - treat as "Below X"
-                    pcs_price_value = float(pcs_filter)
-                    if pcs_product_price <= pcs_price_value:
-                        pcs_price_match = True
-                        break
-            
-            if not pcs_price_match:
-                continue
-
+        # Price / PCS price filters are applied in SQL via get_price_filtered_item_ids
 
         # images
         product["product_thumbnail"] = get_file(product["product_thumbnail_id"])

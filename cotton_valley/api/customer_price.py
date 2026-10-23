@@ -1,5 +1,34 @@
 import frappe
+from frappe.utils import flt
 from cotton_valley.api.common import check_customer_token, get_customer_from_token
+
+
+def build_price_ranges(min_price, max_price, segment, precision):
+    """
+    Build "Below", consecutive range and "Above" filters covering min_price..max_price.
+    Values are parsed by products.parse_price_filter: "below-X", "X-Y", "above-X".
+    """
+    filters = []
+
+    below = round(min_price + segment, precision)
+    filters.append({"id": 1, "price": below, "text": "Below", "value": f"below-{below}"})
+
+    current_min = below
+    for _ in range(5):
+        current_max = round(current_min + segment, precision)
+        if current_max >= max_price:
+            break
+        filters.append({
+            "id": len(filters) + 1,
+            "minPrice": current_min,
+            "maxPrice": current_max,
+            "value": f"{current_min}-{current_max}"
+        })
+        current_min = current_max
+
+    # "Above" starts where the last range ends so buckets don't overlap
+    filters.append({"id": len(filters) + 1, "price": current_min, "text": "Above", "value": f"above-{current_min}"})
+    return filters
 
 
 @frappe.whitelist(allow_guest=True)
@@ -37,161 +66,66 @@ def get_price_filters(company=None, category=None, sub_category=None):
         #         "data": {}
         #     }
         
-        # Get min and max prices from actual Item Price data
-        # Filter by price list and company
-        conditions = ["ip.price_list_rate > 0", "ip.price_list = %s", "i.company = %s", "i.disabled = 0"]
+        # Get min and max case / piece prices from actual Item Price data.
+        # Effective price matches what products show: customer price list, falling back to Retail.
+        price_expr = "COALESCE(NULLIF(cp.price_list_rate, 0), rp.price_list_rate)"
+        case_pack_expr = "CAST(NULLIF(TRIM(i.custom_case_pack), '') AS DECIMAL(18,6))"
+        pcs_expr = f"({price_expr}) / CASE WHEN {case_pack_expr} > 0 THEN {case_pack_expr} ELSE 1 END"
+
+        conditions = [f"{price_expr} > 0", "i.company = %s", "i.disabled = 0", "i.hide = 0"]
         values = [price_list, company]
-        
-        # Build joins based on filters
-        joins = "INNER JOIN `tabItem` i ON i.name = ip.item_code"
-        
+
+        joins = """
+            LEFT JOIN `tabItem Price` cp ON cp.item_code = i.name AND cp.price_list = %s
+            LEFT JOIN `tabItem Price` rp ON rp.item_code = i.name AND rp.price_list = 'Retail'
+        """
+
         if category:
             joins += " INNER JOIN `tabProduct Categoris` c ON c.parent = i.name"
             conditions.append("c.product_category = %s")
             values.append(category)
-        
+
         if sub_category:
             conditions.append("i.custom_sub_category = %s")
             values.append(sub_category)
-        
+
         price_data = frappe.db.sql(f"""
-            SELECT 
-                MIN(ip.price_list_rate) as min_price,
-                MAX(ip.price_list_rate) as max_price
-            FROM `tabItem Price` ip
+            SELECT
+                MIN({price_expr}) as min_price,
+                MAX({price_expr}) as max_price,
+                MIN({pcs_expr}) as pcs_min,
+                MAX({pcs_expr}) as pcs_max
+            FROM `tabItem` i
             {joins}
             WHERE {' AND '.join(conditions)}
         """, tuple(values), as_dict=True)
-        
-        min_price = (price_data[0].get('min_price') or 0) if price_data else 0
-        max_price = (price_data[0].get('max_price') or 100) if price_data else 100
-        
-        # Calculate dynamic price ranges based on actual data
-        # Divide the price range into 5 segments
-        price_range = max_price - min_price
-        segment = price_range / 5 if price_range > 0 else 20
-        
-        # Round segments to nearest 5 or 10 for cleaner ranges
+        price_data = price_data[0] if price_data else {}
+
+        min_price = flt(price_data.get("min_price"))
+        max_price = flt(price_data.get("max_price")) or 100
+
+        # Divide the price range into 5 segments, rounded to nearest 5 or 10 for cleaner ranges
+        segment = (max_price - min_price) / 5 if max_price > min_price else 20
         if segment > 10:
             segment = round(segment / 10) * 10
         elif segment > 5:
             segment = round(segment / 5) * 5
         else:
             segment = max(1, round(segment))
-        
-        # Generate dynamic filter ranges
-        filter_price = []
-        filter_id = 1
-        
-        # Below filter
-        below_value = round(min_price + segment, 2)
-        filter_price.append({
-            "id": filter_id,
-            "price": below_value,
-            "text": "Below",
-            "value": str(below_value)
-        })
-        filter_id += 1
-        
-        # Range filters
-        current_min = below_value
-        for i in range(5):
-            current_max = round(current_min + segment, 2)
-            if current_max < max_price:
-                filter_price.append({
-                    "id": filter_id,
-                    "minPrice": current_min,
-                    "maxPrice": current_max,
-                    "value": f"{current_min}-{current_max}"
-                })
-                filter_id += 1
-                current_min = current_max
-        
-        # Above filter
-        above_value = round(max_price - segment, 2)
-        filter_price.append({
-            "id": filter_id,
-            "price": above_value,
-            "text": "Above",
-            "value": str(above_value)
-        })
-        
-        # For PCS (piece) prices - typically lower prices
-        # Check if there are items with very low prices (< 20)
-        pcs_conditions = ["ip.price_list_rate > 0", "ip.price_list_rate < 20", "ip.price_list = %s", "i.company = %s", "i.disabled = 0"]
-        pcs_values = [price_list, company]
-        
-        # Build joins based on filters
-        pcs_joins = "INNER JOIN `tabItem` i ON i.name = ip.item_code"
-        
-        if category:
-            pcs_joins += " INNER JOIN `tabProduct Categoris` c ON c.parent = i.name"
-            pcs_conditions.append("c.product_category = %s")
-            pcs_values.append(category)
-        
-        if sub_category:
-            pcs_conditions.append("i.custom_sub_category = %s")
-            pcs_values.append(sub_category)
-        
-        pcs_price_data = frappe.db.sql(f"""
-            SELECT 
-                MIN(ip.price_list_rate) as min_price,
-                MAX(ip.price_list_rate) as max_price
-            FROM `tabItem Price` ip
-            {pcs_joins}
-            WHERE {' AND '.join(pcs_conditions)}
-        """, tuple(pcs_values), as_dict=True)
-        
-        pcs_min = (pcs_price_data[0].get('min_price') or 0.5) if pcs_price_data else 0.5
-        pcs_max = (pcs_price_data[0].get('max_price') or 10) if pcs_price_data else 10
-        
-        # Calculate PCS segments
-        pcs_range = pcs_max - pcs_min
-        pcs_segment = pcs_range / 5 if pcs_range > 0 else 2
-        
-        # Round to cleaner values
+
+        filter_price = build_price_ranges(min_price, max_price, segment, 2)
+
+        pcs_min = flt(price_data.get("pcs_min"))
+        pcs_max = flt(price_data.get("pcs_max")) or 10
+
+        pcs_segment = (pcs_max - pcs_min) / 5 if pcs_max > pcs_min else 2
         if pcs_segment < 1:
-            pcs_segment = round(pcs_segment, 1)
+            pcs_segment = max(0.1, round(pcs_segment, 1))
         else:
             pcs_segment = round(pcs_segment)
-        
-        # Generate PCS filter ranges
-        filter_pcs_price = []
-        pcs_id = 1
-        
-        # Below filter
-        pcs_below = round(pcs_min + pcs_segment, 1)
-        filter_pcs_price.append({
-            "id": pcs_id,
-            "price": pcs_below,
-            "text": "Below",
-            "value": str(pcs_below)
-        })
-        pcs_id += 1
-        
-        # Range filters
-        pcs_current_min = pcs_below
-        for i in range(5):
-            pcs_current_max = round(pcs_current_min + pcs_segment, 1)
-            if pcs_current_max < pcs_max:
-                filter_pcs_price.append({
-                    "id": pcs_id,
-                    "minPrice": pcs_current_min,
-                    "maxPrice": pcs_current_max,
-                    "value": f"{pcs_current_min}-{pcs_current_max}"
-                })
-                pcs_id += 1
-                pcs_current_min = pcs_current_max
-        
-        # Above filter
-        pcs_above = round(pcs_max - pcs_segment, 1)
-        filter_pcs_price.append({
-            "id": pcs_id,
-            "price": pcs_above,
-            "text": "Above",
-            "value": str(pcs_above)
-        })
-        
+
+        filter_pcs_price = build_price_ranges(pcs_min, pcs_max, pcs_segment, 2)
+
         return {
             "status": "success",
             "data": {
