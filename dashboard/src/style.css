@@ -1,0 +1,71 @@
+/* preflight is off, so `base` only adds the --tw-* defaults (gradients, shadows, transforms) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.cv-dash {
+	color: var(--text-color);
+	font-variant-numeric: normal;
+}
+
+.cv-dash *,
+.cv-dash *::before,
+.cv-dash *::after {
+	box-sizing: border-box;
+}
+
+/* Custom chart tooltip markup (rendered by ApexCharts inside the dashboard root) */
+.cv-dash .cv-tooltip {
+	padding: 8px 10px;
+	min-width: 160px;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.cv-dash .cv-tooltip-title {
+	margin-bottom: 4px;
+	font-weight: 600;
+}
+
+.cv-dash .cv-tooltip-row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	font-variant-numeric: tabular-nums;
+}
+
+.cv-dash .cv-tooltip-row span:first-child {
+	opacity: 0.75;
+}
+
+.cv-dash .apexcharts-tooltip {
+	border-radius: 8px;
+	box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+@keyframes cv-shimmer {
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+.cv-dash .cv-skeleton {
+	position: relative;
+	overflow: hidden;
+	background: var(--control-bg);
+}
+
+.cv-dash .cv-skeleton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	transform: translateX(-100%);
+	background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.25), transparent);
+	animation: cv-shimmer 1.4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cv-dash .cv-skeleton::after {
+		animation: none;
+	}
+}

@@ -1,0 +1,9 @@
+{
+  "name": "cotton_valley",
+  "private": true,
+  "scripts": {
+    "postinstall": "cd dashboard && yarn install",
+    "dev": "cd dashboard && yarn dev",
+    "build": "cd dashboard && yarn build"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "content": null,
+  "creation": "2026-10-29 12:00:00.000000",
+  "docstatus": 0,
+  "doctype": "Page",
+  "icon": "fa fa-line-chart",
+  "idx": 0,
+  "modified": "2026-10-29 12:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Cotton Valley",
+  "name": "sales-rep-dashboard",
+  "owner": "Administrator",
+  "page_name": "sales-rep-dashboard",
+  "roles": [
+    {
+      "role": "Sales Person"
+    },
+    {
+      "role": "Sales User"
+    },
+    {
+      "role": "Sales Manager"
+    },
+    {
+      "role": "Sales Master Manager"
+    },
+    {
+      "role": "System Manager"
+    }
+  ],
+  "standard": "Yes",
+  "system_page": 0,
+  "title": "Sales Rep Dashboard"
+}

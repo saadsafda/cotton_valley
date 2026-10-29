@@ -23,3 +23,5 @@ pending.json
 processing.json
 quotes.json
 tickets.json
+# Vue dashboard build output (built by `bench build --app cotton_valley`)
+cotton_valley/public/dashboards/
