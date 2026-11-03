@@ -12,6 +12,8 @@
   "show_newsletter",
   "column_break_tnut",
   "show_promotion_baners",
+  "column_break_ctlg",
+  "show_catalog",
   "section_break_uoqb",
   "home_banners",
   "section_break_cnqi",
@@ -59,7 +61,13 @@
   "news_title",
   "sub_title",
   "column_break_frlg",
-  "newsletter_background"
+  "newsletter_background",
+  "catalog_section",
+  "catalog_title",
+  "catalog_description",
+  "catalog_url",
+  "column_break_ctlh",
+  "catalog_image"
  ],
  "fields": [
   {
@@ -376,13 +384,59 @@
    "fieldname": "newsletter_background",
    "fieldtype": "Attach Image",
    "label": "Newsletter Background"
+  },
+  {
+   "fieldname": "column_break_ctlg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "show_catalog",
+   "fieldtype": "Check",
+   "label": "Show Catalog"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.show_catalog",
+   "fieldname": "catalog_section",
+   "fieldtype": "Section Break",
+   "label": "Product Catalog Section"
+  },
+  {
+   "fieldname": "catalog_title",
+   "fieldtype": "Data",
+   "label": "Catalog Title",
+   "mandatory_depends_on": "eval:doc.show_catalog"
+  },
+  {
+   "fieldname": "catalog_description",
+   "fieldtype": "Small Text",
+   "label": "Catalog Description"
+  },
+  {
+   "description": "Full link opened by View Catalog, including https://. Replace it when the catalog changes.",
+   "fieldname": "catalog_url",
+   "fieldtype": "Data",
+   "label": "Catalog URL",
+   "mandatory_depends_on": "eval:doc.show_catalog",
+   "options": "URL"
+  },
+  {
+   "fieldname": "column_break_ctlh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Panel background, with the catalog on the left of the image. Recommended Size: 1024 \u00d7 254 pixels",
+   "fieldname": "catalog_image",
+   "fieldtype": "Attach Image",
+   "label": "Catalog Background"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-09-30 03:44:58.276401",
+ "modified": "2026-11-02 22:00:00.000000",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "UDC Home Page",

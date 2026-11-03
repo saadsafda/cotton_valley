@@ -3,7 +3,10 @@
 
 # import frappe
 from frappe.model.document import Document
+from frappe.utils import validate_url
 
 
 class UDCHomePage(Document):
-	pass
+	def validate(self):
+		if self.catalog_url:
+			validate_url(self.catalog_url, throw=True, valid_schemes=("http", "https"))

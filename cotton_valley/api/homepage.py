@@ -131,6 +131,13 @@ def get_homepage_slides(company=None):
                 "image_url": frappe.utils.get_url(doc.newsletter_background),
                 "status": doc.show_newsletter
             },
+            "product_catalog": {
+                "title": doc.get("catalog_title"),
+                "description": doc.get("catalog_description"),
+                "image_url": frappe.utils.get_url(doc.get("catalog_image")) if doc.get("catalog_image") else "",
+                "url": doc.get("catalog_url"),
+                "status": bool(doc.get("show_catalog") and doc.get("catalog_url"))
+            },
             "products_ids": all_product_ids
         }
     }
