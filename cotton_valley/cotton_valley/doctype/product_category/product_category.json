@@ -17,6 +17,7 @@
   "category_image",
   "web_ranking",
   "app_ranking",
+  "show_on_website",
   "section_break_fcxy",
   "subcategories"
  ],
@@ -90,13 +91,22 @@
    "fieldname": "erp_id",
    "fieldtype": "Data",
    "label": "ERP ID"
+  },
+  {
+   "default": "1",
+   "description": "Untick to hide this category from the website's Shop menu and category list.",
+   "fieldname": "show_on_website",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Show on Website"
   }
  ],
  "grid_page_length": 50,
  "image_field": "category_image",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-23 06:11:27.480433",
+ "modified": "2026-11-06 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Product Category",

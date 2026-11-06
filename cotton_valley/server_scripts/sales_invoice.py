@@ -13,6 +13,24 @@ from PIL import Image as PILImage  # ✅ required for webp conversion
 mimetypes.add_type("image/webp", ".webp")
 
 
+def set_product_type_from_sales_order(doc, method=None):
+    """Copy product_type from the Sales Order the invoice items reference.
+
+    Invoices created through the API carry the Sales Order only on the item
+    rows (References > Sales Order), so the header Product Type stayed blank
+    and had to be filled by hand. A value already set is left alone.
+    """
+    if doc.get("product_type"):
+        return
+
+    sales_orders = [row.sales_order for row in doc.get("items") or [] if row.get("sales_order")]
+    for sales_order in dict.fromkeys(sales_orders):
+        product_type = frappe.db.get_value("Sales Order", sales_order, "product_type")
+        if product_type:
+            doc.product_type = product_type
+            return
+
+
 def mark_shipped(doc, method=None):
     doc.db_set("order_status", "Shipped", update_modified=False)
 

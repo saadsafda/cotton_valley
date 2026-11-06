@@ -202,6 +202,7 @@ doc_events = {
         "on_cancel": "cotton_valley.server_scripts.sales_order.increase_stock_on_cancel",
 	},
 	"Sales Invoice": {
+		"validate": "cotton_valley.server_scripts.sales_invoice.set_product_type_from_sales_order",
 		"on_submit": "cotton_valley.server_scripts.sales_invoice.mark_shipped",
 	},
 	"Activity Log": {

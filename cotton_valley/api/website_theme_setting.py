@@ -166,7 +166,11 @@ def get_website_theme_settings(company=None):
     if company == "UDC":
         doctype = f"UDC {doctype}"
     settings = frappe.get_single(doctype)
-    all_category_ids = frappe.get_all("Product Category", filters=[["company", "=", company]], pluck="name")
+    all_category_ids = frappe.get_all(
+        "Product Category",
+        filters=[["company", "=", company], ["show_on_website", "=", 1]],
+        pluck="name",
+    )
     all_event_pages = frappe.get_all("Event Page", filters=[["internal_page", "=", 0], ["company", "=", company]], pluck="name")
     brand_list = get_brands(company=company)
 
@@ -259,8 +263,8 @@ def get_website_theme_settings(company=None):
                 ],
                 "support_number": settings.support_number,
                 "support_email": settings.support_email,
-                # "play_store_url": settings.play_store_url,
-                # "app_store_url": settings.app_store_url,
+                "play_store_url": settings.play_store_url,
+                "app_store_url": settings.app_store_url,
                 "social_media_enable": settings.social_media_enable,
                 "facebook": settings.facebook_url,
                 "instagram": settings.instagram_url,

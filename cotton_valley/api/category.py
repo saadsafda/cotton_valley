@@ -25,7 +25,11 @@ def get_category_list(category_id=None, company=None):
     if category_id:
         filter_conditions.append("name = %s")
         filter_values.append(category_id)
-    
+    else:
+        # hidden categories are left out of listings but still resolvable by id,
+        # so existing links to a category page keep working
+        filter_conditions.append("show_on_website = 1")
+
     where_clause = " AND ".join(filter_conditions) if filter_conditions else "1=1"
     
     categories = frappe.db.sql(f"""
