@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2025-11-27 04:20:18.590268",
+ "modified": "2026-11-13 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Cotton Valley",
  "name": "Sales Invoice report View",
@@ -29,6 +29,12 @@
   },
   {
    "role": "ERPNext User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "In house SR"
   }
  ],
  "timeout": 0

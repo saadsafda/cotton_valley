@@ -2280,7 +2280,7 @@
   "javascript": null,
   "json": null,
   "letter_head": null,
-  "modified": "2025-11-27 04:20:18.590268",
+  "modified": "2026-11-13 12:00:00.000000",
   "module": "Cotton Valley",
   "name": "Sales Invoice report View",
   "prepared_report": 0,
@@ -2308,6 +2308,18 @@
     "parentfield": "roles",
     "parenttype": "Report",
     "role": "ERPNext User"
+   },
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "Sales User"
+   },
+   {
+    "parent": "Sales Invoice report View",
+    "parentfield": "roles",
+    "parenttype": "Report",
+    "role": "In house SR"
    }
   ],
   "timeout": 0
