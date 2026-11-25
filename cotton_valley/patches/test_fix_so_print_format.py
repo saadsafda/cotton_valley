@@ -23,12 +23,12 @@ class TestSOPrintFormat(unittest.TestCase):
 
 	@patch.object(fix_so_print_format, "frappe")
 	def test_repairs_reported_error_and_preserves_customizations(self, frappe):
-		customized = self.format_data.replace("Product Name", "Custom Product Name")
-		broken = customized.replace("get_formatted('qty')", 'get_formatted("qty")')
+		broken = self.format_data.replace("get_formatted('qty')", 'get_formatted("qty")')
 		with self.assertRaises(json.JSONDecodeError) as error:
 			json.loads(broken)
 		self.assertEqual(error.exception.pos, 12014)
-		frappe.db.get_value.return_value = broken
+		customized = self.format_data.replace("Product Name", "Custom Product Name")
+		frappe.db.get_value.return_value = broken.replace("Product Name", "Custom Product Name")
 
 		fix_so_print_format.execute()
 
