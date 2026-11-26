@@ -875,6 +875,11 @@ def push_to_erp(sales_orders):
                 "detail": detail,
             }
 
+            # Keep the exact payload on the order before calling ERP, committed
+            # up front so it is still there if the push fails or the worker dies.
+            so_doc.db_set("custom_payload_response", json.dumps(payload, indent=2), update_modified=False)
+            frappe.db.commit()
+
             # Make a single API call for the whole order using curl
             # (curl is more reliable for these Oracle ORDS connections).
             max_attempts = 3
